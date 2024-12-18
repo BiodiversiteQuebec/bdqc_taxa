@@ -142,7 +142,7 @@ df.head(30)
 
 # Manually fix/change Caribou (Rangifer tarandus) matching
 df.loc[df['name'] == 'Rangifer tarandus', ['valid_name', 'canonical_full']] = 'Rangifer tarandus caribou'
-df.loc[df['name'] == 'Rangifer tarandus', 'rank'] = 'subspecies'
+df.loc[df['name'] == 'Rangifer tarandus', 'rank'] = 'species'
 df.loc[df['name'] == 'Rangifer tarandus', 'synonym'] = True
 df.loc[df['name'] == 'Rangifer tarandus', 'vernacular_fr'] = 'Caribou des bois'
 

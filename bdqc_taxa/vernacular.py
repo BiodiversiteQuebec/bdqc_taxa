@@ -41,13 +41,15 @@ class Vernacular:
                  source_taxon_key: str = '',
                  language: str = '',
                  rank: Optional[str] = None,
-                 rank_order: int = 9999):
+                 rank_order: int = 9999,
+                 preferred: bool = False):
         self._name = name
         self.source = source
         self.source_taxon_key = source_taxon_key
         self.language = language.lower() if language else None
         self.rank = rank.lower() if rank else None
         self.rank_order = rank_order
+        self.preferred = preferred
 
     @property
     def name(self):
@@ -60,13 +62,15 @@ class Vernacular:
         for result in gbif_search_results:
             if result['language'] not in ACCEPTED_LANGUAGE:
                 continue
+            preferred = result['preferred'] if 'preferred' in result else False
             vernacular = cls(
                     name = result['vernacularName'],
                     source = result['source'],
                     language = result['language'],
                     source_taxon_key = result['sourceTaxonKey'],
                     rank = rank,
-                    rank_order = rank_order(rank)
+                    rank_order = rank_order(rank),
+                    preferred = preferred
                 )
             out.append(vernacular)
         # dict comprehension trick to get only unique objects

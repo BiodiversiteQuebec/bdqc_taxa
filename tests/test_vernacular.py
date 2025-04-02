@@ -44,6 +44,21 @@ class TestVernacular(TestCase):
         results = Vernacular.from_gbif_match(name, kingdom = kingdom)
         self.assertVernacularList(results)
 
+    def test_from_gbif_preferred_epilobium_ciliatum(
+            self, name = 'Epilobium ciliatum var. ecomosum',
+            source = 'Database of Vascular Plants of Canada (VASCAN)'):
+        results = Vernacular.from_gbif_match(name)
+        self.assertVernacularList(results)
+
+        # Filter for source
+        results = [vn for vn in results if vn.source == source]
+
+        # Assert some results are preferred
+        self.assertTrue(any([vn.preferred for vn in results]))
+
+        # Assert some results are not preferred
+        self.assertTrue(any([not vn.preferred for vn in results]))
+
     def test_from_match(self, name = 'Cyanocitta cristata'):
         results = Vernacular.from_match(name)
         self.assertVernacularList(results)

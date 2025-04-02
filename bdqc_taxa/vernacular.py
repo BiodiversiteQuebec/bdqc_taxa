@@ -74,8 +74,13 @@ class Vernacular:
         return out
     
     @classmethod
-    def from_gbif_match(cls, name: str = '', **match_kwargs):
-        taxa = gbif.Species.match(name = name, **match_kwargs)
+    def from_gbif_match(cls, name: str = '', rank: Optional[str] = None, **match_kwargs):
+        try:
+            rank = rank.upper()
+        except AttributeError:
+            pass
+        
+        taxa = gbif.Species.match(name = name, rank = rank, **match_kwargs)
 
         try:
             return cls.from_gbif(taxa['usageKey'], rank=taxa['rank'])
@@ -221,7 +226,7 @@ class Vernacular:
 
     @classmethod
     def from_match(cls, name: str, rank: Optional[str] = None, **match_kwargs):
-        out = cls.from_gbif_match(name, **match_kwargs)
+        out = cls.from_gbif_match(name, rank, **match_kwargs)
 
         # Get the first result rank to use as a fallback
         if not rank and out:

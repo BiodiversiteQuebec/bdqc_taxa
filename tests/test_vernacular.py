@@ -135,6 +135,10 @@ class TestVernacular(TestCase):
         results = Vernacular.from_wikidata_match(query)
         # Assert no scientific name in results
         self.assertFalse(any([bad_name in vn.name for vn in results]))
+        
+    def test_gbif_with_rank_epilobium(self, name='Epilobium ciliatum ciliatum', rank='subspecies'):
+        result = Vernacular.from_gbif_match(name, rank)
+        self.assertTrue(all([vn.rank == 'subspecies' for vn in result]))
 
 class TestInitcap(TestCase):
     def test_initcap_vernacular(self, text = 'Vincent Beauregard'):

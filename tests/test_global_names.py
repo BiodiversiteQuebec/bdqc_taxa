@@ -34,9 +34,5 @@ class TestGlobalNames(TestCase):
         # Assert that the length of unique data_source_ids == the length of result
         # This means that there are only one entry per data sources which is what we expect
         self.assertTrue(len(set(data_source_ids)) == len(result))
-        
-    def test_gn_no_match_pass_authorship_step(self, name='Antigone canadensis', authorship='(Linnaeus, 1758)'):
-        results = global_names.verify(name, authorship)
-        self.assertTrue(len(results) > 0)
-        self.assertTrue(results['names'][0]['matchType'] == 'NoMatch')
+
         

@@ -4,6 +4,7 @@ from . import cdpnq
 from . import eliso
 from . import wikidata
 from typing import Optional
+import logging
 
 # ACCEPTED_DATA_SOURCE = [
 #     'Integrated Taxonomic Information System (ITIS)',

@@ -171,6 +171,7 @@ class Vernacular:
             try:
                 rank_qid = wikidata.TAXA_RANKS_QID[rank]
             except KeyError:
+                logging.warning(f"Unrecognized rank: {rank}")
                 return []
                 
         out = []

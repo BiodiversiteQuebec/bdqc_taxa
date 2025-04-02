@@ -171,7 +171,7 @@ class Vernacular:
             try:
                 rank_qid = wikidata.TAXA_RANKS_QID[rank]
             except KeyError:
-                raise ValueError(f"Rank '{rank}' is not in the list of accepted ranks.")
+                return []
                 
         out = []
         search_results = wikidata.search_entities(name)

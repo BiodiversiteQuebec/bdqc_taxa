@@ -4,6 +4,7 @@ from . import cdpnq
 from . import eliso
 from . import wikidata
 from typing import Optional
+import logging
 
 # ACCEPTED_DATA_SOURCE = [
 #     'Integrated Taxonomic Information System (ITIS)',
@@ -171,7 +172,8 @@ class Vernacular:
             try:
                 rank_qid = wikidata.TAXA_RANKS_QID[rank]
             except KeyError:
-                raise ValueError(f"Rank '{rank}' is not in the list of accepted ranks.")
+                logging.warning(f"Unrecognized rank: {rank}")
+                return []
                 
         out = []
         search_results = wikidata.search_entities(name)

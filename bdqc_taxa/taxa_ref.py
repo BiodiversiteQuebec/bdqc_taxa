@@ -384,6 +384,7 @@ class TaxaRef:
             str(ref.__dict__): ref for ref in taxa_ref_list
             }.values()
 
+        # Create dict of source names and rank counts
         source_names = {ref.source_name for ref in taxa_ref_list}
         source_refs = {source_name: {} for source_name in source_names}
         source_rank_count = {source_name: {} for source_name in source_names}
@@ -402,11 +403,11 @@ class TaxaRef:
                 source_rank_count[ref.source_name][str(ref.rank_order)] = 1
 
         for source in source_refs.keys():
-            # order refs by rank order
+            # Sort refs by rank order within each source
             source_set = sorted(
                 source_refs[source].values(), key = lambda x: x.rank_order
                 )
-            # Set match_type by their position in rank_order
+            # Iterate through sorted references and set the match type based on their position in the rank order. If two consecutive references have the same rank, they are marked as "complex", and the one before is marked as "complex_closest_parent"
             complex_switch = False
             for i, ref in enumerate(source_set):
                 if not complex_switch:

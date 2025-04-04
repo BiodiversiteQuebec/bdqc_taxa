@@ -361,7 +361,7 @@ class TestComplex(unittest.TestCase):
         self.assertFalse(out)
 
     def test_from_all_sources(self,
-                              name='Lasiurus cinereus|Lasionycteris noctivagans'):
+                              name='Myotis sp | Chiroptera'):
 
         refs = taxa_ref.TaxaRef.from_all_sources(name)
         self.assertTrue(len(refs) > 1)

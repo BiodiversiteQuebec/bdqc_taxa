@@ -53,3 +53,16 @@ class TestSpecies(TestCase):
                 has_preferred = True
         
         self.assertTrue(has_preferred)
+    
+    # Regression test : Should return subsp. record
+    def test_species_match_no_rank(self, name='Epilobium ciliatum ciliatum'):
+        result = Species.match(name=name)
+        self.assertFalse(result['rank'] == 'SUBSPECIES')
+    
+    def test_species_match_rank(self, name='Epilobium ciliatum ciliatum', rank='SUBSPECIES'):
+        result = Species.match(name=name, rank=rank)
+        self.assertTrue(result['rank'] == 'SUBSPECIES')
+    # Edge case with no rank returns most precise possible answer
+    def test_species_match_bad_rank(self, name='Epilobium ciliatum ciliatum', rank='KINGDOM'):
+        result = Species.match(name=name, rank=rank)
+        self.assertTrue(result['rank'] == 'SPECIES')

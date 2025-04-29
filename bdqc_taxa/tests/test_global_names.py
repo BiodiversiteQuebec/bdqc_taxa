@@ -1,6 +1,5 @@
 from bdqc_taxa import global_names
 from unittest import TestCase
-import context
 
 class TestGlobalNames(TestCase):
     def test_verify(self, name = 'Acer saccharum'):

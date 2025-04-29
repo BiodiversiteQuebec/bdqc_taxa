@@ -1,6 +1,5 @@
 import unittest
 
-import context
 from bdqc_taxa import bryoquel, taxa_ref
 from bdqc_taxa import global_names
 

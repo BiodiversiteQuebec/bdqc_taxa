@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 about = {}
-with open(os.path.join(base_dir, "bdqc_taxa", "__about__.py")) as f:
+with open(os.path.join(base_dir, "bdqc_taxa", "src", "__about__.py")) as f:
     exec(f.read(), about)
 
 
@@ -24,8 +24,12 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ],
-    packages=['bdqc_taxa'],
-    package_data={'bdqc_taxa': ['custom_sources.sqlite']},
+    package_dir={"bdqc_taxa": "bdqc_taxa/src"},
+    packages=["bdqc_taxa"],
+    include_package_data=True,
+    package_data={
+        'bdqc_taxa': ['custom_sources.sqlite']
+    },
     python_requires=">=3.6",
     extras_require={
         'dev': [

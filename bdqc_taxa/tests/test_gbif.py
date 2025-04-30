@@ -1,4 +1,3 @@
-import context
 from unittest import TestCase
 from bdqc_taxa.gbif import Species
 from typing import List

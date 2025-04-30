@@ -12,12 +12,25 @@
 
 import sqlite3
 import importlib.resources
+import os.path
 
 # Get the database file from the package data
-
 DB_FILE = 'custom_sources.sqlite'
-with importlib.resources.open_binary('bdqc_taxa', DB_FILE) as db_file:
-    db_path = db_file.name
+
+# Try to find the database file
+db_path = None
+
+# Look in parent directory of the package (where it should be after refactoring)
+module_dir = os.path.dirname(os.path.dirname(__file__))
+db_path = os.path.join(module_dir, DB_FILE)
+
+if not os.path.exists(db_path):
+    # Try with importlib.resources as fallback
+    try:
+        with importlib.resources.open_binary('bdqc_taxa', DB_FILE) as db_file:
+            db_path = db_file.name
+    except (ImportError, FileNotFoundError):
+        raise FileNotFoundError(f"Could not locate {DB_FILE} in package data")
 
 # Connect to the database
 conn = sqlite3.connect(db_path)

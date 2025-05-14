@@ -193,7 +193,7 @@ def _search_page(args):
     page, search_func = args
     return search_func(page=page)
 
-def search_all_species(records_per_page=100, num_processes=4, **kwargs):
+def search_all_species(records_per_page=100, num_processes=4, max_records=None, **kwargs):
     """
     Search all species by paginating through results using parallel processing.
     
@@ -203,6 +203,8 @@ def search_all_species(records_per_page=100, num_processes=4, **kwargs):
         Number of records per page. Default value is 100. Maximum value is 100.
     num_processes : int, optional
         Number of processes to use for parallel processing. Default is 4.
+    max_records : int, optional
+        Maximum number of records to return. If None, returns all records.
     **kwargs : 
         Additional arguments to pass to search_species function.
         
@@ -225,17 +227,22 @@ def search_all_species(records_per_page=100, num_processes=4, **kwargs):
     except (KeyError, ValueError):
         return first_page.get('results', [])
     
-    if total_pages <= 1:
-        return all_results
+    if total_pages <= 1 or (max_records and len(all_results) >= max_records):
+        return all_results[:max_records] if max_records else all_results
+    
+    # Adjust total pages if max_records is specified
+    if max_records:
+        remaining_records = max_records - len(all_results)
+        pages_needed = min(total_pages - 1, (remaining_records + records_per_page - 1) // records_per_page)
+        pages_to_process = list(range(1, pages_needed + 1))
+    else:
+        pages_to_process = list(range(1, total_pages))
     
     # Create a partial function with fixed parameters
     search_func = partial(search_species, records_per_page=records_per_page, **kwargs)
     
-    # Create a list of page numbers to process (skip page 0 as we already processed it)
-    pages_to_process = list(range(1, total_pages))
-    
     # Process pages in parallel
-    with multiprocessing.Pool(processes=num_processes) as pool:
+    with multiprocessing.Pool(processes=min(num_processes, len(pages_to_process))) as pool:
         # Map page numbers to search_func with the helper function
         args = [(page, search_func) for page in pages_to_process]
         results = pool.map(_search_page, args)
@@ -244,5 +251,7 @@ def search_all_species(records_per_page=100, num_processes=4, **kwargs):
     for result in results:
         if result and isinstance(result, dict) and 'results' in result:
             all_results.extend(result['results'])
+            if max_records and len(all_results) >= max_records:
+                return all_results[:max_records]
     
     return all_results

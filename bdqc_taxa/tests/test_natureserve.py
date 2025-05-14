@@ -103,11 +103,15 @@ class TestNatureServe(TestCase):
         # record type of all results should be 'species'
         self.assertTrue(all(record.get('recordType') == 'SPECIES' for record in search_result["results"]))
 
+    # Test is really slow, so we limit the number of records to 1000
+    # and the number of records per page to 100 (max available by api)
     def test_search_all_subnation_checklist(self, records_per_page=100, subnation='QC', nation='CA'):
         # Notes on behaviour on synonym search: Returns only the accepted name records and infra-specific names
 
         # Test a synonym species name returns at least one match
-        search_results = search_all_species(records_per_page=records_per_page, nation=nation, subnation=subnation)
+        search_results = search_all_species(records_per_page=records_per_page,
+                                            max_records=1000,
+                                            nation=nation, subnation=subnation)
         self.assertIsInstance(search_results, list)
 
         self.assertGreaterEqual(len(search_results), 1)

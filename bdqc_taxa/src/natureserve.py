@@ -3,6 +3,8 @@ from urllib.request import Request, urlopen, URLError, HTTPError
 from urllib.parse import urlencode
 
 from datetime import datetime
+import multiprocessing
+from functools import partial
 
 HOST = "https://explorer.natureserve.org/api"
 
@@ -185,3 +187,62 @@ def search_species(species_search_token=None,
     if not isinstance(result, dict) or 'results' not in result:
         return None
     return result
+
+def _search_page(args):
+    """Helper function for multiprocessing that searches a specific page"""
+    page, search_func = args
+    return search_func(page=page)
+
+def search_all_species(records_per_page=100, num_processes=4, **kwargs):
+    """
+    Search all species by paginating through results using parallel processing.
+    
+    Parameters
+    ----------
+    records_per_page : int, optional
+        Number of records per page. Default value is 100. Maximum value is 100.
+    num_processes : int, optional
+        Number of processes to use for parallel processing. Default is 4.
+    **kwargs : 
+        Additional arguments to pass to search_species function.
+        
+    Returns
+    -------
+    list
+        Combined results from all pages.
+    """
+    if records_per_page > 100:
+        raise ValueError("records_per_page must be less than or equal to 100.")
+
+    # Get first page to determine total pages
+    first_page = search_species(page=0, records_per_page=records_per_page, **kwargs)
+    if not first_page or 'resultsSummary' not in first_page:
+        return []
+    
+    try:
+        total_pages = int(first_page['resultsSummary']['totalPages'])
+        all_results = first_page.get('results', [])
+    except (KeyError, ValueError):
+        return first_page.get('results', [])
+    
+    if total_pages <= 1:
+        return all_results
+    
+    # Create a partial function with fixed parameters
+    search_func = partial(search_species, records_per_page=records_per_page, **kwargs)
+    
+    # Create a list of page numbers to process (skip page 0 as we already processed it)
+    pages_to_process = list(range(1, total_pages))
+    
+    # Process pages in parallel
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        # Map page numbers to search_func with the helper function
+        args = [(page, search_func) for page in pages_to_process]
+        results = pool.map(_search_page, args)
+    
+    # Combine all results
+    for result in results:
+        if result and isinstance(result, dict) and 'results' in result:
+            all_results.extend(result['results'])
+    
+    return all_results

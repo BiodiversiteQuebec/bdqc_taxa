@@ -1,6 +1,5 @@
 from unittest import TestCase
-from bdqc_taxa.natureserve import get_taxon, search_species
-
+from bdqc_taxa.natureserve import get_taxon, search_species, search_all_species
 
 class TestNatureServe(TestCase):
     def test_get_taxon(self, global_id='ELEMENT_GLOBAL.2.160636'):
@@ -103,3 +102,16 @@ class TestNatureServe(TestCase):
         self.assertIn('scientificName', search_result["results"][0])
         # record type of all results should be 'species'
         self.assertTrue(all(record.get('recordType') == 'SPECIES' for record in search_result["results"]))
+
+    def test_search_all_subnation_checklist(self, records_per_page=100, subnation='QC', nation='CA'):
+        # Notes on behaviour on synonym search: Returns only the accepted name records and infra-specific names
+
+        # Test a synonym species name returns at least one match
+        search_results = search_all_species(records_per_page=records_per_page, nation=nation, subnation=subnation)
+        self.assertIsInstance(search_results, list)
+
+        self.assertGreaterEqual(len(search_results), 1)
+        # First search_results should contain 'scientificName'
+        self.assertIn('scientificName', search_results[0])
+        # record type of all results should be 'species'
+        self.assertTrue(all(record.get('recordType') == 'SPECIES' for record in search_results))

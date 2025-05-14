@@ -2,7 +2,33 @@ import json
 from urllib.request import Request, urlopen, URLError, HTTPError
 from urllib.parse import urlencode
 
+from datetime import datetime
+
 HOST = "https://explorer.natureserve.org/api"
+
+CURRENT_DATE = datetime.now()
+
+# Metadata is generated from Terms of Use and Citations to reflect DublinCore metadata structure
+# https://explorer.natureserve.org/AboutTheData/UseGuidelinesCitations
+METADATA = {
+    "title": "NatureServe Explorer API",
+    "description": "Provides access to NatureServe's biodiversity data, including taxon record retrieval and species search.",
+    "creator": "NatureServe",
+    "publisher": "NatureServe",
+    "date": CURRENT_DATE.strftime("%Y-%m-%d"),
+    "termsOfUse": "https://explorer.natureserve.org/AboutTheData/UseGuidelinesCitations",
+    "logo": "https://www.natureserve.org/sites/default/files/2022-07/network_logo_250.jpg",
+    "rights": "Use governed by NatureServe’s Use Guidelines and Citations.",
+    "citation": f"NatureServe. {CURRENT_DATE.year}. NatureServe Network Biodiversity Location Data accessed through NatureServe Explorer. NatureServe, Arlington, Virginia. Available https://explorer.natureserve.org/. (Accessed: {CURRENT_DATE.strftime('%B %d, %Y')}).",
+    "licenseURL": "https://explorer.natureserve.org/AboutTheData/UseGuidelinesCitations",
+    "creator": "NatureServe",
+    "creatorURL": "https://explorer.natureserve.org/",
+    "contact": "DataSupport@natureserve.org",
+    "resourceType": "api",
+    "resourceURL": "https://explorer.natureserve.org/api",
+    "resourceName": "NatureServe Explorer API",
+    "resourceDescription": "NatureServe Explorer API provides access to NatureServe's biodiversity data.",
+}
 
 MATCH_AGAINST = [
     "scientificName",

@@ -4,6 +4,22 @@ from urllib.parse import urlencode
 
 HOST = "https://explorer.natureserve.org/api"
 
+MATCH_AGAINST = [
+    "scientificName",
+    "allScientificNames",
+    "primaryCommonName",
+    "allCommonNames",
+    "allNames",
+    "code"
+]
+
+SIMILARITY_OPERATORS = [
+    "similarTo",
+    "contains",
+    "startsWith",
+    "equals"
+]
+
 
 def _get_url_data(url, method="GET", params=None, body=None):
     """
@@ -51,7 +67,9 @@ def get_taxon(global_id):
     return _get_url_data(url, method="GET")
 
 
-def search_species(search_token, page=None, records_per_page=None):
+def search_species(search_token,
+                   operator ="similarTo", match_against="allScientificNames",
+                   page=None, records_per_page=None):
     """
     SearchSpecies via POST with criteriaType, textCriteria, and pagingOptions.
 
@@ -63,6 +81,13 @@ def search_species(search_token, page=None, records_per_page=None):
     search_token : str
         Token to match against all scientific names (primary and synonyms)
         using a “similarTo” operator.
+    operator : str, optional
+        Similarity operator to use for the search. Default is "similarTo".
+        Other options include "contains", "startsWith", and "equals".
+    match_against : str, optional
+        Field to match against. Default is "allScientificNames".
+        Other options include "scientificName", "primaryCommonName",
+        "allCommonNames", "allNames", and "code".
     page : int, optional
         Page number for pagination.
     records_per_page : int, optional
@@ -73,6 +98,12 @@ def search_species(search_token, page=None, records_per_page=None):
     dict
         JSON response containing search metadata and results under 'data' key.
     """
+    if operator not in SIMILARITY_OPERATORS:
+        raise ValueError(f"Invalid operator: {operator}. Must be one of {SIMILARITY_OPERATORS}.")
+    
+    if match_against not in MATCH_AGAINST:
+        raise ValueError(f"Invalid match_against: {match_against}. Must be one of {MATCH_AGAINST}.")
+
     url = f"{HOST}/data/speciesSearch"
     body = {
         "criteriaType": "species",
@@ -80,8 +111,8 @@ def search_species(search_token, page=None, records_per_page=None):
             {
                 "paramType": "textSearch",
                 "searchToken": search_token,
-                "matchAgainst": "allScientificNames",
-                "operator": "similarTo"
+                "operator": operator,
+                "matchAgainst": match_against
             }
         ],
         "pagingOptions": {

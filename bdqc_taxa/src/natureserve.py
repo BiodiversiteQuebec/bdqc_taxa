@@ -48,15 +48,20 @@ SIMILARITY_OPERATORS = [
     "equals"
 ]
 
-NATIONS = [
+LOCATION_NATIONS = [
     "CA",
     "US",
 ]
 
-SUBNATIONS = [
+LOCATION_SUBNATIONS = [
     "AB", "BC", "LB", "MB", "NB", "NF", "NS", "NT", "ON", "PE", "QC", "SK", "YT",
 ]
 
+LOCATION_ORIGIN = [
+    "all",
+    "onlyNatives",
+    "onlyExotics"
+]
 
 def _get_url_data(url, method="GET", params=None, body=None):
     """
@@ -104,11 +109,15 @@ def get_taxon(global_id):
     return _get_url_data(url, method="GET")
 
 
+# Optional; Defines whether searches will be limited to only include species which are native or exotic within the specified locations. Defaults to "all" if the property or the locationOptions object is not specified. Only applicable when searching for species. If specified for a search which does not return species, this property will be ignored. Possible values: all, onlyNatives, onlyExotics
+
 def search_species(species_search_token=None,
                    text_search_operator ="similarTo",
                    text_match_against="allScientificNames",
-                   nation=None, subnation=None,
-                   page=None, records_per_page=None):
+                   location_nation=None, location_subnation=None,
+                   location_origin=None,
+                   page=None, records_per_page=None,
+                   additional_criterias=None):
     """
     SearchSpecies via POST with criteriaType, textCriteria, and pagingOptions.
 
@@ -117,20 +126,30 @@ def search_species(species_search_token=None,
 
     Parameters
     ----------
-    search_token : str
+    text_search_token : str
         Token to match against all scientific names (primary and synonyms)
         using a “similarTo” operator.
-    operator : str, optional
+    text_search_operator : str, optional
         Similarity operator to use for the search. Default is "similarTo".
         Other options include "contains", "startsWith", and "equals".
-    match_against : str, optional
+    text_match_against : str, optional
         Field to match against. Default is "allScientificNames".
         Other options include "scientificName", "primaryCommonName",
         "allCommonNames", "allNames", and "code".
+    location_nation : str, optional
+        Nation code to limit the search to a specific nation.
+        Must be one of "CA" or "US".
+    location_subnation : str, optional
+        Subnation code to limit the search to a specific subnation.
+        Must be one of the subnation codes for Canada. Example: "ON", "PE", "QC", ...
+    location_origin : str, optional
+        Origin of the species. Must be one of "all", "onlyNatives", or "onlyExotics".   
     page : int, optional
         Page number for pagination.
     records_per_page : int, optional
         Number of records per page for pagination.
+    additional_criterias : dict, optional
+        Additional criteria to include in the search (statusCriteria, etc).
 
     Returns
     -------
@@ -156,19 +175,27 @@ def search_species(species_search_token=None,
 
     location_criteria = None
 
-    if nation and nation in NATIONS:
+    if location_nation and location_nation in LOCATION_NATIONS:
         location_criteria = {
             "paramType": "nation",
-            "nation": nation
+            "nation": location_nation
         }
 
-    if subnation and not nation:
+    if location_subnation and not location_nation:
         raise ValueError("Subnation cannot be specified without a nation.")
-    elif subnation and subnation in SUBNATIONS:
+    elif location_subnation and location_subnation in LOCATION_SUBNATIONS:
         location_criteria = {
             "paramType": "subnation",
-            "subnation": subnation,
-            "nation": nation
+            "subnation": location_subnation,
+            "nation": location_nation
+        }
+
+    location_options = None
+    if location_origin and not location_nation:
+        raise ValueError("Origin cannot be specified without a nation.")
+    elif location_origin and location_origin in LOCATION_ORIGIN:
+        location_options = {
+            "origin": location_origin
         }
 
     body = {
@@ -182,6 +209,10 @@ def search_species(species_search_token=None,
     body.update({"textCriteria": [text_criteria]}) if text_criteria else None
 
     body.update({"locationCriteria": [location_criteria]}) if location_criteria else None
+
+    body.update({"locationOptions": location_options}) if location_options else None
+
+    body.update({"additionalCriteria": additional_criterias}) if additional_criterias else None
 
     result = _get_url_data(url, method="POST", body=body)
     if not isinstance(result, dict) or 'results' not in result:

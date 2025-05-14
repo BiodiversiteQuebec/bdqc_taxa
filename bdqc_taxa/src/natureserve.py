@@ -46,6 +46,15 @@ SIMILARITY_OPERATORS = [
     "equals"
 ]
 
+NATIONS = [
+    "CA",
+    "US",
+]
+
+SUBNATIONS = [
+    "AB", "BC", "LB", "MB", "NB", "NF", "NS", "NT", "ON", "PE", "QC", "SK", "YT",
+]
+
 
 def _get_url_data(url, method="GET", params=None, body=None):
     """
@@ -93,8 +102,10 @@ def get_taxon(global_id):
     return _get_url_data(url, method="GET")
 
 
-def search_species(search_token,
-                   operator ="similarTo", match_against="allScientificNames",
+def search_species(species_search_token=None,
+                   text_search_operator ="similarTo",
+                   text_match_against="allScientificNames",
+                   nation=None, subnation=None,
                    page=None, records_per_page=None):
     """
     SearchSpecies via POST with criteriaType, textCriteria, and pagingOptions.
@@ -124,28 +135,52 @@ def search_species(search_token,
     dict
         JSON response containing search metadata and results under 'data' key.
     """
-    if operator not in SIMILARITY_OPERATORS:
-        raise ValueError(f"Invalid operator: {operator}. Must be one of {SIMILARITY_OPERATORS}.")
+    if text_search_operator not in SIMILARITY_OPERATORS:
+        raise ValueError(f"Invalid operator: {text_search_operator}. Must be one of {SIMILARITY_OPERATORS}.")
     
-    if match_against not in MATCH_AGAINST:
-        raise ValueError(f"Invalid match_against: {match_against}. Must be one of {MATCH_AGAINST}.")
+    if text_match_against not in MATCH_AGAINST:
+        raise ValueError(f"Invalid match_against: {text_match_against}. Must be one of {MATCH_AGAINST}.")
 
     url = f"{HOST}/data/speciesSearch"
+
+    text_criteria = None
+    if species_search_token:
+        text_criteria = {
+            "paramType": "textSearch",
+            "searchToken": species_search_token,
+            "operator": text_search_operator,
+            "matchAgainst": text_match_against
+        }
+
+    location_criteria = None
+
+    if nation and nation in NATIONS:
+        location_criteria = {
+            "paramType": "nation",
+            "nation": nation
+        }
+
+    if subnation and not nation:
+        raise ValueError("Subnation cannot be specified without a nation.")
+    elif subnation and subnation in SUBNATIONS:
+        location_criteria = {
+            "paramType": "subnation",
+            "subnation": subnation,
+            "nation": nation
+        }
+
     body = {
         "criteriaType": "species",
-        "textCriteria": [
-            {
-                "paramType": "textSearch",
-                "searchToken": search_token,
-                "operator": operator,
-                "matchAgainst": match_against
-            }
-        ],
         "pagingOptions": {
             "page": page,
             "recordsPerPage": records_per_page
         }
     }
+
+    body.update({"textCriteria": [text_criteria]}) if text_criteria else None
+
+    body.update({"locationCriteria": [location_criteria]}) if location_criteria else None
+
     result = _get_url_data(url, method="POST", body=body)
     if not isinstance(result, dict) or 'results' not in result:
         return []

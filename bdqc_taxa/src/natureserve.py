@@ -183,5 +183,5 @@ def search_species(species_search_token=None,
 
     result = _get_url_data(url, method="POST", body=body)
     if not isinstance(result, dict) or 'results' not in result:
-        return []
-    return result["results"]
+        return None
+    return result

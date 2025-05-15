@@ -27,21 +27,6 @@ RETURNS SETOF taxa_obs AS $$
     where match_taxa_obs.id_taxa_obs = taxa_obs.id
 $$ LANGUAGE sql;
 
--- DROP FUNCTION IF EXISTS match_taxa_ref_relatives(text);
-CREATE FUNCTION rubus.match_taxa_ref_relatives(
-    taxa_name text)
-RETURNS SETOF rubus.taxa_ref AS $$
-    select distinct taxa_ref.*
-    from rubus.taxa_ref search_ref
-    left join rubus.taxa_obs_ref_lookup search_lookup
-        on search_ref.id = search_lookup.id_taxa_ref
-    left join rubus.taxa_obs_ref_lookup synonym_lookup
-        on search_lookup.id_taxa_ref_valid = synonym_lookup.id_taxa_ref_valid
-    left join rubus.taxa_ref
-        on synonym_lookup.id_taxa_ref = taxa_ref.id
-    where search_ref.scientific_name = taxa_name
-    $$ LANGUAGE sql;
-
 -- -----------------------------------------------------------------------------
 -- FUNCTION match_taxa_groups
 -- -----------------------------------------------------------------------------

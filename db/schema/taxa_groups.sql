@@ -1,10 +1,8 @@
 --
 -- Taxa group resoucres creation
 --
-
-
-DROP TABLE IF EXISTS public.taxa_groups CASCADE;
-CREATE TABLE IF NOT EXISTS public.taxa_groups (
+-- DROP TABLE IF EXISTS rubus.taxa_groups CASCADE;
+CREATE TABLE IF NOT EXISTS rubus.taxa_groups (
     id serial primary key,
     short varchar(20),
     vernacular_fr text,
@@ -14,19 +12,19 @@ CREATE TABLE IF NOT EXISTS public.taxa_groups (
     groups_within text[]
 );
 
-CREATE INDEX IF NOT EXISTS taxa_groups_short_idx ON public.taxa_groups (short);
+CREATE INDEX IF NOT EXISTS taxa_groups_short_idx ON rubus.taxa_groups (short);
 -- Create unique index on short name
-CREATE UNIQUE INDEX IF NOT EXISTS taxa_groups_short_unique_idx ON public.taxa_groups (short);
+CREATE UNIQUE INDEX IF NOT EXISTS taxa_groups_short_unique_idx ON rubus.taxa_groups (short);
 
-ALTER TABLE public.taxa_groups OWNER TO coleo;
-ALTER INDEX public.taxa_groups_short_idx OWNER TO coleo;
-ALTER INDEX public.taxa_groups_short_unique_idx OWNER TO coleo;
+ALTER TABLE rubus.taxa_groups OWNER TO coleo;
+ALTER INDEX rubus.taxa_groups_short_idx OWNER TO coleo;
+ALTER INDEX rubus.taxa_groups_short_unique_idx OWNER TO coleo;
 
-GRANT INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.taxa_groups TO read_write_all;
-GRANT REFERENCES, SELECT, TRIGGER ON TABLE public.taxa_groups TO read_only_all;
+GRANT INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE rubus.taxa_groups TO read_write_all;
+GRANT REFERENCES, SELECT, TRIGGER ON TABLE rubus.taxa_groups TO read_only_all;
 
 --
--- Data for Name: taxa_groups; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: taxa_groups; Type: TABLE DATA; Schema: rubus; Owner: postgres
 --
 
 -- DESCRIPTION OF LEVELS
@@ -69,7 +67,7 @@ SENSITIVE	31	Espèce sensibles	Sensitive species	2	CDPNQ
 CDPNQ_EMV    32	Espèces menacées, vulnérables ou susceptibles   At-risk species 2	CDPNQ
 \.
 
-INSERT INTO public.taxa_group_members (short, id, vernacular_fr, vernacular_en, level, groups_within)
+INSERT INTO rubus.taxa_group_members (short, id, vernacular_fr, vernacular_en, level, groups_within)
 VALUES
     -- ('CDPNQ_RISK', ARRAY['CDPNQ_S1', 'CDPNQ_S2', 'CDPNQ_S3']),
     -- ('CDPNQ_STATUS', ARRAY['CDPNQ_SUSC', 'CDPNQ_VUL', 'CDPNQ_VUL_HARVEST', 'CDPNQ_ENDANGERED']);
@@ -80,40 +78,40 @@ VALUES
 
 
 --
--- Data for Name: taxa_group_members; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: taxa_group_members; Type: TABLE DATA; Schema: rubus; Owner: postgres
 --
 
-DROP TABLE IF EXISTS public.taxa_group_members CASCADE;
-CREATE TABLE public.taxa_group_members (
+-- DROP TABLE IF EXISTS rubus.taxa_group_members CASCADE;
+CREATE TABLE rubus.taxa_group_members (
     short varchar(20),
     scientific_name text
 );
 
-ALTER TABLE public.taxa_group_members
+ALTER TABLE rubus.taxa_group_members
     ADD COLUMN IF NOT EXISTS id_taxa_obs integer
-    REFERENCES public.taxa_obs(id) ON DELETE SET NULL;
+    REFERENCES rubus.taxa_obs(id) ON DELETE SET NULL;
 
 -- Not null constraint on id_taxa_obs
-ALTER TABLE public.taxa_group_members
+ALTER TABLE rubus.taxa_group_members
     ALTER COLUMN id_taxa_obs SET NOT NULL;
 
 -- Attempt to drop the column with CASCADE to remove all dependencies
-ALTER TABLE public.taxa_group_members
+ALTER TABLE rubus.taxa_group_members
     DROP COLUMN IF EXISTS scientific_name CASCADE;
 
 CREATE INDEX IF NOT EXISTS taxa_group_members_id_taxa_obs_idx
-    ON public.taxa_group_members (id_taxa_obs);
+    ON rubus.taxa_group_members (id_taxa_obs);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_taxa_group_members_short_id_taxa_obs
-    ON public.taxa_group_members (short, id_taxa_obs);
+    ON rubus.taxa_group_members (short, id_taxa_obs);
 
-ALTER TABLE public.taxa_group_members OWNER TO coleo;
-ALTER INDEX public.taxa_group_members_id_taxa_obs_idx OWNER TO coleo;
-ALTER INDEX public.idx_taxa_group_members_short_id_taxa_obs OWNER TO coleo;
+ALTER TABLE rubus.taxa_group_members OWNER TO coleo;
+ALTER INDEX rubus.taxa_group_members_id_taxa_obs_idx OWNER TO coleo;
+ALTER INDEX rubus.idx_taxa_group_members_short_id_taxa_obs OWNER TO coleo;
 
 
 -- Fonction d'injection et de relation
-CREATE OR REPLACE FUNCTION public.insert_taxa_obs_group_member(
+CREATE OR REPLACE FUNCTION rubus.insert_taxa_obs_group_member(
     short_group char(255),
     scientific_name text,
     authorship text DEFAULT '',
@@ -137,13 +135,13 @@ BEGIN
       LIMIT 1;
 
     -- 3.3. Insérer dans taxa_group_members avec id_taxa_obs
-    INSERT INTO public.taxa_group_members (short, id_taxa_obs)
+    INSERT INTO rubus.taxa_group_members (short, id_taxa_obs)
     VALUES ($1, taxa_obs_id)
     ON CONFLICT DO NOTHING;
 
     -- 3.4. Rafraîchir taxa_ref pour ce taxa_obs
     BEGIN
-        PERFORM public.insert_taxa_ref_from_taxa_obs(taxa_obs_id, $2, $3, $5);
+        PERFORM rubus.insert_taxa_ref_from_taxa_obs(taxa_obs_id, $2, $3, $5);
     EXCEPTION
         WHEN OTHERS THEN
         RAISE NOTICE 'Error inserting record with id % and scientific name %', taxa_obs_id, $2;
@@ -151,10 +149,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-ALTER FUNCTION public.insert_taxa_obs_group_member(char(255), text, text, text, text) OWNER TO coleo;
+ALTER FUNCTION rubus.insert_taxa_obs_group_member(char(255), text, text, text, text) OWNER TO coleo;
 
-DELETE FROM public.taxa_group_members;
-COPY public.taxa_group_members (short, scientific_name) FROM stdin;
+-- DELETE FROM rubus.taxa_group_members;
+COPY rubus.taxa_group_members (short, scientific_name) FROM stdin;
 AMPHIBIANS	Amphibia
 BIRDS	Aves
 MAMMALS	Mammalia
@@ -496,53 +494,53 @@ SENSITIVE	Apalone spinifera
 -- CREATE TAXA LOOKUP
 --
 
-DROP MATERIALIZED VIEW IF EXISTS public.taxa_obs_group_lookup CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS rubus.taxa_obs_group_lookup CASCADE;
 -- Dépendances
 -- api.taxa
 -- view api.taxa_groups
 -- view atlas_api.observation_web_geom
 
-CREATE TABLE public.taxa_obs_group_lookup (
-    id_taxa_obs integer NOT NULL REFERENCES public.taxa_obs(id) ON DELETE CASCADE,
-    id_group integer NOT NULL REFERENCES public.taxa_groups(id) ON DELETE CASCADE,
-    short_group text NOT NULL REFERENCES public.taxa_groups(short) ON DELETE CASCADE
+CREATE TABLE rubus.taxa_obs_group_lookup (
+    id_taxa_obs integer NOT NULL REFERENCES rubus.taxa_obs(id) ON DELETE CASCADE,
+    id_group integer NOT NULL REFERENCES rubus.taxa_groups(id) ON DELETE CASCADE,
+    short_group text NOT NULL REFERENCES rubus.taxa_groups(short) ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX idx_taxa_obs_group_lookup ON public.taxa_obs_group_lookup (id_taxa_obs, id_group, short_group);
+CREATE UNIQUE INDEX idx_taxa_obs_group_lookup ON rubus.taxa_obs_group_lookup (id_taxa_obs, id_group, short_group);
 
 CREATE INDEX IF NOT EXISTS taxa_obs_group_lookup_id_taxa_obs_idx
-  ON public.taxa_obs_group_lookup (id_taxa_obs);
+  ON rubus.taxa_obs_group_lookup (id_taxa_obs);
 
 CREATE INDEX IF NOT EXISTS taxa_obs_group_lookup_id_group_idx
-    ON public.taxa_obs_group_lookup (id_group);
+    ON rubus.taxa_obs_group_lookup (id_group);
 
 CREATE INDEX IF NOT EXISTS taxa_obs_group_lookup_short_group_idx
-    ON public.taxa_obs_group_lookup (short_group);
+    ON rubus.taxa_obs_group_lookup (short_group);
 
-ALTER TABLE public.taxa_obs_group_lookup OWNER TO coleo;
-ALTER INDEX public.taxa_obs_group_lookup_id_taxa_obs_idx OWNER TO coleo;
-ALTER INDEX public.taxa_obs_group_lookup_id_group_idx OWNER TO coleo;
-ALTER INDEX public.taxa_obs_group_lookup_short_group_idx OWNER TO coleo;
+ALTER TABLE rubus.taxa_obs_group_lookup OWNER TO coleo;
+ALTER INDEX rubus.taxa_obs_group_lookup_id_taxa_obs_idx OWNER TO coleo;
+ALTER INDEX rubus.taxa_obs_group_lookup_id_group_idx OWNER TO coleo;
+ALTER INDEX rubus.taxa_obs_group_lookup_short_group_idx OWNER TO coleo;
 
 -- View 1: Level 1 and 2 groups
-CREATE OR REPLACE VIEW public.taxa_obs_group_lookup_level_1_2_view AS
+CREATE OR REPLACE VIEW rubus.taxa_obs_group_lookup_level_1_2_view AS
 SELECT DISTINCT
     obs_lookup.id_taxa_obs, 
     taxa_groups.id AS id_group, 
     taxa_groups.short AS short_group
-FROM public.taxa_group_members group_m
+FROM rubus.taxa_group_members group_m
 JOIN taxa_groups ON taxa_groups.short = group_m.short
 JOIN taxa_obs_ref_lookup match_lu
     ON group_m.id_taxa_obs = match_lu.id_taxa_obs
     AND match_lu.is_parent IS FALSE
-LEFT JOIN public.taxa_obs_ref_lookup obs_lookup
+LEFT JOIN rubus.taxa_obs_ref_lookup obs_lookup
     ON match_lu.id_taxa_ref_valid = obs_lookup.id_taxa_ref
 WHERE taxa_groups.level = ANY(ARRAY[1, 2]);
 
-ALTER TABLE public.taxa_obs_group_lookup_level_1_2_view OWNER TO coleo;
+ALTER TABLE rubus.taxa_obs_group_lookup_level_1_2_view OWNER TO coleo;
 
 -- View 2: Level 0 groups (Quebec observations)
-CREATE OR REPLACE VIEW public.taxa_obs_group_lookup_quebec_view AS
+CREATE OR REPLACE VIEW rubus.taxa_obs_group_lookup_quebec_view AS
 SELECT DISTINCT ON (id_taxa_obs)
     id_taxa_obs, 
     taxa_groups.id AS id_group, 
@@ -550,34 +548,34 @@ SELECT DISTINCT ON (id_taxa_obs)
 FROM observations_partitions.within_quebec, taxa_groups
 WHERE level = 0;
 
-ALTER TABLE public.taxa_obs_group_lookup_quebec_view OWNER TO coleo;
+ALTER TABLE rubus.taxa_obs_group_lookup_quebec_view OWNER TO coleo;
 
 -- View 3: Level 3 groups
-CREATE OR REPLACE VIEW public.taxa_obs_group_lookup_level_3_view AS
+CREATE OR REPLACE VIEW rubus.taxa_obs_group_lookup_level_3_view AS
 SELECT 
     level_1_2.id_taxa_obs, 
     level_3_groups.id AS id_group, 
     level_3_groups.short AS short_group
 FROM taxa_groups AS level_3_groups
-JOIN public.taxa_obs_group_lookup_level_1_2_view AS level_1_2
+JOIN rubus.taxa_obs_group_lookup_level_1_2_view AS level_1_2
     ON level_1_2.short_group = ANY(level_3_groups.groups_within)
 WHERE level_3_groups.level = 3;
 
-ALTER TABLE public.taxa_obs_group_lookup_level_3_view OWNER TO coleo;
+ALTER TABLE rubus.taxa_obs_group_lookup_level_3_view OWNER TO coleo;
 
-CREATE OR REPLACE FUNCTION public.refresh_taxa_obs_group_lookup()
+CREATE OR REPLACE FUNCTION rubus.refresh_taxa_obs_group_lookup()
 RETURNS void AS $$
 BEGIN
-    DELETE FROM public.taxa_obs_group_lookup;
+    DELETE FROM rubus.taxa_obs_group_lookup;
 
-    INSERT INTO public.taxa_obs_group_lookup (id_taxa_obs, id_group, short_group)
-    SELECT * FROM public.taxa_obs_group_lookup_level_1_2_view
+    INSERT INTO rubus.taxa_obs_group_lookup (id_taxa_obs, id_group, short_group)
+    SELECT * FROM rubus.taxa_obs_group_lookup_level_1_2_view
     UNION
-    SELECT * FROM public.taxa_obs_group_lookup_quebec_view
+    SELECT * FROM rubus.taxa_obs_group_lookup_quebec_view
     UNION
-    SELECT * FROM public.taxa_obs_group_lookup_level_3_view
+    SELECT * FROM rubus.taxa_obs_group_lookup_level_3_view
     ON CONFLICT DO NOTHING;
 END;
 $$ LANGUAGE plpgsql;
 
-ALTER FUNCTION public.refresh_taxa_obs_group_lookup() OWNER TO coleo;
+ALTER FUNCTION rubus.refresh_taxa_obs_group_lookup() OWNER TO coleo;

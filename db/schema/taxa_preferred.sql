@@ -1,5 +1,5 @@
--- DROP MATERIALIZED VIEW IF EXISTS api.taxa_obs_ref_preferred;
-CREATE MATERIALIZED VIEW IF NOT EXISTS api.taxa_obs_ref_preferred AS
+-- DROP MATERIALIZED VIEW IF EXISTS rubus.taxa_obs_ref_preferred;
+CREATE MATERIALIZED VIEW IF NOT EXISTS rubus.taxa_obs_ref_preferred AS
 WITH all_ref AS (
     SELECT DISTINCT ON (ref_lu.id_taxa_obs, taxa_ref.id)
         ref_lu.id_taxa_obs,
@@ -12,10 +12,10 @@ WITH all_ref AS (
         taxa_ref.valid,
         ref_lu.is_parent,
         taxa_rank_order."order" as rank_order
-    FROM taxa_obs_ref_lookup ref_lu
-    LEFT JOIN taxa_ref ON ref_lu.id_taxa_ref_valid = taxa_ref.id
-    LEFT JOIN api.taxa_ref_sources USING (source_id)
-    LEFT JOIN taxa_rank_order on taxa_ref."rank" = taxa_rank_order.rank_name
+    FROM rubus.taxa_obs_ref_lookup ref_lu
+    LEFT JOIN rubus.taxa_ref ON ref_lu.id_taxa_ref_valid = taxa_ref.id
+    LEFT JOIN rubus.taxa_ref_sources USING (source_id)
+    LEFT JOIN rubus.taxa_rank_order on taxa_ref."rank" = taxa_rank_order.rank_name
     WHERE COALESCE(ref_lu.match_type, ''::text) <> 'complex'::text
 ), is_match AS (
     SELECT DISTINCT ON (id_taxa_obs)
@@ -40,17 +40,17 @@ WHERE COALESCE(all_ref.rank_order, 0) <= (SELECT rank_order FROM is_match WHERE 
 ORDER BY all_ref.id_taxa_obs, all_ref."rank", all_ref.source_priority, all_ref.scientific_name, all_ref.id_taxa_ref
 WITH DATA;
 
-ALTER TABLE IF EXISTS api.taxa_obs_ref_preferred
+ALTER TABLE IF EXISTS rubus.taxa_obs_ref_preferred
     OWNER TO coleo;
 
-CREATE INDEX ON api.taxa_obs_ref_preferred (id_taxa_obs);
-CREATE INDEX ON api.taxa_obs_ref_preferred (id_taxa_ref);
-CREATE INDEX ON api.taxa_obs_ref_preferred (rank);
-CREATE INDEX ON api.taxa_obs_ref_preferred (is_match);
+CREATE INDEX ON rubus.taxa_obs_ref_preferred (id_taxa_obs);
+CREATE INDEX ON rubus.taxa_obs_ref_preferred (id_taxa_ref);
+CREATE INDEX ON rubus.taxa_obs_ref_preferred (rank);
+CREATE INDEX ON rubus.taxa_obs_ref_preferred (is_match);
 
 
---DROP MATERIALIZED VIEW IF EXISTS api.taxa_ref_vernacular_preferred;
-CREATE MATERIALIZED VIEW IF NOT EXISTS api.taxa_ref_vernacular_preferred AS
+--DROP MATERIALIZED VIEW IF EXISTS rubus.taxa_ref_vernacular_preferred;
+CREATE MATERIALIZED VIEW IF NOT EXISTS rubus.taxa_ref_vernacular_preferred AS
 WITH all_vernacular AS (
   SELECT DISTINCT ON (v_lu.id_taxa_ref, tv."rank", tv.language)
     v_lu.id_taxa_ref,
@@ -61,9 +61,9 @@ WITH all_vernacular AS (
     TRUE AS is_match,
     tv.preferred,
     tv.source_name
-  FROM taxa_ref_vernacular_lookup v_lu
-  LEFT JOIN taxa_vernacular tv ON v_lu.id_taxa_vernacular = tv.id
-  LEFT JOIN api.taxa_vernacular_sources src ON tv.source_name = src.source_name
+  FROM rubus.taxa_ref_vernacular_lookup v_lu
+  LEFT JOIN rubus.taxa_vernacular tv ON v_lu.id_taxa_vernacular = tv.id
+  LEFT JOIN rubus.taxa_vernacular_sources src ON tv.source_name = src.source_name
   ORDER BY v_lu.id_taxa_ref, tv."rank", tv.language, src.source_priority, tv.preferred DESC, tv.name
 ), vernacular_eng AS (
   SELECT
@@ -101,10 +101,10 @@ WITH all_vernacular AS (
   FULL OUTER JOIN vernacular_fra USING (id_taxa_ref)
 WITH DATA;
 
-ALTER TABLE IF EXISTS api.taxa_ref_vernacular_preferred
+ALTER TABLE IF EXISTS rubus.taxa_ref_vernacular_preferred
     OWNER TO coleo;
 
-CREATE INDEX ON api.taxa_ref_vernacular_preferred (id_taxa_ref);
-CREATE INDEX ON api.taxa_ref_vernacular_preferred (id_taxa_vernacular_en);
-CREATE INDEX ON api.taxa_ref_vernacular_preferred (id_taxa_vernacular_fr);
-CREATE INDEX ON api.taxa_ref_vernacular_preferred ("rank");
+CREATE INDEX ON rubus.taxa_ref_vernacular_preferred (id_taxa_ref);
+CREATE INDEX ON rubus.taxa_ref_vernacular_preferred (id_taxa_vernacular_en);
+CREATE INDEX ON rubus.taxa_ref_vernacular_preferred (id_taxa_vernacular_fr);
+CREATE INDEX ON rubus.taxa_ref_vernacular_preferred ("rank");

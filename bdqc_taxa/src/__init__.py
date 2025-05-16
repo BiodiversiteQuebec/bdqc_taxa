@@ -19,6 +19,7 @@ from . import vernacular
 from . import taxa_ref
 from . import eliso
 from . import cdpnq
+from . import natureserve
 
 __all__ = [
     "__title__",
@@ -35,4 +36,5 @@ __all__ = [
     "taxa_ref",
     "eliso",
     "cdpnq",
+    "natureserve",
 ]

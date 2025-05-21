@@ -17,8 +17,8 @@ class TestTaxaGroupMembers(unittest.TestCase):
         query = f"""
             select
                 taxa_obs.*,
-                id_taxa_obs in (select id_taxa_obs from taxa_obs_ref_lookup) in_taxa_ref
-            from taxa_group_members members
+                id_taxa_obs in (select id_taxa_obs from rubus.taxa_obs_ref_lookup) in_taxa_ref
+            from rubus.taxa_group_members members
             join taxa_obs on members.id_taxa_obs = taxa_obs.id
             where taxa_obs.scientific_name not in ({','.join([f"'{taxon}'" for taxon in excepted_taxa])})
             """
@@ -30,14 +30,14 @@ class TestTaxaGroupMembers(unittest.TestCase):
         # Test the insert_taxa_obs_group_member function from migration
         # Insert Panthera leo with short='Africa' and other fields null/default
         self.cur.execute("""
-            SELECT public.insert_taxa_obs_group_member(%s, %s)
+            SELECT rubus.insert_taxa_obs_group_member(%s, %s)
         """, (short_group, scientific_name))
 
         # Check that the record exists in taxa_group_members
         self.cur.execute("""
             SELECT short, taxa_obs.scientific_name, id_taxa_obs
-            FROM taxa_group_members
-            JOIN taxa_obs ON taxa_group_members.id_taxa_obs = taxa_obs.id
+            FROM rubus.taxa_group_members
+            JOIN taxa_obs ON rubus.taxa_group_members.id_taxa_obs = taxa_obs.id
             WHERE short = %s AND taxa_obs.scientific_name = %s
         """, (short_group, scientific_name))
         row = self.cur.fetchone()
@@ -59,7 +59,7 @@ class TestTaxaGroupMembers(unittest.TestCase):
         # Check that the record exists in taxa_obs_ref_lookup
         self.cur.execute("""
             SELECT id_taxa_obs, scientific_name
-            FROM taxa_obs_ref_lookup
+            FROM rubus.taxa_obs_ref_lookup
             JOIN taxa_obs ON taxa_obs_ref_lookup.id_taxa_obs = taxa_obs.id
             WHERE scientific_name = %s
         """, (scientific_name,))
@@ -89,7 +89,7 @@ class TestTaxaObsGroupLookup(unittest.TestCase):
         """, (verified_taxa,))
 
         self.cur.execute("""
-            SELECT public.insert_taxa_ref_from_taxa_obs(id, scientific_name)
+            SELECT rubus.insert_taxa_ref_from_taxa_obs(id, scientific_name)
             FROM taxa_obs
             WHERE scientific_name = %s
         """, (verified_taxa,))
@@ -99,7 +99,7 @@ class TestTaxaObsGroupLookup(unittest.TestCase):
             select
                 taxa_obs.*,
                 taxa_obs_group_lookup.*
-            from taxa_obs_group_lookup_level_1_2_view taxa_obs_group_lookup
+            from rubus.taxa_obs_group_lookup_level_1_2_view taxa_obs_group_lookup
             join taxa_obs on taxa_obs_group_lookup.id_taxa_obs = taxa_obs.id
             where taxa_obs.scientific_name = '{verified_taxa}'
             and taxa_obs_group_lookup.short_group = '{level_1_group_short}'
@@ -133,22 +133,22 @@ class TestTaxaObsGroupLookup(unittest.TestCase):
         # Insert taxa_ref for each
         for rec in taxa_obs_data:
             self.cur.execute("""
-                SELECT public.insert_taxa_ref_from_taxa_obs(id, scientific_name, authorship, parent_scientific_name)
+                SELECT rubus.insert_taxa_ref_from_taxa_obs(id, scientific_name, authorship, parent_scientific_name)
                 FROM taxa_obs
                 where id = %s
-                    and id not in (select id_taxa_obs from taxa_obs_ref_lookup where match_type is not null)
+                    and id not in (select id_taxa_obs from rubus.taxa_obs_ref_lookup where match_type is not null)
             """, (rec[0],))
 
         # Insert group member defined by reference list
         self.cur.execute("""
-            SELECT public.insert_taxa_obs_group_member(%s, %s, %s, %s, %s)
+            SELECT rubus.insert_taxa_obs_group_member(%s, %s, %s, %s, %s)
         """, (short_group, taxa_obs_data[0][1], taxa_obs_data[0][2],  taxa_obs_data[0][3],  taxa_obs_data[0][4]))
 
 
         # Assert id_taxa_obs are related to group in taxa_obs_group_lookup
         query = f"""
             select *
-            from taxa_obs_group_lookup_level_1_2_view glu
+            from rubus.taxa_obs_group_lookup_level_1_2_view glu
             join taxa_obs on glu.id_taxa_obs = taxa_obs.id
             where glu.short_group = '{short_group}'
             """
@@ -179,22 +179,22 @@ class TestTaxaObsGroupLookup(unittest.TestCase):
         # Insert taxa_ref for each
         for rec in taxa_obs_data:
             self.cur.execute("""
-                SELECT public.insert_taxa_ref_from_taxa_obs(id, scientific_name, authorship, parent_scientific_name)
+                SELECT rubus.insert_taxa_ref_from_taxa_obs(id, scientific_name, authorship, parent_scientific_name)
                 FROM taxa_obs
                 where id = %s
-                    and id not in (select id_taxa_obs from taxa_obs_ref_lookup where match_type is not null)
+                    and id not in (select id_taxa_obs from rubus.taxa_obs_ref_lookup where match_type is not null)
             """, (rec[0],))
 
         # Insert group member defined by reference list
         self.cur.execute("""
-            SELECT public.insert_taxa_obs_group_member(%s, %s, %s, %s, %s)
+            SELECT rubus.insert_taxa_obs_group_member(%s, %s, %s, %s, %s)
         """, (short_group, taxa_obs_data[0][1], taxa_obs_data[0][2],  taxa_obs_data[0][3],  taxa_obs_data[0][4]))
 
 
         # Assert id_taxa_obs are related to group in taxa_obs_group_lookup
         query = f"""
             select *
-            from taxa_obs_group_lookup_level_1_2_view glu
+            from rubus.taxa_obs_group_lookup_level_1_2_view glu
             join taxa_obs on glu.id_taxa_obs = taxa_obs.id
             where glu.short_group = '{short_group}'
             """

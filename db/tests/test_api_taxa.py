@@ -82,19 +82,20 @@ class TestObsRefpreferredLookup(unittest.TestCase):
             SELECT
                 count(distinct(id_taxa_ref, id_taxa_obs)) as count_preferred_rows,
                 count(*) as count_all_rows
-            FROM api.taxa_obs_ref_preferred_lookup
+            FROM rubus.taxa_obs_ref_preferred
         """
         self.cur.execute(query)
         result = self.cur.fetchone()
         self.assertTrue(result[0])
 
+# Normal that this test fails as a couple of taxa_obs do not get parsed in the pipeline
     def test_all_taxa_obs_in_preferred(self):
         query = """
             SELECT
                 distinct on (id_taxa_obs)
                 lu.*
-                from taxa_obs_ref_lookup lu
-                where id_taxa_obs not in (SELECT id_taxa_obs from api.taxa_obs_ref_preffered_lookup)
+                from rubus.taxa_obs_ref_lookup lu
+                where id_taxa_obs not in (SELECT id_taxa_obs from rubus.taxa_obs_ref_preferred)
             """
         results = pd.read_sql(query, self.conn)
         # Assert all taxa_obs in preffered lookup
@@ -105,7 +106,7 @@ class TestObsRefpreferredLookup(unittest.TestCase):
             SELECT
                 count(distinct(id_taxa_obs)) as taxa_obs_count,
                 SUM(CASE WHEN is_match IS TRUE THEN 1 ELSE 0 END) as is_match_count
-            FROM api.taxa_obs_ref_preferred_lookup
+            FROM rubus.taxa_obs_ref_preferred
         """
         self.cur.execute(query)
         result = self.cur.fetchone()
@@ -122,11 +123,11 @@ class TestObsRefpreferredLookup(unittest.TestCase):
                 ge_ref.scientific_name as genus_name,
                 sp_ref.source_name as species_source_name,
                 ge_ref.source_name as genus_source_name
-            FROM api.taxa_obs_ref_preferred_lookup as sp_lu
-            JOIN api.taxa_obs_ref_preferred_lookup as ge_lu ON sp_lu.id_taxa_obs = ge_lu.id_taxa_obs
+            FROM rubus.taxa_obs_ref_preferred as sp_lu
+            JOIN rubus.taxa_obs_ref_preferred as ge_lu ON sp_lu.id_taxa_obs = ge_lu.id_taxa_obs
                 AND sp_lu.rank = 'species' AND ge_lu.rank = 'genus'
-            JOIN taxa_ref as sp_ref ON sp_lu.id_taxa_ref = sp_ref.id
-            JOIN taxa_ref as ge_ref ON ge_lu.id_taxa_ref = ge_ref.id
+            JOIN rubus.taxa_ref as sp_ref ON sp_lu.id_taxa_ref = sp_ref.id
+            JOIN rubus.taxa_ref as ge_ref ON ge_lu.id_taxa_ref = ge_ref.id
         """
         df = pd.read_sql(query, self.conn)
         # Column genus strings are in species strings
@@ -145,8 +146,8 @@ class TestObsRefpreferredLookup(unittest.TestCase):
             valid_ref.source_name,
             valid_lu.is_match
         FROM taxa_obs
-        LEFT JOIN api.taxa_obs_ref_preferred_lookup valid_lu ON taxa_obs.id = valid_lu.id_taxa_obs
-        LEFT JOIN taxa_ref valid_ref ON valid_lu.id_taxa_ref = valid_ref.id
+        LEFT JOIN rubus.taxa_obs_ref_preferred valid_lu ON taxa_obs.id = valid_lu.id_taxa_obs
+        LEFT JOIN rubus.taxa_ref valid_ref ON valid_lu.id_taxa_ref = valid_ref.id
         WHERE is_match IS TRUE
         """
     
@@ -234,10 +235,10 @@ class TestObsRefpreferredLookup(unittest.TestCase):
             valid_ref.rank,
             valid_ref.source_name,
             valid_lu.is_match
-        FROM taxa_ref obs_ref
-        LEFT JOIN taxa_obs_ref_lookup obs_lu ON obs_ref.id = obs_lu.id_taxa_ref and obs_lu.is_parent IS FALSE
-        LEFT JOIN api.taxa_obs_ref_preferred_lookup valid_lu ON obs_lu.id_taxa_obs = valid_lu.id_taxa_obs
-        LEFT JOIN taxa_ref valid_ref ON valid_lu.id_taxa_ref = valid_ref.id
+        FROM rubus.taxa_ref obs_ref
+        LEFT JOIN rubus.taxa_obs_ref_lookup obs_lu ON obs_ref.id = obs_lu.id_taxa_ref and obs_lu.is_parent IS FALSE
+        LEFT JOIN rubus.taxa_obs_ref_preferred valid_lu ON obs_lu.id_taxa_obs = valid_lu.id_taxa_obs
+        LEFT JOIN rubus.taxa_ref valid_ref ON valid_lu.id_taxa_ref = valid_ref.id
         WHERE valid_lu.is_match IS TRUE
         """
         # TESTS TO BE DONE
@@ -254,16 +255,6 @@ class TestObsRefpreferredLookup(unittest.TestCase):
         query = self.QUERY_TAXA_REF_JOIN + f"AND obs_ref.source_name = '{source_name}'"
         df = pd.read_sql(query, self.conn)
 
-    def test_match_has_no_children(self):
-        query = f"""
-
-        """
-
-
-        # Assert all source names are from CDPNQ
-        self.assertTrue((df['source_name'] == source_name).all())
-
-
 class TestTaxaRefVernacularLookup(unittest.TestCase):
     def setUp(self):
         self.conn = connect()
@@ -274,25 +265,46 @@ class TestTaxaRefVernacularLookup(unittest.TestCase):
         self.conn.close()
 
     QUERY_TAXA_OBS_VERNACULAR_LOOKUP = f"""
-        SELECT
-            taxa_obs.scientific_name observed_scientific_name,
-            taxa_vernacular.id,
-            taxa_vernacular.language,
-            taxa_vernacular.name as valid_vernacular_name,
-            taxa_vernacular.rank as valid_vernacular_rank,
-            taxa_vernacular.source_name as valid_vernacular_source_name,
-            lu.is_match
-        FROM taxa_obs
-        LEFT JOIN api.taxa_obs_vernacular_preferred_lookup lu ON taxa_obs.id = lu.id_taxa_obs
-        LEFT JOIN taxa_vernacular taxa_vernacular ON lu.id_taxa_vernacular = taxa_vernacular.id
-        WHERE lu.is_match IS TRUE
-        """    
+(
+    SELECT
+        taxa_obs.scientific_name AS observed_scientific_name,
+        taxa_vernacular.id,
+        taxa_vernacular.language,
+        taxa_vernacular.name AS valid_vernacular_name,
+        taxa_vernacular.rank AS valid_vernacular_rank,
+        taxa_vernacular.source_name AS valid_vernacular_source_name,
+        vern_lu.is_match
+    FROM taxa_obs
+    LEFT JOIN rubus.taxa_obs_ref_preferred ref_lu ON taxa_obs.id = ref_lu.id_taxa_obs
+    LEFT JOIN rubus.taxa_ref_vernacular_preferred vern_lu ON ref_lu.id_taxa_ref = vern_lu.id_taxa_ref
+    LEFT JOIN rubus.taxa_vernacular taxa_vernacular ON vern_lu.id_taxa_vernacular_en = taxa_vernacular.id
+    WHERE vern_lu.is_match IS TRUE
+      AND taxa_obs.scientific_name = %s
+)
+UNION
+(
+    SELECT
+        taxa_obs.scientific_name AS observed_scientific_name,
+        taxa_vernacular.id,
+        taxa_vernacular.language,
+        taxa_vernacular.name AS valid_vernacular_name,
+        taxa_vernacular.rank AS valid_vernacular_rank,
+        taxa_vernacular.source_name AS valid_vernacular_source_name,
+        vern_lu.is_match
+    FROM taxa_obs
+    LEFT JOIN rubus.taxa_obs_ref_preferred ref_lu ON taxa_obs.id = ref_lu.id_taxa_obs
+    LEFT JOIN rubus.taxa_ref_vernacular_preferred vern_lu ON ref_lu.id_taxa_ref = vern_lu.id_taxa_ref
+    LEFT JOIN rubus.taxa_vernacular taxa_vernacular ON vern_lu.id_taxa_vernacular_fr = taxa_vernacular.id
+    WHERE vern_lu.is_match IS TRUE
+      AND taxa_obs.scientific_name = %s
+)
+"""    
     
     def test_query_actaea_alba(self,scientific_name='Actaea alba',
                                valid_vernacular_name='Actée à gros pédicelles',
                                valid_source_name='Database of Vascular Plants of Canada (VASCAN)'):
-        query = self.QUERY_TAXA_OBS_VERNACULAR_LOOKUP + f"AND taxa_obs.scientific_name = '{scientific_name}'"
-        df = pd.read_sql(query, self.conn)
+        query = self.QUERY_TAXA_OBS_VERNACULAR_LOOKUP
+        df = pd.read_sql(query, self.conn, params = (scientific_name, scientific_name))
         #Assert french language in results
         self.assertTrue(df['language'].str.contains('fr').any())
         # Assert english language in results
@@ -338,10 +350,10 @@ class TestTaxaRefVernacularLookup(unittest.TestCase):
             taxa_vernacular.rank as valid_vernacular_rank,
             taxa_vernacular.source_name as valid_vernacular_source_name,
             lu.is_match
-        FROM taxa_ref
-        LEFT JOIN taxa_obs_ref_lookup obs_lu ON taxa_ref.id = obs_lu.id_taxa_ref and obs_lu.is_parent IS FALSE
-        LEFT JOIN api.taxa_obs_vernacular_preferred_lookup lu ON obs_lu.id_taxa_obs = lu.id_taxa_obs
-        LEFT JOIN taxa_vernacular taxa_vernacular ON lu.id_taxa_vernacular = taxa_vernacular.id
+        FROM rubus.taxa_ref
+        LEFT JOIN rubus.taxa_obs_ref_lookup obs_lu ON taxa_ref.id = obs_lu.id_taxa_ref and obs_lu.is_parent IS FALSE
+        LEFT JOIN rubus.taxa_obs_vernacular_preferred lu ON obs_lu.id_taxa_obs = lu.id_taxa_obs
+        LEFT JOIN rubus.taxa_vernacular taxa_vernacular ON lu.id_taxa_vernacular = taxa_vernacular.id
         WHERE lu.is_match IS TRUE
         """    
 

@@ -41,7 +41,7 @@ class TestTaxaMatchSources(unittest.TestCase):
                                                    source_name="CDPNQ"):
         query = f"""
             SELECT *
-            FROM match_taxa_sources(
+            FROM rubus.match_taxa_sources(
                         name=>%s,
                         name_authorship=>%s,
                         parent_scientific_name=>%s)

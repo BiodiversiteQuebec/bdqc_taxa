@@ -70,7 +70,7 @@ SENSITIVE	31	Espèce sensibles	Sensitive species	2	CDPNQ
 CDPNQ_EMV    32	Espèces menacées, vulnérables ou susceptibles   At-risk species 2	CDPNQ
 \.
 
-INSERT INTO rubus.taxa_group_members (short, id, vernacular_fr, vernacular_en, level, groups_within)
+INSERT INTO rubus.taxa_groups (short, id, vernacular_fr, vernacular_en, level, groups_within)
 VALUES
     -- ('CDPNQ_RISK', ARRAY['CDPNQ_S1', 'CDPNQ_S2', 'CDPNQ_S3']),
     -- ('CDPNQ_STATUS', ARRAY['CDPNQ_SUSC', 'CDPNQ_VUL', 'CDPNQ_VUL_HARVEST', 'CDPNQ_ENDANGERED']);
@@ -164,343 +164,79 @@ ALTER FUNCTION rubus.insert_taxa_obs_group_member(char(255), text, text, text, t
 --------------------------------------------------------------------------
 
 -- DELETE FROM rubus.taxa_group_members;
-COPY rubus.taxa_group_members (short, scientific_name) FROM stdin;
-AMPHIBIANS	Amphibia
-BIRDS	Aves
-MAMMALS	Mammalia
-REPTILES	Reptilia
-FISH	Myxini
-FISH	Holocephali
-FISH	Actinopterygii
-FISH	Cephalaspidomorphi
-FISH	Elasmobranchii
-FISH	Coelacanthiformes
-TUNICATES	Ascidiacea
-TUNICATES	Thaliacea
-TUNICATES	Appendicularia
-LANCELETS	Leptocardii
-ARTHROPODS	Arthropoda
-OTHER_INVERTEBRATES	Hemichordata
-OTHER_INVERTEBRATES	Micrognathozoa
-OTHER_INVERTEBRATES	Mollusca
-OTHER_INVERTEBRATES	Myxozoa
-OTHER_INVERTEBRATES	Nematoda
-OTHER_INVERTEBRATES	Nematomorpha
-OTHER_INVERTEBRATES	Nemertea
-OTHER_INVERTEBRATES	Onychophora
-OTHER_INVERTEBRATES	Orthonectida
-OTHER_INVERTEBRATES	Phoronida
-OTHER_INVERTEBRATES	Placozoa
-OTHER_INVERTEBRATES	Platyhelminthes
-OTHER_INVERTEBRATES	Porifera
-OTHER_INVERTEBRATES	Rotifera
-OTHER_INVERTEBRATES	Sipuncula
-OTHER_INVERTEBRATES	Xenacoelomorpha
-OTHER_INVERTEBRATES	Tardigrada
-OTHER_INVERTEBRATES	Acanthocephala
-OTHER_INVERTEBRATES	Annelida
-OTHER_INVERTEBRATES	Brachiopoda
-OTHER_INVERTEBRATES	Bryozoa
-OTHER_INVERTEBRATES	Cephalorhyncha
-OTHER_INVERTEBRATES	Chaetognatha
-OTHER_INVERTEBRATES	Cnidaria
-OTHER_INVERTEBRATES	Ctenophora
-OTHER_INVERTEBRATES	Cycliophora
-OTHER_INVERTEBRATES	Dicyemida
-OTHER_INVERTEBRATES	Echinodermata
-OTHER_INVERTEBRATES	Entoprocta
-OTHER_INVERTEBRATES	Gastrotricha
-OTHER_INVERTEBRATES	Gnathostomulida
-OTHER_TAXONS	Protozoa
-OTHER_TAXONS	Viruses
-OTHER_TAXONS	Chromista
-OTHER_TAXONS	Bacteria
-OTHER_TAXONS	Archaea
-FUNGI	Fungi
-ANGIOSPERMS	Magnoliopsida
-ANGIOSPERMS	Liliopsida
-CONIFERS	Pinopsida
-VASCULAR_CRYPTOGAM	Lycopodiopsida
-VASCULAR_CRYPTOGAM	Polypodiopsida
-OTHER_GYMNOSPERMS	Gnetopsida
-OTHER_GYMNOSPERMS	Cycadopsida
-OTHER_GYMNOSPERMS	Ginkgoopsida
-ALGAE	Chlorophyta
-ALGAE	Charophyta
-ALGAE	Rhodophyta
-BRYOPHYTES	Bryophyta
-OTHER_PLANTS	Glaucophyta
-OTHER_PLANTS	Anthocerotophyta
-OTHER_PLANTS	Marchantiophyta
-CDPNQ_S1	Apalone spinifera
-CDPNQ_S1	Noturus insignis
-CDPNQ_S1	Podiceps auritus
-CDPNQ_S1	Charadrius melodus
-CDPNQ_S1	Hydroprogne caspia
-CDPNQ_S1	Sterna dougallii
-CDPNQ_S1	Melanerpes erythrocephalus
-CDPNQ_S1	Lanius ludovicianus
-CDPNQ_S1	Setophaga cerulea
-CDPNQ_S1	Parkesia motacilla
-CDPNQ_S1	Centronyx henslowii
-CDPNQ_S1	Calidris canutus rufa
-CDPNQ_S1	Sorex dispar
-CDPNQ_S1	Lasiurus borealis
-CDPNQ_S1	Careproctus reinhardti
-CDPNQ_S1	Coregonus artedi
-CDPNQ_S1	Moxostoma hubbsi
-CDPNQ_S1	Melanogrammus aeglefinus
-CDPNQ_S1	Pollachius virens
-CDPNQ_S1	Scomber scombrus
-CDPNQ_S1	Gymnelus viridis
-CDPNQ_S1	Lycodes esmarkii
-CDPNQ_S1	Anarhichas minor
-CDPNQ_S1	Cryptacanthodes maculatus
-CDPNQ_S1	Lophius americanus
-CDPNQ_S1	Sorex gaspensis
-CDPNQ_S1	Myotis lucifugus
-CDPNQ_S1	Myotis leibii
-CDPNQ_S1	Myotis septentrionalis
-CDPNQ_S1	Perimyotis subflavus
-CDPNQ_S1	Hemitripterus americanus
-CDPNQ_S1	Delphinapterus leucas
-CDPNQ_S1	Balaenoptera musculus
-CDPNQ_S1	Eubalaena glacialis
-CDPNQ_S1	Gulo gulo
-CDPNQ_S1	Phoca vitulina mellonae
-CDPNQ_S1	Rangifer tarandus
-CDPNQ_S1	Myoxocephalus thompsonii
-CDPNQ_S2	Calidris pusilla
-CDPNQ_S2	Limanda ferruginea
-CDPNQ_S2	Chaetura pelagica
-CDPNQ_S2	Progne subis
-CDPNQ_S2	Cistothorus platensis
-CDPNQ_S2	Catharus bicknelli
-CDPNQ_S2	Vermivora cyanoptera
-CDPNQ_S2	Vermivora chrysoptera
-CDPNQ_S2	Ammodramus savannarum
-CDPNQ_S2	Anguilla rostrata
-CDPNQ_S2	Hybognathus hankinsoni
-CDPNQ_S2	Moxostoma carinatum
-CDPNQ_S2	Rangifer tarandus
-CDPNQ_S2	Sternotherus odoratus
-CDPNQ_S2	Podiceps grisegena
-CDPNQ_S2	Chlidonias niger
-CDPNQ_S2	Coccyzus americanus
-CDPNQ_S2	Emydoidea blandingii
-CDPNQ_S2	Delphinapterus leucas
-CDPNQ_S2	Desmognathus ochrophaeus
-CDPNQ_S2	Pseudacris triseriata
-CDPNQ_S2	Pseudacris maculata
-CDPNQ_S2	Ichthyomyzon fossor
-CDPNQ_S2	Artediellus uncinatus
-CDPNQ_S2	Icelus spatula
-CDPNQ_S2	Liparis gibbus
-CDPNQ_S2	Cyclopterus lumpus
-CDPNQ_S2	Esox americanus vermiculatus
-CDPNQ_S2	Boreogadus saida
-CDPNQ_S2	Gadus ogac
-CDPNQ_S2	Ammocrypta pellucida
-CDPNQ_S2	Phalaropus tricolor
-CDPNQ_S2	Glaucomys volans
-CDPNQ_S2	Microtus pinetorum
-CDPNQ_S2	Mustela nivalis
-CDPNQ_S2	Storeria dekayi
-CDPNQ_S2	Thamnophis saurita
-CDPNQ_S2	Hydrobates leucorhous
-CDPNQ_S2	Ixobrychus exilis
-CDPNQ_S3	Pipilo erythrophthalmus
-CDPNQ_S3	Spizella pusilla
-CDPNQ_S3	Ammospiza nelsoni
-CDPNQ_S3	Dolichonyx oryzivorus
-CDPNQ_S3	Sturnella magna
-CDPNQ_S3	Icterus spurius
-CDPNQ_S3	Branta hutchinsii
-CDPNQ_S3	Anser albifrons
-CDPNQ_S3	Anser rossii
-CDPNQ_S3	Branta bernicla
-CDPNQ_S3	Mareca penelope
-CDPNQ_S3	Aythya valisineria
-CDPNQ_S3	Numenius phaeopus
-CDPNQ_S3	Limosa haemastica
-CDPNQ_S3	Arenaria interpres
-CDPNQ_S3	Calidris bairdii
-CDPNQ_S3	Calidris maritima
-CDPNQ_S3	Calidris himantopus
-CDPNQ_S3	Calidris subruficollis
-CDPNQ_S3	Limnodromus scolopaceus
-CDPNQ_S3	Hydrocoloeus minutus
-CDPNQ_S3	Xema sabini
-CDPNQ_S3	Pelecanus erythrorhynchos
-CDPNQ_S3	Ursus maritimus
-CDPNQ_S3	Phalacrocorax carbo
-CDPNQ_S3	Somateria mollissima
-CDPNQ_S3	Larus glaucoides
-CDPNQ_S3	Megascops asio
-CDPNQ_S3	Thryothorus ludovicianus
-CDPNQ_S3	Ichthyomyzon unicuspis
-CDPNQ_S3	Acipenser fulvescens
-CDPNQ_S3	Acipenser oxyrinchus
-CDPNQ_S3	Hiodon alosoides
-CDPNQ_S3	Exoglossum maxillingua
-CDPNQ_S3	Notropis rubellus
-CDPNQ_S3	Carpiodes cyprinus
-CDPNQ_S3	Microgadus tomcod
-CDPNQ_S3	Brosme brosme
-CDPNQ_S3	Didelphis virginiana
-CDPNQ_S3	Dorosoma cepedianum
-CDPNQ_S3	Butorides virescens
-CDPNQ_S3	Nycticorax nycticorax
-CDPNQ_S3	Spatula discors
-CDPNQ_S3	Melanitta deglandi
-CDPNQ_S3	Circus hudsonius
-CDPNQ_S3	Buteo lagopus
-CDPNQ_S3	Charadrius semipalmatus
-CDPNQ_S3	Charadrius vociferus
-CDPNQ_S3	Limnodromus griseus
-CDPNQ_S3	Phalaropus lobatus
-CDPNQ_S3	Chordeiles minor
-CDPNQ_S3	Contopus cooperi
-CDPNQ_S3	Eremophila alpestris
-CDPNQ_S3	Petrochelidon pyrrhonota
-CDPNQ_S3	Oporornis agilis
-CDPNQ_S3	Pooecetes gramineus
-CDPNQ_S3	Euphagus carolinus
-CDPNQ_S3	Calidris melanotos
-CDPNQ_S3	Calidris mauri
-CDPNQ_S3	Gyrinophilus porphyriticus
-CDPNQ_S3	Hemidactylium scutatum
-CDPNQ_S3	Bucephala islandica
-CDPNQ_S3	Melanerpes carolinus
-CDPNQ_S3	Mola mola
-CDPNQ_S3	Myoxocephalus scorpius
-CDPNQ_S3	Gymnocanthus tricuspis
-CDPNQ_S3	Leptagonus decagonus
-CDPNQ_S3	Eumicrotremus spinosus
-CDPNQ_S3	Alosa sapidissima
-CDPNQ_S3	Esox americanus americanus
-CDPNQ_S3	Esox niger
-CDPNQ_S3	Notropis bifrenatus
-CDPNQ_S3	Moxostoma valenciennesi
-CDPNQ_S3	Noturus flavus
-CDPNQ_S3	Ameiurus natalis
-CDPNQ_S3	Phycis chesteri
-CDPNQ_S3	Morone chrysops
-CDPNQ_S3	Lepomis peltastes
-CDPNQ_S3	Percina copelandi
-CDPNQ_S3	Pholis gunnellus
-CDPNQ_S3	Lycodes lavalaei
-CDPNQ_S3	Lycodes vahlii
-CDPNQ_S3	Eumesogrammus praecisus
-CDPNQ_S3	Lumpenus lampretaeformis
-CDPNQ_S3	Scophthalmus aquosus
-CDPNQ_S3	Hippoglossus hippoglossus
-CDPNQ_S3	Pleuronectes putnami
-CDPNQ_S3	Pseudopleuronectes americanus
-CDPNQ_S3	Centroscyllium fabricii
-CDPNQ_S3	Lasionycteris noctivagans
-CDPNQ_S3	Eptesicus fuscus
-CDPNQ_S3	Lasiurus cinereus
-CDPNQ_S3	Tamias minimus
-CDPNQ_S3	Lagenorhynchus albirostris
-CDPNQ_S3	Orcinus orca
-CDPNQ_S3	Balaenoptera physalus
-CDPNQ_S3	Megaptera novaeangliae
-CDPNQ_S3	Rangifer tarandus
-CDPNQ_S3	Glyptemys insculpta
-CDPNQ_S3	Graptemys geographica
-CDPNQ_S3	Lampropeltis triangulum
-CDPNQ_S3	Nerodia sipedon
-CDPNQ_S3	Osmerus mordax
-CDPNQ_S3	Salvelinus alpinus oquassa
-CDPNQ_S3	Gadus morhua
-CDPNQ_S3	Ichthyomyzon castaneus
-CDPNQ_S3	Gavia pacifica
-CDPNQ_S3	Ardea alba
-CDPNQ_S3	Cygnus buccinator
-CDPNQ_S3	Somateria spectabilis
-CDPNQ_S3	Histrionicus histrionicus
-CDPNQ_S3	Oxyura jamaicensis
-CDPNQ_S3	Aquila chrysaetos
-CDPNQ_S3	Falco sparverius
-CDPNQ_S3	Coturnicops noveboracensis
-CDPNQ_S3	Pluvialis dominica
-CDPNQ_S3	Tringa flavipes
-CDPNQ_S3	Tringa semipalmata
-CDPNQ_S3	Bartramia longicauda
-CDPNQ_S3	Limosa fedoa
-CDPNQ_S3	Calidris alpina
-CDPNQ_S3	Stercorarius pomarinus
-CDPNQ_S3	Stercorarius parasiticus
-CDPNQ_S3	Stercorarius longicaudus
-CDPNQ_S3	Chroicocephalus ridibundus
-CDPNQ_S3	Fratercula arctica
-CDPNQ_S3	Asio flammeus
-CDPNQ_S3	Antrostomus vociferus
-CDPNQ_S3	Contopus virens
-CDPNQ_S3	Stelgidopteryx serripennis
-CDPNQ_S3	Riparia riparia
-CDPNQ_S3	Hirundo rustica
-CDPNQ_S3	Polioptila caerulea
-CDPNQ_S3	Hylocichla mustelina
-CDPNQ_S3	Vireo flavifrons
-SENSITIVE	Desmognathus ochrophaeus
-SENSITIVE	Melanoplus gaspesiensis
-SENSITIVE	Oeneis bore gaspeensis
-SENSITIVE	Coenonympha nipisiquit
-SENSITIVE	Lasionycteris noctivagans
-SENSITIVE	Lasiurus cinereus
-SENSITIVE	Myotis septentrionalis
-SENSITIVE	Myotis leibii
-SENSITIVE	Lasiurus borealis
-SENSITIVE	Myotis lucifugus
-SENSITIVE	Perimyotis subflavus
-SENSITIVE	Margaritifera margaritifera
-SENSITIVE	Aquila chrysaetos
-SENSITIVE	Centronyx henslowii
-SENSITIVE	Falco peregrinus
-SENSITIVE	Melanerpes erythrocephalus
-SENSITIVE	Lanius ludovicianus
-SENSITIVE	Allium tricoccum
-SENSITIVE	Aplectrum hyemale
-SENSITIVE	Calypso bulbosa
-SENSITIVE	Cirsium scariosum
-SENSITIVE	Cypripedium passerinum
-SENSITIVE	Cypripedium reginae
-SENSITIVE	Cypripedium arietinum
-SENSITIVE	Acer nigrum
-SENSITIVE	Gentianopsis virgata macounii
-SENSITIVE	Gentianopsis crinita
-SENSITIVE	Geranium maculatum
-SENSITIVE	Panax quinquefolius
-SENSITIVE	Goodyera pubescens
-SENSITIVE	Houstonia longifolia
-SENSITIVE	Hydrophyllum canadense
-SENSITIVE	Lobelia spicata
-SENSITIVE	Monarda punctata
-SENSITIVE	Galearis spectabilis
-SENSITIVE	Ulmus thomasii
-SENSITIVE	Phegopteris hexagonoptera
-SENSITIVE	Platanus occidentalis
-SENSITIVE	Platanthera macrophylla
-SENSITIVE	Pterospora andromedea
-SENSITIVE	Verbena simplex
-SENSITIVE	Woodsia obtusa obtusa
-SENSITIVE	Acipenser oxyrinchus
-SENSITIVE	Acipenser fulvescens
-SENSITIVE	Diadophis punctatus
-SENSITIVE	Storeria dekayi
-SENSITIVE	Nerodia sipedon
-SENSITIVE	Opheodrys vernalis
-SENSITIVE	Thamnophis saurita
-SENSITIVE	Lampropeltis triangulum
-SENSITIVE	Glyptemys insculpta
-SENSITIVE	Graptemys geographica
-SENSITIVE	Emydoidea blandingii
-SENSITIVE	Sternotherus odoratus
-SENSITIVE	Clemmys guttata
-SENSITIVE	Apalone spinifera
-\.
+-- Refactored to use SELECT instead of COPY
+WITH taxa_inserts(short, scientific_name) AS (
+    VALUES
+        ('AMPHIBIANS', 'Amphibia'),
+        ('BIRDS', 'Aves'),
+        ('MAMMALS', 'Mammalia'),
+        ('REPTILES', 'Reptilia'),
+        ('FISH', 'Myxini'),
+        ('FISH', 'Holocephali'),
+        ('FISH', 'Actinopterygii'),
+        ('FISH', 'Cephalaspidomorphi'),
+        ('FISH', 'Elasmobranchii'),
+        ('FISH', 'Coelacanthiformes'),
+        ('TUNICATES', 'Ascidiacea'),
+        ('TUNICATES', 'Thaliacea'),
+        ('TUNICATES', 'Appendicularia'),
+        ('LANCELETS', 'Leptocardii'),
+        ('ARTHROPODS', 'Arthropoda'),
+        ('OTHER_INVERTEBRATES', 'Hemichordata'),
+        ('OTHER_INVERTEBRATES', 'Micrognathozoa'),
+        ('OTHER_INVERTEBRATES', 'Mollusca'),
+        ('OTHER_INVERTEBRATES', 'Myxozoa'),
+        ('OTHER_INVERTEBRATES', 'Nematoda'),
+        ('OTHER_INVERTEBRATES', 'Nematomorpha'),
+        ('OTHER_INVERTEBRATES', 'Nemertea'),
+        ('OTHER_INVERTEBRATES', 'Onychophora'),
+        ('OTHER_INVERTEBRATES', 'Orthonectida'),
+        ('OTHER_INVERTEBRATES', 'Phoronida'),
+        ('OTHER_INVERTEBRATES', 'Placozoa'),
+        ('OTHER_INVERTEBRATES', 'Platyhelminthes'),
+        ('OTHER_INVERTEBRATES', 'Porifera'),
+        ('OTHER_INVERTEBRATES', 'Rotifera'),
+        ('OTHER_INVERTEBRATES', 'Sipuncula'),
+        ('OTHER_INVERTEBRATES', 'Xenacoelomorpha'),
+        ('OTHER_INVERTEBRATES', 'Tardigrada'),
+        ('OTHER_INVERTEBRATES', 'Acanthocephala'),
+        ('OTHER_INVERTEBRATES', 'Annelida'),
+        ('OTHER_INVERTEBRATES', 'Brachiopoda'),
+        ('OTHER_INVERTEBRATES', 'Bryozoa'),
+        ('OTHER_INVERTEBRATES', 'Cephalorhyncha'),
+        ('OTHER_INVERTEBRATES', 'Chaetognatha'),
+        ('OTHER_INVERTEBRATES', 'Cnidaria'),
+        ('OTHER_INVERTEBRATES', 'Ctenophora'),
+        ('OTHER_INVERTEBRATES', 'Cycliophora'),
+        ('OTHER_INVERTEBRATES', 'Dicyemida'),
+        ('OTHER_INVERTEBRATES', 'Echinodermata'),
+        ('OTHER_INVERTEBRATES', 'Entoprocta'),
+        ('OTHER_INVERTEBRATES', 'Gastrotricha'),
+        ('OTHER_INVERTEBRATES', 'Gnathostomulida'),
+        ('OTHER_TAXONS', 'Protozoa'),
+        ('OTHER_TAXONS', 'Viruses'),
+        ('OTHER_TAXONS', 'Chromista'),
+        ('OTHER_TAXONS', 'Bacteria'),
+        ('OTHER_TAXONS', 'Archaea'),
+        ('FUNGI', 'Fungi'),
+        ('ANGIOSPERMS', 'Magnoliopsida'),
+        ('ANGIOSPERMS', 'Liliopsida'),
+        ('CONIFERS', 'Pinopsida'),
+        ('VASCULAR_CRYPTOGAM', 'Lycopodiopsida'),
+        ('VASCULAR_CRYPTOGAM', 'Polypodiopsida'),
+        ('OTHER_GYMNOSPERMS', 'Gnetopsida'),
+        ('OTHER_GYMNOSPERMS', 'Cycadopsida'),
+        ('OTHER_GYMNOSPERMS', 'Ginkgoopsida'),
+        ('ALGAE', 'Chlorophyta'),
+        ('ALGAE', 'Charophyta'),
+        ('ALGAE', 'Rhodophyta'),
+        ('BRYOPHYTES', 'Bryophyta'),
+        ('OTHER_PLANTS', 'Glaucophyta'),
+        ('OTHER_PLANTS', 'Anthocerotophyta'),
+        ('OTHER_PLANTS', 'Marchantiophyta')
+)
+SELECT rubus.insert_taxa_obs_group_member(short, scientific_name)
+FROM taxa_inserts;
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------

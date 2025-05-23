@@ -1,7 +1,4 @@
--------------------------------------------------------------------------------
--- CREATE TABLE rubus.taxa_ref
--- DESCRIPTION Stores taxa attributes from reference sources
--------------------------------------------------------------------------------
+-- DROP TABLE IF EXISTS rubus.taxa_ref;
 CREATE TABLE IF NOT EXISTS rubus.taxa_ref (
     id SERIAL PRIMARY KEY,
     source_name text NOT NULL,
@@ -17,16 +14,19 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_ref (
     UNIQUE (source_name, source_record_id)
 );
 
+ALTER TABLE IF EXISTS rubus.taxa_ref
+    OWNER to coleo;
+
 CREATE INDEX IF NOT EXISTS source_id_srid_idx
   ON rubus.taxa_ref (source_id, valid_srid);
 
 CREATE INDEX IF NOT EXISTS scientific_name_idx
   ON rubus.taxa_ref (scientific_name);
 
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
 
--------------------------------------------------------------------------------
--- CREATE public.taxa_obs to rubus.taxa_ref correspondance table
--------------------------------------------------------------------------------
+-- DROP TABLE IF EXISTS rubus.taxa_obs_ref_lookup;
 CREATE TABLE IF NOT EXISTS rubus.taxa_obs_ref_lookup (
     id_taxa_obs integer NOT NULL,
     id_taxa_ref integer NOT NULL,
@@ -35,6 +35,9 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_obs_ref_lookup (
     is_parent boolean,
     UNIQUE (id_taxa_obs, id_taxa_ref)
 );
+
+ALTER TABLE IF EXISTS rubus.taxa_obs_ref_lookup
+    OWNER to coleo;
 
 CREATE INDEX IF NOT EXISTS id_taxa_obs_idx
   ON rubus.taxa_obs_ref_lookup (id_taxa_obs);

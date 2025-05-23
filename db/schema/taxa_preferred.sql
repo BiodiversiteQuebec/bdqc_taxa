@@ -48,6 +48,8 @@ CREATE INDEX ON rubus.taxa_obs_ref_preferred (id_taxa_ref);
 CREATE INDEX ON rubus.taxa_obs_ref_preferred (rank);
 CREATE INDEX ON rubus.taxa_obs_ref_preferred (is_match);
 
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
 
 --DROP MATERIALIZED VIEW IF EXISTS rubus.taxa_ref_vernacular_preferred;
 CREATE MATERIALIZED VIEW IF NOT EXISTS rubus.taxa_ref_vernacular_preferred AS

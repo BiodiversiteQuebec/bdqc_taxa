@@ -157,12 +157,12 @@ BEGIN
     DROP TABLE IF EXISTS taxa_obs_ref_cdpnq_synonym_fix_lookup;
     CREATE TEMPORARY TABLE taxa_obs_ref_cdpnq_synonym_fix_lookup AS (
     SELECT
-        distinct on (cdpnq_lu.id_taxa_ref, synonym_obs_lu.id_taxa_obs)
-        cdpnq_lu.id_taxa_ref,
-        cdpnq_lu.id_taxa_ref AS id_taxa_ref_valid,
-        synonym_obs_lu.id_taxa_obs,
-        synonym_obs_lu.match_type,
-        synonym_obs_lu.is_parent
+    distinct on (cdpnq_lu.id_taxa_ref, synonym_obs_lu.id_taxa_obs)
+    cdpnq_lu.id_taxa_ref,
+    cdpnq_lu.id_taxa_ref AS id_taxa_ref_valid,
+    synonym_obs_lu.id_taxa_obs,
+    synonym_obs_lu.match_type,
+    synonym_obs_lu.is_parent
     FROM rubus.taxa_ref cdpnq_ref
     JOIN rubus.taxa_obs_ref_lookup cdpnq_lu ON cdpnq_ref.id = cdpnq_lu.id_taxa_ref
     JOIN rubus.taxa_obs_ref_lookup gbif_lu ON cdpnq_lu.id_taxa_obs = gbif_lu.id_taxa_obs
@@ -178,6 +178,13 @@ BEGIN
             SELECT id_taxa_obs, id_taxa_ref
             FROM rubus.taxa_obs_ref_lookup
         )
+      AND NOT EXISTS (
+            SELECT 1
+            FROM rubus.taxa_obs_ref_lookup lu
+            JOIN rubus.taxa_ref ref ON ref.id = lu.id_taxa_ref
+            WHERE lu.id_taxa_obs = synonym_obs_lu.id_taxa_obs
+              AND ref.source_name = 'CDPNQ'
+      )
     );
 
     DELETE FROM rubus.taxa_obs_ref_lookup

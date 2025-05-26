@@ -19,6 +19,9 @@ TABLESPACE pg_default;
 ALTER TABLE IF EXISTS rubus.taxa_rank_order
     OWNER to coleo;
 
+CREATE INDEX IF NOT EXISTS taxa_rank_order_rank_name_idx
+  ON rubus.taxa_rank_order (rank_name);
+
 REVOKE ALL ON TABLE rubus.taxa_rank_order FROM read_write_all;
 
 GRANT ALL ON TABLE rubus.taxa_rank_order TO coleo;

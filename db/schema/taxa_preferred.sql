@@ -35,8 +35,14 @@ SELECT DISTINCT ON (all_ref.id_taxa_obs, all_ref."rank")
     all_ref.scientific_name,
     all_ref.source_name
 FROM all_ref
-LEFT JOIN is_match USING (id_taxa_obs, "rank")
-WHERE COALESCE(all_ref.rank_order, 0) <= (SELECT rank_order FROM is_match WHERE id_taxa_obs = all_ref.id_taxa_obs)
+JOIN (
+    SELECT id_taxa_obs, MAX(rank_order) AS max_rank_order
+    FROM is_match
+    GROUP BY id_taxa_obs
+) max_ranks
+  ON all_ref.id_taxa_obs = max_ranks.id_taxa_obs
+LEFT JOIN is_match ON all_ref.id_taxa_obs = is_match.id_taxa_obs AND all_ref."rank" = is_match."rank"
+WHERE COALESCE(all_ref.rank_order, 0 ) <= max_ranks.max_rank_order
 ORDER BY all_ref.id_taxa_obs, all_ref."rank", all_ref.source_priority, all_ref.scientific_name, all_ref.id_taxa_ref
 WITH DATA;
 

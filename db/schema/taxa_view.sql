@@ -37,8 +37,7 @@ LEFT JOIN rubus.taxa_obs_ref_preferred "order" ON "order".rank = 'order' AND "or
 LEFT JOIN rubus.taxa_obs_ref_preferred family ON family.rank = 'family' AND family.id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred genus ON genus.rank = 'genus' AND genus.id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND species.id_taxa_obs = ref_pref.id_taxa_obs
-WHERE ref_pref.is_match IS TRUE
-  AND ref_pref.scientific_name IS NOT NULL;
+WHERE ref_pref.is_match IS TRUE;
 
 ALTER TABLE rubus.taxa_view
     OWNER TO coleo;
@@ -69,7 +68,7 @@ ALTER FUNCTION rubus.refresh_taxa()
 CREATE TABLE IF NOT EXISTS api.taxa(
 	id_taxa_obs integer NOT NULL,
 	observed_scientific_name text NOT NULL,
-	valid_scientific_name text NOT NULL,
+	valid_scientific_name text,
 	rank text NOT NULL,
 	sensitive boolean NOT NULL,
 	vernacular_en text,

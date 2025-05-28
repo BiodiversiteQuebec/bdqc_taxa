@@ -248,7 +248,7 @@ FROM taxa_inserts;
 -- view atlas_api.observation_web_geom
 
 CREATE TABLE rubus.taxa_obs_group_lookup (
-    id_taxa_obs integer NOT NULL REFERENCES rubus.taxa_obs(id) ON DELETE CASCADE,
+    id_taxa_obs integer NOT NULL REFERENCES public.taxa_obs(id) ON DELETE CASCADE,
     id_group integer NOT NULL REFERENCES rubus.taxa_groups(id) ON DELETE CASCADE,
     short_group text NOT NULL REFERENCES rubus.taxa_groups(short) ON DELETE CASCADE
 );

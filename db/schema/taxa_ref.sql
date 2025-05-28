@@ -68,7 +68,7 @@ CREATE INDEX IF NOT EXISTS ref_lu_is_parent_idx
 ALTER TABLE rubus.taxa_obs_ref_lookup
     ADD CONSTRAINT taxa_obs_ref_lookup_id_taxa_obs_fkey
     FOREIGN KEY (id_taxa_obs)
-    REFERENCES rubus.taxa_obs (id)
+    REFERENCES public.taxa_obs (id)
     ON DELETE CASCADE
     ON UPDATE CASCADE;
 

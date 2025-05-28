@@ -20,9 +20,6 @@ ALTER TABLE rubus.taxa_groups OWNER TO coleo;
 ALTER INDEX rubus.taxa_groups_short_idx OWNER TO coleo;
 ALTER INDEX rubus.taxa_groups_short_unique_idx OWNER TO coleo;
 
-GRANT INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE rubus.taxa_groups TO read_write_all;
-GRANT REFERENCES, SELECT, TRIGGER ON TABLE rubus.taxa_groups TO read_only_all;
-
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 

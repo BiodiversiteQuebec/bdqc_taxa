@@ -287,7 +287,7 @@ SELECT DISTINCT
     taxa_groups.short AS short_group
 FROM rubus.taxa_group_members group_m
 JOIN taxa_groups ON taxa_groups.short = group_m.short
-JOIN taxa_obs_ref_lookup match_lu
+JOIN rubus.taxa_obs_ref_lookup match_lu
     ON group_m.id_taxa_obs = match_lu.id_taxa_obs
     AND match_lu.is_parent IS FALSE
 LEFT JOIN rubus.taxa_obs_ref_lookup obs_lookup

@@ -54,7 +54,25 @@ BEGIN
     DELETE FROM api.taxa;
 
 	INSERT INTO api.taxa
-	SELECT * FROM rubus.taxa_view;
+	SELECT 
+        coalesce(tv.id_taxa_obs, tobs.id) as id_taxa_obs,
+        coalesce(tv.observed_scientific_name, tobs.scientific_name) as observed_scientific_name,
+        tv.valid_scientific_name,
+        coalesce(tv.rank, tobs.rank) as rank,
+        tv.sensitive,
+        tv.vernacular_en text,
+        tv.vernacular_fr text,
+        tv.group_en text,
+        tv.group_fr text,
+        tv.kingdom text,
+        tv.phylum text,
+        tv.class text,
+        tv."order" text,
+        tv.family text,
+        tv.genus text,
+        tv.species text
+    FROM taxa_obs tobs
+    left join rubus.taxa_view tv on tv.id_taxa_obs=tobs.id;
 END;
 $BODY$;
 
@@ -69,8 +87,8 @@ CREATE TABLE IF NOT EXISTS api.taxa(
 	id_taxa_obs integer NOT NULL,
 	observed_scientific_name text NOT NULL,
 	valid_scientific_name text,
-	rank text NOT NULL,
-	sensitive boolean NOT NULL,
+	rank text,
+	sensitive boolean,
 	vernacular_en text,
 	vernacular_fr text,
 	group_en text,

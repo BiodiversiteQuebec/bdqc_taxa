@@ -19,7 +19,7 @@ SELECT
     genus.scientific_name as genus,
     species.scientific_name as species
 FROM taxa_obs
-LEFT JOIN rubus.taxa_obs_ref_preferred ref_pref ON taxa_obs.id = ref_pref.id_taxa_obs
+LEFT JOIN rubus.taxa_obs_ref_preferred ref_pref ON taxa_obs.id = ref_pref.id_taxa_obs AND ref_pref.is_match IS TRUE
 LEFT JOIN rubus.taxa_ref_vernacular_preferred vernacular_pref ON ref_pref.id_taxa_ref = vernacular_pref.id_taxa_ref
 LEFT JOIN 
   (SELECT * FROM rubus.taxa_obs_group_lookup WHERE taxa_obs_group_lookup.short_group::text = 'SENSITIVE'::text)
@@ -36,8 +36,7 @@ LEFT JOIN rubus.taxa_obs_ref_preferred class ON class.rank = 'class' AND class.i
 LEFT JOIN rubus.taxa_obs_ref_preferred "order" ON "order".rank = 'order' AND "order".id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred family ON family.rank = 'family' AND family.id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred genus ON genus.rank = 'genus' AND genus.id_taxa_obs = ref_pref.id_taxa_obs
-LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND species.id_taxa_obs = ref_pref.id_taxa_obs
-WHERE ref_pref.is_match IS TRUE;
+LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND species.id_taxa_obs = ref_pref.id_taxa_obs;
 
 ALTER TABLE rubus.taxa_view
     OWNER TO coleo;
@@ -69,8 +68,8 @@ CREATE TABLE IF NOT EXISTS api.taxa(
 	id_taxa_obs integer NOT NULL,
 	observed_scientific_name text NOT NULL,
 	valid_scientific_name text,
-	rank text NOT NULL,
-	sensitive boolean NOT NULL,
+	rank text,
+	sensitive boolean,
 	vernacular_en text,
 	vernacular_fr text,
 	group_en text,

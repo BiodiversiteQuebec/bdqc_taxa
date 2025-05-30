@@ -286,8 +286,8 @@ SELECT DISTINCT
     taxa_groups.id AS id_group, 
     taxa_groups.short AS short_group
 FROM rubus.taxa_group_members group_m
-JOIN taxa_groups ON taxa_groups.short = group_m.short
-JOIN taxa_obs_ref_lookup match_lu
+JOIN rubus.taxa_groups ON taxa_groups.short = group_m.short
+JOIN rubus.taxa_obs_ref_lookup match_lu
     ON group_m.id_taxa_obs = match_lu.id_taxa_obs
     AND match_lu.is_parent IS FALSE
 LEFT JOIN rubus.taxa_obs_ref_lookup obs_lookup
@@ -319,7 +319,7 @@ SELECT
     level_1_2.id_taxa_obs, 
     level_3_groups.id AS id_group, 
     level_3_groups.short AS short_group
-FROM taxa_groups AS level_3_groups
+FROM rubus.taxa_groups AS level_3_groups
 JOIN rubus.taxa_obs_group_lookup_level_1_2_view AS level_1_2
     ON level_1_2.short_group = ANY(level_3_groups.groups_within)
 WHERE level_3_groups.level = 3;

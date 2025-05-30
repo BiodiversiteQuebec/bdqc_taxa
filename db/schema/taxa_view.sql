@@ -19,7 +19,7 @@ SELECT
     genus.scientific_name as genus,
     species.scientific_name as species
 FROM taxa_obs
-LEFT JOIN rubus.taxa_obs_ref_preferred ref_pref ON taxa_obs.id = ref_pref.id_taxa_obs
+LEFT JOIN rubus.taxa_obs_ref_preferred ref_pref ON taxa_obs.id = ref_pref.id_taxa_obs AND ref_pref.is_match IS TRUE
 LEFT JOIN rubus.taxa_ref_vernacular_preferred vernacular_pref ON ref_pref.id_taxa_ref = vernacular_pref.id_taxa_ref
 LEFT JOIN 
   (SELECT * FROM rubus.taxa_obs_group_lookup WHERE taxa_obs_group_lookup.short_group::text = 'SENSITIVE'::text)
@@ -36,8 +36,7 @@ LEFT JOIN rubus.taxa_obs_ref_preferred class ON class.rank = 'class' AND class.i
 LEFT JOIN rubus.taxa_obs_ref_preferred "order" ON "order".rank = 'order' AND "order".id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred family ON family.rank = 'family' AND family.id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred genus ON genus.rank = 'genus' AND genus.id_taxa_obs = ref_pref.id_taxa_obs
-LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND species.id_taxa_obs = ref_pref.id_taxa_obs
-WHERE ref_pref.is_match IS TRUE;
+LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND species.id_taxa_obs = ref_pref.id_taxa_obs;
 
 ALTER TABLE rubus.taxa_view
     OWNER TO coleo;
@@ -54,25 +53,7 @@ BEGIN
     DELETE FROM api.taxa;
 
 	INSERT INTO api.taxa
-	SELECT 
-        coalesce(tv.id_taxa_obs, tobs.id) as id_taxa_obs,
-        coalesce(tv.observed_scientific_name, tobs.scientific_name) as observed_scientific_name,
-        tv.valid_scientific_name,
-        coalesce(tv.rank, tobs.rank) as rank,
-        tv.sensitive,
-        tv.vernacular_en text,
-        tv.vernacular_fr text,
-        tv.group_en text,
-        tv.group_fr text,
-        tv.kingdom text,
-        tv.phylum text,
-        tv.class text,
-        tv."order" text,
-        tv.family text,
-        tv.genus text,
-        tv.species text
-    FROM taxa_obs tobs
-    left join rubus.taxa_view tv on tv.id_taxa_obs=tobs.id;
+	SELECT * FROM rubus.taxa_view;
 END;
 $BODY$;
 

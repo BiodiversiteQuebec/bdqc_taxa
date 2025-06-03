@@ -223,16 +223,18 @@ BEGIN
     INSERT INTO rubus.taxa_obs_ref_lookup (id_taxa_obs, id_taxa_ref, id_taxa_ref_valid, match_type, is_parent)
     SELECT DISTINCT ON (cur_parent_lu.id_taxa_obs, new_parent_ref.id)
         cur_parent_lu.id_taxa_obs,
-        new_parent_ref.id as id_taxa_ref,
-        new_parent_ref.id as id_taxa_ref_valid,
+        new_parent_ref.id AS id_taxa_ref,
+        new_parent_ref.id AS id_taxa_ref_valid,
         cur_parent_lu.match_type,
         cur_parent_lu.is_parent
     FROM rubus.taxa_obs_ref_lookup cur_parent_lu
     JOIN rubus.taxa_ref cur_parent_ref ON cur_parent_lu.id_taxa_ref = cur_parent_ref.id
-    JOIN rubus.taxa_ref new_parent_ref USING (scientific_name, rank)
-    WHERE (cur_parent_lu.id_taxa_obs, new_parent_ref.id) NOT IN (SELECT id_taxa_obs, id_taxa_ref FROM rubus.taxa_obs_ref_lookup)
-        AND cur_parent_lu.is_parent IS TRUE
-        AND new_parent_ref.valid IS TRUE
+    JOIN rubus.taxa_ref new_parent_ref ON cur_parent_ref.scientific_name = new_parent_ref.scientific_name
+        AND cur_parent_ref.rank = new_parent_ref.rank
+    WHERE cur_parent_lu.is_parent IS TRUE
+      AND new_parent_ref.valid IS TRUE
+      AND (cur_parent_lu.id_taxa_obs, new_parent_ref.id) NOT IN (SELECT id_taxa_obs, id_taxa_ref FROM rubus.taxa_obs_ref_lookup)
+      AND (cur_parent_lu.id_taxa_obs, new_parent_ref.source_name) NOT IN (SELECT id_taxa_obs, source_name FROM rubus.taxa_obs_ref_lookup JOIN rubus.taxa_ref ON rubus.taxa_obs_ref_lookup.id_taxa_ref = rubus.taxa_ref.id)
         ON CONFLICT DO NOTHING;
 
 END;

@@ -1,7 +1,7 @@
 -- DROP VIEW rubus.taxa_view;
 CREATE OR REPLACE VIEW rubus.taxa_view
 AS
-SELECT
+SELECT DISTINCT ON (taxa_obs.id)
     taxa_obs.id AS id_taxa_obs,
     taxa_obs.scientific_name AS observed_scientific_name,
     ref_pref.scientific_name AS valid_scientific_name,

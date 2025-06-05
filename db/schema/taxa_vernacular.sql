@@ -40,7 +40,7 @@ CREATE OR REPLACE TRIGGER update_modified_at
     BEFORE UPDATE 
     ON rubus.taxa_vernacular
     FOR EACH ROW
-    EXECUTE FUNCTION rubus.trigger_set_timestamp();
+    EXECUTE FUNCTION public.trigger_set_timestamp();
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------

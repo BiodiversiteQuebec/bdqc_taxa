@@ -90,7 +90,7 @@ BEGIN
 END;
 $BODY$;
 
-ALTER FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer, text, text)
+ALTER FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text)
     OWNER TO coleo;
 
 --------------------------------------------------------------------------

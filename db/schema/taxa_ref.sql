@@ -23,6 +23,12 @@ CREATE INDEX IF NOT EXISTS source_id_srid_idx
 CREATE INDEX IF NOT EXISTS scientific_name_idx
   ON rubus.taxa_ref (scientific_name);
 
+CREATE INDEX IF NOT EXISTS taxa_ref_idx
+  ON rubus.taxa_ref (id);
+
+CREATE INDEX IF NOT EXISTS taxa_ref_rank_idx
+  ON rubus.taxa_ref (rank);
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -48,6 +54,12 @@ CREATE INDEX IF NOT EXISTS id_taxa_ref_idx
 CREATE INDEX IF NOT EXISTS id_taxa_ref_valid_idx
   ON rubus.taxa_obs_ref_lookup (id_taxa_ref_valid);
 
+CREATE INDEX IF NOT EXISTS ref_lu_match_type_idx
+  ON rubus.taxa_obs_ref_lookup (match_type);
+
+CREATE INDEX IF NOT EXISTS ref_lu_is_parent_idx
+  ON rubus.taxa_obs_ref_lookup (is_parent);
+
 -- Foreign key constraints
 
 -- ALTER TABLE rubus.taxa_obs_ref_lookup
@@ -56,7 +68,7 @@ CREATE INDEX IF NOT EXISTS id_taxa_ref_valid_idx
 ALTER TABLE rubus.taxa_obs_ref_lookup
     ADD CONSTRAINT taxa_obs_ref_lookup_id_taxa_obs_fkey
     FOREIGN KEY (id_taxa_obs)
-    REFERENCES rubus.taxa_obs (id)
+    REFERENCES public.taxa_obs (id)
     ON DELETE CASCADE
     ON UPDATE CASCADE;
 

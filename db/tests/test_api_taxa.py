@@ -67,7 +67,54 @@ class TestTaxa(unittest.TestCase):
         df = pd.read_sql(query, self.conn)
         self.assertEqual(len(df), 0)    
 
+    def test_rank_value_present_for_targeted_rank(self):
+        query_sp = """
+            SELECT *
+            FROM api.taxa 
+            WHERE rank = 'species'
+            AND species IS NULL
+        """
+        df = pd.read_sql(query_sp, self.conn)
+        self.assertEqual(len(df), 0)
+        
+        query_genus = """
+            SELECT *
+            FROM api.taxa 
+            WHERE rank = 'genus'
+            AND genus IS NULL
+        """
+        df = pd.read_sql(query_genus, self.conn)
+        self.assertEqual(len(df), 0)
+        
+    def test_valid_scientific_name_per_rank(self):
+        query = """
+            SELECT *
+            FROM api.taxa
+            WHERE (valid_scientific_name != species AND rank = 'species')
+            OR (valid_scientific_name != genus AND rank = 'genus')
+        """
+        df = pd.read_sql(query, self.conn)
+        self.assertEqual(len(df), 0)
+        
+    def test_wrong_sciname_parsing(self):
+        query = """
+            SELECT *
+            FROM api.taxa
+            WHERE observed_scientific_name ILIKE '%\_%'
+        """
+        df = pd.read_sql(query, self.conn)
+        self.assertEqual(len(df), 0)
 
+    def test_spaces_in_sciname(self):
+        query = """
+            SELECT *
+            FROM api.taxa
+            WHERE valid_scientific_name ILIKE '% %'
+                AND rank NOT IN ('species','subspecies','variety')
+                AND observed_scientific_name != 'incertae sedis'
+            """
+        df = pd.read_sql(query, self.conn)
+        self.assertEqual(len(df), 0)
 class TestObsRefpreferredLookup(unittest.TestCase):
     def setUp(self):
         self.conn = connect()

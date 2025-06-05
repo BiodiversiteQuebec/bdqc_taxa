@@ -231,8 +231,18 @@ class Vernacular:
         return out
 
     @classmethod
-    def from_match(cls, name: str, rank: Optional[str] = None, **match_kwargs):
-        out = cls.from_gbif_match(name, rank, **match_kwargs)
+    def from_match(cls, name: str,
+                    rank: Optional[str] = None,
+                    gbif_key: Optional[int] = None,
+                    **match_kwargs):
+        out = []
+
+        if gbif_key:
+            # If a GBIF key is provided, use it to get vernacular names
+            out = [*out, *cls.from_gbif(gbif_key, rank=rank)]
+        else:
+            # Otherwise, try to match the name with GBIF
+            out = [*out, *cls.from_gbif_match(name, rank, **match_kwargs)]
 
         # Get the first result rank to use as a fallback
         if not rank and out:

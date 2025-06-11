@@ -32,3 +32,4 @@ insert into rubus.taxa_rank_order (rank_name, "order") values ('genus', 5);
 insert into rubus.taxa_rank_order (rank_name, "order") values ('species', 6);
 insert into rubus.taxa_rank_order (rank_name, "order") values ('subspecies', 7);
 insert into rubus.taxa_rank_order (rank_name, "order") values ('variety', 8);
+insert into rubus.taxa_rank_order (rank_name, "order") values ('form', 9);

@@ -6,6 +6,11 @@ import numpy as np
 import sqlite3
 from bdqc_taxa.gbif import Species
 import concurrent.futures
+import os
+
+# Set the path to the file directory
+file_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(file_dir)
 
 # %%
 # Set the path to the data directory
@@ -348,8 +353,16 @@ df = pd.concat([df, genus_rows], axis=0)
 # Drop duplicates
 df = df.drop_duplicates(subset=["name"])
 
+# Rename columns
+df = df.rename(columns={
+    "GENRE": "genus",
+    "ESPECE": "species",
+    "Origine": "origin",
+    "Rang_S": "s_rank",
+})
+
 # Reorder columns
-df = df[["name", "valid_name", "rank", "synonym", "author", "vernacular_fr", "vernacular_en"]]
+df = df[["name", "valid_name", "rank", "synonym", "author", "vernacular_fr", "vernacular_en", 'genus', 'species', 'origin', 's_rank']]
 
 # Sort by name
 df = df.sort_values(by="valid_name")
@@ -387,31 +400,35 @@ conn.execute("DROP TABLE IF EXISTS cdpnq_vertebrates_fts")
 conn.commit()
 conn.close()
 
-# # %%
-# # Append to the sqlite README file
-# readme = """
+# %%
+# Append to the sqlite README file
+readme = """
 
-# TABLE cdpnq_vertebrates
+TABLE cdpnq_vertebrates
 
-# Description: 
-#     This file was generated from the Liste de la faune vertébrée du Québec (LFVQ) Data file LFVQ_18_04_2024.xlsx 
-#     The file was obtained from Données Québec on 2024-04-18.
-#     The last version of the file is from 2024-04-18`.
-#     The file was parsed using the script `scripts/make_cdpnq_vertebrates.py`.
+Description: 
+    This file was generated from the Liste de la faune vertébrée du Québec (LFVQ) Data file LFVQ_31_01_2025.xlsx.
+    The file was obtained from Données Québec on 2025-07-15.
+    The last version of the file is from 2025-01-31.
+    The file was parsed using the script `scripts/make_cdpnq_vertebrates.py`.
 
-# Columns:
-#     name: scientific name
-#     valid_name: valid scientific name
-#     rank: rank of the taxa
-#     synonym: boolean indicating if the name is a synonym
-#     author: author of the scientific name
-#     vernacular_fr: vernacular name in French
-#     vernacular_en: vernacular name in English
+Columns:
+    name: scientific name
+    valid_name: valid scientific name
+    rank: rank of the taxa
+    synonym: boolean indicating if the name is a synonym
+    author: author of the scientific name
+    vernacular_fr: vernacular name in French
+    vernacular_en: vernacular name in English
+    genus: genus of the taxa
+    species: species of the taxa
+    origin: origin of the taxa (Indigène, Exotique, Inconnu/Non déterminé)
+    s_rank: scientific rank of the taxa (e.g. S1, S2, S3, etc.)
 
-# Notes:
-#     The entries have no recorded author.
-# """
+Notes:
+    The entries have no recorded author.
+"""
 
-# with open("..\\bdqc_taxa\\custom_sources.txt", "a") as f:
-#     f.write(readme)
+with open("..\\custom_sources.txt", "a") as f:
+    f.write(readme)
 # %%

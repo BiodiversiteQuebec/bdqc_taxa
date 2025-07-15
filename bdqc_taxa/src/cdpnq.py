@@ -15,6 +15,7 @@
 import sqlite3
 import importlib.resources
 import os.path
+from typing import Union
 
 
 # Get the database file from the package data
@@ -38,7 +39,7 @@ if not os.path.exists(db_path):
 # Connect to the database
 conn = sqlite3.connect(db_path)
 
-def match_taxa_odonates(name) -> dict:
+def match_taxa_odonates(name) -> Union[dict, None]:
     """Match a species name to the Bryoquel database
     Parameters
     ----------
@@ -92,7 +93,7 @@ def match_taxa_odonates(name) -> dict:
     else:
         return None
 
-def match_taxa_vertebrates(name) -> dict:
+def match_taxa_vertebrates(name) -> Union[dict, None]:
     """Match a species name to the CDPQN database
     Parameters
     ----------
@@ -107,7 +108,7 @@ def match_taxa_vertebrates(name) -> dict:
         rank: rank of the taxa
         synonym: boolean indicating if the name is a synonym
         author: author of the scientific name
-        canonical_full: canonical full name
+        canonical_full: same as name
         vernacular_fr: vernacular name in French
         vernacular_en: vernacular name in English
     """
@@ -139,14 +140,18 @@ def match_taxa_vertebrates(name) -> dict:
             'rank': result[2],
             'synonym': result[3],
             'author': result[4],
-            'canonical_full': result[5],
-            'vernacular_fr': result[6],
-            'vernacular_en': result[7]
+            'canonical_full': result[0], # Same as name
+            'vernacular_fr': result[5],
+            'vernacular_en': result[6],
+            'genus': result[7],
+            'species': result[8],
+            's_rank': result[9],
+            'origin': result[10],
         }
     else:
         return None
 
-def match_taxa(name) -> dict:
+def match_taxa(name) -> Union[dict, None]:
     """Match a species name to the CDPNQ database
     Parameters
     ----------

@@ -32,7 +32,7 @@ class TestCdpnqOdonates(unittest.TestCase):
         
 class TestCdpnqVertebrates(unittest.TestCase):
     def test_match_species(self, name = 'Pica hudsonia'):
-        result = cdpnq.match_taxa_vertebrates(name)
+        result = cdpnq.match_taxa_vertebrates(name)[0]
         self.assertEqual(result['name'], name)
         self.assertEqual(result['rank'], 'species')
 
@@ -42,20 +42,39 @@ class TestCdpnqVertebrates(unittest.TestCase):
 
     def test_match_synonym(self, name = 'Pica pica'):
         result = cdpnq.match_taxa_vertebrates(name)
-        self.assertEqual(result['valid_name'], 'Pica hudsonia')
+        # Assert two in list
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]['valid_name'], 'Pica hudsonia')
+        self.assertEqual(result[0]['rank'], 'species')
+
+    def test_match_synonym_from_gbif(self, name = 'Leuconotopicus villosus'):
+        result = cdpnq.match_taxa_vertebrates(name)
+        self.assertEqual(result['valid_name'], 'Dryobates villosus')
         self.assertEqual(result['rank'], 'species')
+        self.assertEqual(result['synonym'], 1)
+
 
     def test_match_genus(self, name = 'Pica'):
-        result = cdpnq.match_taxa_vertebrates(name)
+        result = cdpnq.match_taxa_vertebrates(name)[0]
         self.assertEqual(result['name'], 'Pica')
         self.assertEqual(result['rank'], 'genus')
 
-    def test_no_match_taxon(self, name = 'Rana'):
+    def test_match_genus_synonym(self, name = 'Rana'):
         result = cdpnq.match_taxa_vertebrates(name)
-        self.assertEqual(result, None)
+        self.assertEqual(result['name'], 'Rana')
+        self.assertEqual(result['rank'], 'genus')
+        self.assertEqual(result['synonym'], 1)
+        self.assertEqual(result['valid_name'], 'Lithobates')
+        # All species in Quebec are now in Lithobates genus
+
+    def test_match_ambiguous_genus_resolution(self, name = 'Parus'):
+        result = cdpnq.match_taxa_vertebrates(name)
+        self.assertIsNone(result)
+        # Genus Parus is related to either species from genus Poecile or Baeolophus
+        # and thus cannot be resolved to a single genus.
     
     def test_rangifer_tarandus(self, name = 'Rangifer tarandus'):
-        result = cdpnq.match_taxa_vertebrates(name)
+        result = cdpnq.match_taxa_vertebrates(name)[0]
         self.assertTrue(result['valid_name'] == 'Rangifer tarandus caribou')
         self.assertTrue(result['rank'] == 'species')
         self.assertTrue(result['synonym'] == 1)

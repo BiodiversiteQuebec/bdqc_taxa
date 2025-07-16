@@ -4,7 +4,7 @@ from . import global_names
 from . import gbif
 from . import bryoquel
 from . import cdpnq
-from typing import List
+from typing import List, Optional
 from inspect import signature
 
 GBIF_SOURCE_KEY = 11 # Corresponds to global names
@@ -49,21 +49,31 @@ SOURCES_PARENT_CLASSIFICATION_SRIDS = [
 class TaxaRef:
     def __init__(self,
                  scientific_name: str = '',
-                 id: int = None,
-                 source_id: int = None,
+                 id: int | None = None,
+                 source_id: int | None = None,
                  source_record_id: str = '',
                  source_name: str = '',
                  authorship: str = '',
                  rank: str = '',
-                 rank_order: int = None,
-                 classification_srids: List[str] = None,
-                 valid: bool = None,
+                 rank_order: int | None = None,
+                 classification_srids: List[str] | None = None,
+                 valid: bool | None = None,
                  valid_srid: str = '',
-                 match_type: str = '',
-                 is_parent: bool = None):
-        for param in signature(self.__init__).parameters:
-            setattr(self, param, eval(param))
+                 match_type: str | None = '',
+                 is_parent: bool | None = None):
+        self.scientific_name = scientific_name
+        self.id = id
+        self.source_id = source_id
+        self.source_record_id = source_record_id
+        self.source_name = source_name
+        self.authorship = authorship
         self.rank = rank.lower()
+        self.rank_order = rank_order
+        self.classification_srids = classification_srids
+        self.valid = valid
+        self.valid_srid = valid_srid
+        self.match_type = match_type
+        self.is_parent = is_parent
 
     def __repr__(self):
         return f"{self.__class__.__name__}(\'{self.scientific_name}\')"
@@ -90,7 +100,7 @@ class TaxaRef:
         }
 
     @classmethod
-    def from_global_names(cls, name: str, authorship: str = None, data_sources: List[int] = None):
+    def from_global_names(cls, name: str, authorship: Optional[str] = None, data_sources: Optional[List[int]] = None):
         if data_sources is None:
             data_sources = DATA_SOURCES
 
@@ -483,48 +493,51 @@ class TaxaRef:
         refs = cdpnq.match_taxa(name)
         if refs is None:
             return []
-        for match_taxa in refs:
-            if match_taxa["synonym"]:
-                valid_match = cdpnq.match_taxa(match_taxa["valid_name"])[0]
-                out.append(
-                    cls(
-                        source_id=CDPNQ_SOURCE_KEY,
-                        source_name=CDPNQ_SOURCE_NAME,
-                        source_record_id=valid_match["name"],
-                        scientific_name=valid_match["name"],
-                        authorship=valid_match["author"],
-                        rank=valid_match["rank"],
-                        rank_order=GBIF_RANKS.index(valid_match["rank"]),
-                        valid=True,
-                        valid_srid=valid_match["name"],
-                        match_type="exact",
-                        is_parent=False
-                    )
+        for ref in refs:
+            if ref["synonym"]:
+                valid_match = cdpnq.match_taxa(ref["valid_name"])
+                if valid_match:
+                    valid_match = valid_match[0]
+                    out.append(
+                        cls(
+                            source_id=CDPNQ_SOURCE_KEY,
+                            source_name=CDPNQ_SOURCE_NAME,
+                            source_record_id=valid_match["name"],
+                            scientific_name=valid_match["name"],
+                            authorship=valid_match["author"],
+                            rank=valid_match["rank"],
+                            rank_order=GBIF_RANKS.index(valid_match["rank"]),
+                            valid=True,
+                            valid_srid=valid_match["name"],
+                            match_type=None,
+                            is_parent=False
+                        )
                 )
-                valid = False
-                valid_srid = valid_match["name"]
+                ref['valid'] = False
+                ref['valid_srid'] = valid_match["name"]
             else:
-                valid = True
-                valid_srid = match_taxa["name"]
+                ref['valid'] = True
+                ref['valid_srid'] = ref["name"]
+                valid_match = ref
             
             out.append(cls(
                     source_id=CDPNQ_SOURCE_KEY,
                     source_name=CDPNQ_SOURCE_NAME,
-                    source_record_id=match_taxa["name"],
-                    scientific_name=match_taxa["name"],
-                    authorship=match_taxa["author"],
-                    rank=match_taxa["rank"],
-                    rank_order=GBIF_RANKS.index(match_taxa["rank"]),
-                    valid=valid,
-                    valid_srid=valid_srid,
+                    source_record_id=ref["name"],
+                    scientific_name=ref["name"],
+                    authorship=ref["author"],
+                    rank=ref["rank"],
+                    rank_order=GBIF_RANKS.index(ref["rank"]),
+                    valid=ref['valid'],
+                    valid_srid=ref['valid_srid'],
                     match_type="exact",
                     is_parent=False
                 )
             )
 
-            # Create rows for genus
-            if out[0].rank == 'species':
-                genus = out[0].scientific_name.split()[0]
+            # Create rows for valid parent genus
+            if valid_match and valid_match['rank'].lower() in ['subspecies', 'species']:
+                genus = valid_match['genus'] if 'genus' in valid_match else valid_match['name'].split(' ')[0] # Fallback when genus is not provided (current case for odonates)
                 out.append(cls(
                     source_id=CDPNQ_SOURCE_KEY,
                     source_name=CDPNQ_SOURCE_NAME,
@@ -535,6 +548,23 @@ class TaxaRef:
                     rank_order=GBIF_RANKS.index('genus'),
                     valid=True,
                     valid_srid=genus.lower(),
+                    match_type=None,
+                    is_parent=True
+                ))
+
+            # Create rows for valid parent species
+            if valid_match and valid_match['rank'].lower() in ['subspecies']:
+                species = valid_match['species'] if 'species' in valid_match else ' '.join(valid_match['name'].split(' ')[:2]) # Fallback when species is not provided (current case for odonates)
+                out.append(cls(
+                    source_id=CDPNQ_SOURCE_KEY,
+                    source_name=CDPNQ_SOURCE_NAME,
+                    source_record_id=species.lower(),
+                    scientific_name=species,
+                    authorship=None,
+                    rank='species',
+                    rank_order=GBIF_RANKS.index('species'),
+                    valid=True,
+                    valid_srid=species.lower(),
                     match_type=None,
                     is_parent=True
                 ))

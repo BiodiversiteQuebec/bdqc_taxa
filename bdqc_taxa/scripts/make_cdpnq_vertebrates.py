@@ -36,7 +36,7 @@ dataset_row = {
     "pub_date": metadata["metadata_created"].split("T")[0],
     "abstract": metadata["notes"],
     "keyword_set": [o["name"] for o in metadata["tags"]],
-    "url": "https://www.donneesquebec.ca/recherche/dataset/liste-de-la-faune-vertebree-du-quebec",
+    "url": ["https://www.donneesquebec.ca/recherche/dataset/liste-de-la-faune-vertebree-du-quebec"],
     "alternate_identifier": [metadata["license_id"], metadata["id"]],
     "license_identifier": metadata["license_id"],
     "license_url": metadata["license_url"],
@@ -77,7 +77,40 @@ dataset_row = {
 engine = create_engine(DATABASE_URL)
 datasets_table = Table('datasets', MetaData(), autoload_with=engine, schema='public')
 with engine.begin() as conn:
-    conn.execute(pg_insert(datasets_table).values(dataset_row).on_conflict_do_nothing(index_elements=['id']))
+    conn.execute(
+        pg_insert(datasets_table)
+        .values(dataset_row)
+        .on_conflict_do_update(
+            index_elements=['id'],
+            set_={
+                "title": dataset_row["title"],
+                "creator": dataset_row["creator"],
+                "pub_date": dataset_row["pub_date"],
+                "abstract": dataset_row["abstract"],
+                "keyword_set": dataset_row["keyword_set"],
+                "url": dataset_row["url"],
+                "alternate_identifier": dataset_row["alternate_identifier"],
+                "license_identifier": dataset_row["license_identifier"],
+                "license_url": dataset_row["license_url"],
+                "contact": dataset_row["contact"],
+                "metadata_provider": dataset_row["metadata_provider"],
+                "additional_info": dataset_row["additional_info"],
+                "language": dataset_row["language"],
+                "publisher": dataset_row["publisher"],
+                "methods": dataset_row["methods"],
+                "coverage": dataset_row["coverage"],
+                "citation": dataset_row["citation"],
+                "modified_at": dataset_row["modified_at"],
+                "data_modified_at": dataset_row["data_modified_at"],
+                "data_type": dataset_row["data_type"],
+                "source_eml": dataset_row["source_eml"],
+                "source_eml_url": dataset_row["source_eml_url"],
+                "source_alias": dataset_row["source_alias"],
+                "shareable_data": dataset_row["shareable_data"],
+                "org_dataset_id": dataset_row["org_dataset_id"],
+            }
+        )
+    )
         
 
 # %%

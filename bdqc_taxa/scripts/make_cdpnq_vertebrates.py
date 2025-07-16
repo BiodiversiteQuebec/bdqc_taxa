@@ -5,12 +5,80 @@ import pandas as pd
 import numpy as np
 import sqlite3
 from bdqc_taxa.gbif import Species
+from bdqc_taxa.atlas_utils import DATABASE_URL
+import urllib3
+import json
+from sqlalchemy import create_engine, MetaData, Table
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from datetime import datetime
 import concurrent.futures
 import os
 
 # Set the path to the file directory
 file_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(file_dir)
+
+# %% Metadata
+metadata_url = "https://www.donneesquebec.ca/recherche/api/3/action/package_show?id=liste-de-la-faune-vertebree-du-quebec"
+
+# Download the metadata
+http = urllib3.PoolManager()
+response = http.request('GET', metadata_url)
+metadata = response.data.decode('utf-8')
+metadata = json.loads(metadata)['result']
+
+dataset_row = {
+    "id": metadata["id"],
+    "title": [metadata["title"], metadata["name"]],
+    "creator": [{
+        "organizationName": metadata["organization"]["title"],
+    }],
+    "pub_date": metadata["metadata_created"].split("T")[0],
+    "abstract": metadata["notes"],
+    "keyword_set": [o["name"] for o in metadata["tags"]],
+    "url": "https://www.donneesquebec.ca/recherche/dataset/liste-de-la-faune-vertebree-du-quebec",
+    "alternate_identifier": [metadata["license_id"], metadata["id"]],
+    "license_identifier": metadata["license_id"],
+    "license_url": metadata["license_url"],
+    "contact": [{
+        "organizationName": metadata["author"],
+        "electronicMailAddress": metadata["author_email"],
+    }],
+    "metadata_provider": [{
+        "organizationName": metadata["organization"]["title"],
+    }],
+    "additional_info": [metadata["methodologie"]],
+    "language": metadata["language"],
+    "publisher": {
+        "organizationName": metadata["organization"]["title"],
+    },
+    "methods": {
+        "methodStep": [{
+            "description": metadata["methodologie"]
+        }]
+    },
+    "coverage": {
+        "geographicCoverage": {
+            "geographicDescription": metadata["ext_spatial"],
+        }
+    },
+    "citation": "MINISTÈRE DE L’ENVIRONNEMENT, LUTTE CONTRE LES CHANGEMENTS CLIMATIQUES, FAUNE ET PARCS. Liste de la faune vertébrée du Québec (LFVQ), [Jeu de données], dans Données Québec, 2021, mis à jour le 22 avril 2025. [https://www.donneesquebec.ca/recherche/dataset/liste-de-la-faune-vertebree-du-quebec], (consulté le 11 juillet 2025).",
+    "modified_at": datetime.now(),
+    "data_modified_at": metadata["metadata_modified"],
+    "data_type": "taxa_checklist",
+    "source_eml": metadata,
+    "source_eml_url": metadata_url,
+    "source_alias": "CDPNQ",
+    "shareable_data": metadata["isopen"],
+    "org_dataset_id": metadata["id"]
+}
+
+# Insert dataset row using sqlalchemy
+engine = create_engine(DATABASE_URL)
+datasets_table = Table('datasets', MetaData(), autoload_with=engine, schema='public')
+with engine.begin() as conn:
+    conn.execute(pg_insert(datasets_table).values(dataset_row).on_conflict_do_nothing(index_elements=['id']))
+        
 
 # %%
 # Set the path to the data directory
@@ -19,6 +87,8 @@ xls_path = "scratch/LFVQ_31_01_2025.xlsx"
 df = pd.read_excel(xls_path, header=0, sheet_name="LFVQ_31_01_2025")
 
 # %% Preformat the dataframe
+
+df['source_dataset_id'] = metadata['id']
 
 # Rename and add columns
 df = df.rename(columns={
@@ -51,6 +121,7 @@ df["author"] = np.nan
 
 # Keep only the relevant columns
 df = df[[
+    "source_dataset_id",
     "ELEMENT_ID",
     "name",
     "valid_name",
@@ -362,7 +433,7 @@ df = df.rename(columns={
 })
 
 # Reorder columns
-df = df[["name", "valid_name", "rank", "synonym", "author", "vernacular_fr", "vernacular_en", 'genus', 'species', 'origin', 's_rank']]
+df = df[["source_dataset_id", "name", "valid_name", "rank", "synonym", "author", "vernacular_fr", "vernacular_en", 'genus', 'species', 'origin', 's_rank']]
 
 # Sort by name
 df = df.sort_values(by="valid_name")
@@ -413,6 +484,7 @@ Description:
     The file was parsed using the script `scripts/make_cdpnq_vertebrates.py`.
 
 Columns:
+    source_dataset_id: ID of the source dataset
     name: scientific name
     valid_name: valid scientific name
     rank: rank of the taxa

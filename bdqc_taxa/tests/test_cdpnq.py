@@ -32,9 +32,13 @@ class TestCdpnqOdonates(unittest.TestCase):
         
 class TestCdpnqVertebrates(unittest.TestCase):
     def test_match_species(self, name = 'Pica hudsonia'):
-        result = cdpnq.match_taxa_vertebrates(name)[0]
+        result = cdpnq.match_taxa_vertebrates(name)
         self.assertEqual(result['name'], name)
         self.assertEqual(result['rank'], 'species')
+    
+    def test_match_species_has_source_datasets_id(self, name = 'Pica hudsonia', datasets_id = '9b779078-1fd1-4492-8bbe-0892b0d13192'):
+        result = cdpnq.match_taxa_vertebrates(name)
+        self.assertEqual(result['source_dataset_id'], datasets_id)
 
     def test_no_match(self, name = 'Vincent Beauregard'):
         result = cdpnq.match_taxa_vertebrates(name)
@@ -42,10 +46,8 @@ class TestCdpnqVertebrates(unittest.TestCase):
 
     def test_match_synonym(self, name = 'Pica pica'):
         result = cdpnq.match_taxa_vertebrates(name)
-        # Assert two in list
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]['valid_name'], 'Pica hudsonia')
-        self.assertEqual(result[0]['rank'], 'species')
+        self.assertEqual(result['valid_name'], 'Pica hudsonia')
+        self.assertEqual(result['rank'], 'species')
 
     def test_match_synonym_from_gbif(self, name = 'Leuconotopicus villosus'):
         result = cdpnq.match_taxa_vertebrates(name)
@@ -55,7 +57,7 @@ class TestCdpnqVertebrates(unittest.TestCase):
 
 
     def test_match_genus(self, name = 'Pica'):
-        result = cdpnq.match_taxa_vertebrates(name)[0]
+        result = cdpnq.match_taxa_vertebrates(name)
         self.assertEqual(result['name'], 'Pica')
         self.assertEqual(result['rank'], 'genus')
 
@@ -74,7 +76,7 @@ class TestCdpnqVertebrates(unittest.TestCase):
         # and thus cannot be resolved to a single genus.
     
     def test_rangifer_tarandus(self, name = 'Rangifer tarandus'):
-        result = cdpnq.match_taxa_vertebrates(name)[0]
+        result = cdpnq.match_taxa_vertebrates(name)
         self.assertTrue(result['valid_name'] == 'Rangifer tarandus caribou')
         self.assertTrue(result['rank'] == 'species')
         self.assertTrue(result['synonym'] == 1)

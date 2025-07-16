@@ -135,18 +135,19 @@ def match_taxa_vertebrates(name) -> Union[dict, None]:
     # Return the result
     if result:
         return {
-            'name': result[0],
-            'valid_name': result[1],
-            'rank': result[2],
-            'synonym': result[3],
-            'author': result[4],
-            'canonical_full': result[0], # Same as name
-            'vernacular_fr': result[5],
-            'vernacular_en': result[6],
-            'genus': result[7],
-            'species': result[8],
-            's_rank': result[9],
-            'origin': result[10],
+            'source_dataset_id': result[0],
+            'name': result[1],
+            'valid_name': result[2],
+            'rank': result[3],
+            'synonym': result[4],
+            'author': result[5],
+            'canonical_full': result[1], # Same as name
+            'vernacular_fr': result[6],
+            'vernacular_en': result[7],
+            'genus': result[8],
+            'species': result[9],
+            's_rank': result[10],
+            'origin': result[11],
         }
     else:
         return None

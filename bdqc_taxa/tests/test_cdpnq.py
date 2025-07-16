@@ -35,6 +35,10 @@ class TestCdpnqVertebrates(unittest.TestCase):
         result = cdpnq.match_taxa_vertebrates(name)
         self.assertEqual(result['name'], name)
         self.assertEqual(result['rank'], 'species')
+    
+    def test_match_species_has_source_datasets_id(self, name = 'Pica hudsonia', datasets_id = '9b779078-1fd1-4492-8bbe-0892b0d13192'):
+        result = cdpnq.match_taxa_vertebrates(name)
+        self.assertEqual(result['source_dataset_id'], datasets_id)
 
     def test_no_match(self, name = 'Vincent Beauregard'):
         result = cdpnq.match_taxa_vertebrates(name)
@@ -45,14 +49,31 @@ class TestCdpnqVertebrates(unittest.TestCase):
         self.assertEqual(result['valid_name'], 'Pica hudsonia')
         self.assertEqual(result['rank'], 'species')
 
+    def test_match_synonym_from_gbif(self, name = 'Leuconotopicus villosus'):
+        result = cdpnq.match_taxa_vertebrates(name)
+        self.assertEqual(result['valid_name'], 'Dryobates villosus')
+        self.assertEqual(result['rank'], 'species')
+        self.assertEqual(result['synonym'], 1)
+
+
     def test_match_genus(self, name = 'Pica'):
         result = cdpnq.match_taxa_vertebrates(name)
         self.assertEqual(result['name'], 'Pica')
         self.assertEqual(result['rank'], 'genus')
 
-    def test_no_match_taxon(self, name = 'Rana'):
+    def test_match_genus_synonym(self, name = 'Rana'):
         result = cdpnq.match_taxa_vertebrates(name)
-        self.assertEqual(result, None)
+        self.assertEqual(result['name'], 'Rana')
+        self.assertEqual(result['rank'], 'genus')
+        self.assertEqual(result['synonym'], 1)
+        self.assertEqual(result['valid_name'], 'Lithobates')
+        # All species in Quebec are now in Lithobates genus
+
+    def test_match_ambiguous_genus_resolution(self, name = 'Parus'):
+        result = cdpnq.match_taxa_vertebrates(name)
+        self.assertIsNone(result)
+        # Genus Parus is related to either species from genus Poecile or Baeolophus
+        # and thus cannot be resolved to a single genus.
     
     def test_rangifer_tarandus(self, name = 'Rangifer tarandus'):
         result = cdpnq.match_taxa_vertebrates(name)

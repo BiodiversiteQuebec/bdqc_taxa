@@ -44,28 +44,6 @@ Columns:
     vernacular_fr2: vernacular name in French from Natureserve
 
 
-TABLE cdpnq_vertebrates
-
-Description: 
-    This file was generated from the Liste de la faune vert�br�e du Qu�bec (LFVQ) Data file LFVQ_05_12_2022.xlsx 
-    The file was obtained from Donn�es Qu�bec on 2023-01-12.
-    The last version of thefile is from 2022-12-05`.
-    The file was parsed using the script `scripts/make_cdpnq_vertebrates.py`.
-
-Columns:
-    name: scientific name
-    valid_name: valid scientific name
-    rank: rank of the taxa
-    synonym: boolean indicating if the name is a synonym
-    author: author of the scientific name
-    canonical_full: canonical full name
-    vernacular_fr: vernacular name in French
-    vernacular_en: vernacular name in English
-
-Notes:
-    The entries have no recorded author.
-
-
 TABLE eliso_invertebrates
 
 Description: 
@@ -88,3 +66,29 @@ Columns:
 Notes:
     The entries have no recorded author.
     The entries may contain comments in parentheses that are kept as is but may prevent matching.
+
+
+TABLE cdpnq_vertebrates
+
+Description: 
+    This file was generated from the Liste de la faune vert�br�e du Qu�bec (LFVQ) Data file LFVQ_31_01_2025.xlsx.
+    The file was obtained from Donn�es Qu�bec on 2025-07-15.
+    The last version of the file is from 2025-01-31.
+    The file was parsed using the script `scripts/make_cdpnq_vertebrates.py`.
+
+Columns:
+    source_dataset_id: ID of the source dataset
+    name: scientific name
+    valid_name: valid scientific name
+    rank: rank of the taxa
+    synonym: boolean indicating if the name is a synonym
+    author: author of the scientific name
+    vernacular_fr: vernacular name in French
+    vernacular_en: vernacular name in English
+    genus: genus of the taxa
+    species: species of the taxa
+    origin: origin of the taxa (Indig�ne, Exotique, Inconnu/Non d�termin�)
+    s_rank: scientific rank of the taxa (e.g. S1, S2, S3, etc.)
+
+Notes:
+    The entries have no recorded author.

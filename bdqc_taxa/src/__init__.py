@@ -20,6 +20,7 @@ from . import taxa_ref
 from . import eliso
 from . import cdpnq
 from . import natureserve
+from . import atlas_utils
 
 __all__ = [
     "__title__",
@@ -37,4 +38,5 @@ __all__ = [
     "eliso",
     "cdpnq",
     "natureserve",
+    "atlas_utils"
 ]

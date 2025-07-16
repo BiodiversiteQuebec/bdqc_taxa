@@ -35,8 +35,14 @@ SELECT DISTINCT ON (all_ref.id_taxa_obs, all_ref."rank")
     all_ref.scientific_name,
     all_ref.source_name
 FROM all_ref
-LEFT JOIN is_match USING (id_taxa_obs, "rank")
-WHERE COALESCE(all_ref.rank_order, 0) <= (SELECT rank_order FROM is_match WHERE id_taxa_obs = all_ref.id_taxa_obs)
+JOIN (
+    SELECT id_taxa_obs, MAX(rank_order) AS max_rank_order
+    FROM is_match
+    GROUP BY id_taxa_obs
+) max_ranks
+  ON all_ref.id_taxa_obs = max_ranks.id_taxa_obs
+LEFT JOIN is_match ON all_ref.id_taxa_obs = is_match.id_taxa_obs AND all_ref."rank" = is_match."rank"
+WHERE COALESCE(all_ref.rank_order, 0 ) <= max_ranks.max_rank_order
 ORDER BY all_ref.id_taxa_obs, all_ref."rank", all_ref.source_priority, all_ref.scientific_name, all_ref.id_taxa_ref
 WITH DATA;
 
@@ -54,53 +60,53 @@ CREATE INDEX ON rubus.taxa_obs_ref_preferred (is_match);
 --DROP MATERIALIZED VIEW IF EXISTS rubus.taxa_ref_vernacular_preferred;
 CREATE MATERIALIZED VIEW IF NOT EXISTS rubus.taxa_ref_vernacular_preferred AS
 WITH all_vernacular AS (
-  SELECT DISTINCT ON (v_lu.id_taxa_ref, tv."rank", tv.language)
-    v_lu.id_taxa_ref,
-    tv.id AS id_taxa_vernacular,
-    tv.name,
-    tv."rank",
-    tv.language,
-    TRUE AS is_match,
-    tv.preferred,
-    tv.source_name
-  FROM rubus.taxa_ref_vernacular_lookup v_lu
-  LEFT JOIN rubus.taxa_vernacular tv ON v_lu.id_taxa_vernacular = tv.id
-  LEFT JOIN rubus.taxa_vernacular_sources src ON tv.source_name = src.source_name
-  ORDER BY v_lu.id_taxa_ref, tv."rank", tv.language, src.source_priority, tv.preferred DESC, tv.name
+    SELECT DISTINCT ON (v_lu.id_taxa_ref, tv.rank, tv.language)
+        v_lu.id_taxa_ref,
+        tv.id AS id_taxa_vernacular,
+        tv.name,
+        tv."rank",
+        tv.language,
+        true AS is_match,
+        tv.preferred,
+        tv.source_name
+    FROM rubus.taxa_ref_vernacular_lookup v_lu
+        LEFT JOIN rubus.taxa_ref ON v_lu.id_taxa_ref = taxa_ref.id 
+        LEFT JOIN rubus.taxa_vernacular tv ON v_lu.id_taxa_vernacular = tv.id AND tv.rank = taxa_ref.rank
+        LEFT JOIN rubus.taxa_vernacular_sources src ON tv.source_name = src.source_name::text
+    WHERE tv.id IS NOT NULL
+    ORDER BY v_lu.id_taxa_ref, tv."rank", tv.language, src.source_priority, tv.preferred DESC, tv.name
 ), vernacular_eng AS (
-  SELECT
-    id_taxa_ref,
-    name AS vernacular_en,
-    id_taxa_vernacular AS id_taxa_vernacular_en,
-    "rank" AS rank_en,
-    is_match,
-    preferred AS preferred_en,
-    source_name AS source_en
+  SELECT all_vernacular.id_taxa_ref,
+      all_vernacular.name AS vernacular_en,
+      all_vernacular.id_taxa_vernacular AS id_taxa_vernacular_en,
+      all_vernacular."rank" AS rank_en,
+      all_vernacular.is_match,
+      all_vernacular.preferred AS preferred_en,
+      all_vernacular.source_name AS source_en
   FROM all_vernacular
-  WHERE language = 'eng'
+  WHERE all_vernacular.language = 'eng'::text
 ), vernacular_fra AS (
-  SELECT
-    id_taxa_ref,
-    name AS vernacular_fr,
-    id_taxa_vernacular AS id_taxa_vernacular_fr,
-    "rank" AS rank_fr,
-    is_match,
-    preferred AS preferred_fr,
-    source_name AS source_fr
+  SELECT all_vernacular.id_taxa_ref,
+      all_vernacular.name AS vernacular_fr,
+      all_vernacular.id_taxa_vernacular AS id_taxa_vernacular_fr,
+      all_vernacular."rank" AS rank_fr,
+      all_vernacular.is_match,
+      all_vernacular.preferred AS preferred_fr,
+      all_vernacular.source_name AS source_fr
   FROM all_vernacular
-  WHERE language = 'fra'
-) SELECT
-    COALESCE(vernacular_eng.id_taxa_ref, vernacular_fra.id_taxa_ref) AS id_taxa_ref,
-    id_taxa_vernacular_en,
-    id_taxa_vernacular_fr,
-    vernacular_en,
-    vernacular_fr,
-    rank_en AS "rank",
-    COALESCE(vernacular_eng.is_match, vernacular_fra.is_match) AS is_match,
-    source_en,
-    source_fr
+  WHERE all_vernacular.language = 'fra'::text
+)
+  SELECT COALESCE(vernacular_eng.id_taxa_ref, vernacular_fra.id_taxa_ref) AS id_taxa_ref,
+      vernacular_eng.id_taxa_vernacular_en,
+      vernacular_fra.id_taxa_vernacular_fr,
+      vernacular_eng.vernacular_en,
+      vernacular_fra.vernacular_fr,
+      vernacular_eng.rank_en AS "rank",
+      COALESCE(vernacular_eng.is_match, vernacular_fra.is_match) AS is_match,
+      vernacular_eng.source_en,
+      vernacular_fra.source_fr
   FROM vernacular_eng
-  FULL OUTER JOIN vernacular_fra USING (id_taxa_ref)
+    FULL JOIN vernacular_fra USING (id_taxa_ref)
 WITH DATA;
 
 ALTER TABLE IF EXISTS rubus.taxa_ref_vernacular_preferred

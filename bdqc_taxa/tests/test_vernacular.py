@@ -70,6 +70,14 @@ class TestVernacular(TestCase):
         # Assert empty list
         self.assertEqual(len(results), 0)
 
+    def test_from_match_gbif_key(self, name = 'Micropterus', rank = 'genus', gbif_key = 2391100):
+        results = Vernacular.from_match(name, rank = rank, gbif_key = gbif_key)
+        self.assertVernacularList(results)
+
+        # Expected sources from GBIF : Integrated Taxonomic Information System (ITIS) and Checklist of Vermont Species
+        self.assertTrue(any(['ITIS' in vn.source for vn in results]))
+        self.assertTrue(any(['Checklist of Vermont Species' in vn.source for vn in results]))
+
     def test_from_bryoquel_match(self, name = 'Aulacomnium palustre'):
         results = Vernacular.from_bryoquel_match(name)
         self.assertVernacularList(results)

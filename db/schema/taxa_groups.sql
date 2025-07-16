@@ -20,9 +20,6 @@ ALTER TABLE rubus.taxa_groups OWNER TO coleo;
 ALTER INDEX rubus.taxa_groups_short_idx OWNER TO coleo;
 ALTER INDEX rubus.taxa_groups_short_unique_idx OWNER TO coleo;
 
-GRANT INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE rubus.taxa_groups TO read_write_all;
-GRANT REFERENCES, SELECT, TRIGGER ON TABLE rubus.taxa_groups TO read_only_all;
-
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -36,39 +33,38 @@ GRANT REFERENCES, SELECT, TRIGGER ON TABLE rubus.taxa_groups TO read_only_all;
 -- 2: Application level groups defined by scientific_name, From specific list for specific analysis, may overlaps with other groups
 -- 3: Application level groups defined by other groups instead of scientific_name
 
-COPY taxa_groups (short, id, vernacular_fr, vernacular_en, level, source_desc) FROM stdin;
-AMPHIBIANS	1	Amphibiens	Amphibians	1	NULL
-BIRDS	2	Oiseaux	Birds	1	NULL
-MAMMALS	3	Mammifères	Mammals	1	NULL
-REPTILES	4	Reptiles	Reptiles	1	NULL
-FISH	5	Poissons	Fish	1	NULL
-TUNICATES	6	Tuniciers	Tunicates	1	NULL
-LANCELETS	7	Céphalocordés	Lancelets	1	NULL
-ARTHROPODS	8	Arthropodes	Arthropods	1	NULL
-OTHER_INVERTEBRATES	9	Autres invertébrés	Other invertebrates	1	NULL
-OTHER_TAXONS	10	Autres taxons	Other taxons	1	NULL
-FUNGI	11	Mycètes	Fungi	1	NULL
-ANGIOSPERMS	12	Angiospermes	Angiosperms	1	NULL
-CONIFERS	13	Conifères	Conifers	1	NULL
-VASCULAR_CRYPTOGAM	14	Cryptogames vasculaires	Vascular cryptogam	1	NULL
-OTHER_GYMNOSPERMS	15	Autres gymnospermes	Other gymnosperms	1	NULL
-ALGAE	16	Algues	Algae	1	NULL
-BRYOPHYTES	17	Bryophytes	Bryophytes	1	NULL
-OTHER_PLANTS	18	Autres plantes	Other plants	1	NULL
-ALL_SPECIES	19	Toutes les espèces	All species	0	NULL
-INVASIVE_SPECIES	25	Espèce envahissante	Invasive species	2	Sentinelle, Agriculture, environnement et ressources naturelles Québec
-SENTINELLE_INVASIVE 33    Espèce exotique envahissante	Exotic invasive species 2	SENTINELLE
-PRINCIPAL_INVASIVE 34    Principales espèces exotiques envahissantes	NULL 2	Agriculture, environnement et ressources naturelles Québec
-CDPNQ_SUSC	21	Espèce susceptible		2	CDPNQ
-CDPNQ_VUL	22	Espèce vulnérable		2	CDPNQ
-CDPNQ_VUL_HARVEST	23	Espèce vulnérable à la récolte		2	CDPNQ
-CDPNQ_ENDANGERED	24	Espèce menacée		2	CDPNQ
-CDPNQ_S1	27	Rang S1	S1 Rank	2	CDPNQ
-CDPNQ_S2	28	Rang S2	S2 Rank	2	CDPNQ
-CDPNQ_S3	29	Rang S3	S3 Rank	2	CDPNQ
-SENSITIVE	31	Espèce sensibles	Sensitive species	2	CDPNQ
-CDPNQ_EMV    32	Espèces menacées, vulnérables ou susceptibles   At-risk species 2	CDPNQ
-\.
+INSERT INTO rubus.taxa_groups (short, id, vernacular_fr, vernacular_en, level, source_desc) VALUES
+('AMPHIBIANS', 1, 'Amphibiens', 'Amphibians', 1, NULL),
+('BIRDS', 2, 'Oiseaux', 'Birds', 1, NULL),
+('MAMMALS', 3, 'Mammifères', 'Mammals', 1, NULL),
+('REPTILES', 4, 'Reptiles', 'Reptiles', 1, NULL),
+('FISH', 5, 'Poissons', 'Fish', 1, NULL),
+('TUNICATES', 6, 'Tuniciers', 'Tunicates', 1, NULL),
+('LANCELETS', 7, 'Céphalocordés', 'Lancelets', 1, NULL),
+('ARTHROPODS', 8, 'Arthropodes', 'Arthropods', 1, NULL),
+('OTHER_INVERTEBRATES', 9, 'Autres invertébrés', 'Other invertebrates', 1, NULL),
+('OTHER_TAXONS', 10, 'Autres taxons', 'Other taxons', 1, NULL),
+('FUNGI', 11, 'Mycètes', 'Fungi', 1, NULL),
+('ANGIOSPERMS', 12, 'Angiospermes', 'Angiosperms', 1, NULL),
+('CONIFERS', 13, 'Conifères', 'Conifers', 1, NULL),
+('VASCULAR_CRYPTOGAM', 14, 'Cryptogames vasculaires', 'Vascular cryptogam', 1, NULL),
+('OTHER_GYMNOSPERMS', 15, 'Autres gymnospermes', 'Other gymnosperms', 1, NULL),
+('ALGAE', 16, 'Algues', 'Algae', 1, NULL),
+('BRYOPHYTES', 17, 'Bryophytes', 'Bryophytes', 1, NULL),
+('OTHER_PLANTS', 18, 'Autres plantes', 'Other plants', 1, NULL),
+('ALL_SPECIES', 19, 'Toutes les espèces', 'All species', 0, NULL),
+('INVASIVE_SPECIES', 25, 'Espèce envahissante', 'Invasive species', 2, 'Sentinelle, Agriculture, environnement et ressources naturelles Québec'),
+('SENTINELLE_INVASIVE', 33, 'Espèce exotique envahissante', 'Exotic invasive species', 2, 'SENTINELLE'),
+('PRINCIPAL_INVASIVE', 34, 'Principales espèces exotiques envahissantes', NULL, 2, 'Agriculture, environnement et ressources naturelles Québec'),
+('CDPNQ_SUSC', 21, 'Espèce susceptible', NULL, 2, 'CDPNQ'),
+('CDPNQ_VUL', 22, 'Espèce vulnérable', NULL, 2, 'CDPNQ'),
+('CDPNQ_VUL_HARVEST', 23, 'Espèce vulnérable à la récolte', NULL, 2, 'CDPNQ'),
+('CDPNQ_ENDANGERED', 24, 'Espèce menacée', NULL, 2, 'CDPNQ'),
+('CDPNQ_S1', 27, 'Rang S1', 'S1 Rank', 2, 'CDPNQ'),
+('CDPNQ_S2', 28, 'Rang S2', 'S2 Rank', 2, 'CDPNQ'),
+('CDPNQ_S3', 29, 'Rang S3', 'S3 Rank', 2, 'CDPNQ'),
+('SENSITIVE', 31, 'Espèce sensibles', 'Sensitive species', 2, 'CDPNQ'),
+('CDPNQ_EMV', 32, 'Espèces menacées, vulnérables ou susceptibles', 'At-risk species', 2, 'CDPNQ');
 
 INSERT INTO rubus.taxa_groups (short, id, vernacular_fr, vernacular_en, level, groups_within)
 VALUES
@@ -252,7 +248,7 @@ FROM taxa_inserts;
 -- view atlas_api.observation_web_geom
 
 CREATE TABLE rubus.taxa_obs_group_lookup (
-    id_taxa_obs integer NOT NULL REFERENCES rubus.taxa_obs(id) ON DELETE CASCADE,
+    id_taxa_obs integer NOT NULL REFERENCES public.taxa_obs(id) ON DELETE CASCADE,
     id_group integer NOT NULL REFERENCES rubus.taxa_groups(id) ON DELETE CASCADE,
     short_group text NOT NULL REFERENCES rubus.taxa_groups(short) ON DELETE CASCADE
 );

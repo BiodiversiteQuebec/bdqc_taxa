@@ -534,20 +534,59 @@ class TaxaRef:
                     is_parent=False
                 )
             )
+            
+            if out[0].rank == "subspecies":
+                species = " ".join(out[0].scientific_name.split()[:2])
+                genus = out[0].scientific_name.split()[0]
 
-            # Create rows for valid parent genus
-            if valid_match and valid_match['rank'].lower() in ['subspecies', 'species']:
-                genus = valid_match['genus'] if 'genus' in valid_match else valid_match['name'].split(' ')[0] # Fallback when genus is not provided (current case for odonates)
                 out.append(cls(
                     source_id=CDPNQ_SOURCE_KEY,
                     source_name=CDPNQ_SOURCE_NAME,
-                    source_record_id = genus.lower(),
+                    source_record_id=species,
+                    scientific_name=species,
+                    authorship=None,
+                    rank="species",
+                    rank_order=GBIF_RANKS.index("species"),
+                    valid=True,
+                    valid_srid=species,
+                    match_type=None,
+                    is_parent=True
+                ))
+
+                out.append(cls(
+                    source_id=CDPNQ_SOURCE_KEY,
+                    source_name=CDPNQ_SOURCE_NAME,
+                    source_record_id=genus,
+                    scientific_name=genus,
+                    authorship=None,
+                    rank="genus",
+                    rank_order=GBIF_RANKS.index("genus"),
+                    valid=True,
+                    valid_srid=genus,
+                    match_type=None,
+                    is_parent=True
+                ))
+
+<<<<<<< HEAD
+            # Create rows for valid parent genus
+            if valid_match and valid_match['rank'].lower() in ['subspecies', 'species']:
+                genus = valid_match['genus'] if 'genus' in valid_match else valid_match['name'].split(' ')[0] # Fallback when genus is not provided (current case for odonates)
+=======
+            # Create rows for genus
+            if out[0].rank == 'species':
+                genus = out[0].scientific_name.split()[0]
+
+>>>>>>> main
+                out.append(cls(
+                    source_id=CDPNQ_SOURCE_KEY,
+                    source_name=CDPNQ_SOURCE_NAME,
+                    source_record_id = genus,
                     scientific_name=genus,
                     authorship=None,
                     rank='genus',
                     rank_order=GBIF_RANKS.index('genus'),
                     valid=True,
-                    valid_srid=genus.lower(),
+                    valid_srid=genus,
                     match_type=None,
                     is_parent=True
                 ))

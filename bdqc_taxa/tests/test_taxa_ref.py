@@ -76,27 +76,6 @@ class TestTaxaRef(unittest.TestCase):
     def test_from_global_names_no_match(self, name='Vincent Beauregard'):
         refs = taxa_ref.TaxaRef.from_global_names(name)
         self.assertFalse(refs)
-
-    def test_from_gbif(self, name='Acer saccharum'):
-        refs = taxa_ref.TaxaRef.from_gbif(name)
-        self.assertTrue(len(refs) > 1)
-        [self.assertTrue(v) for ref in refs for k, v in vars(ref).items()
-         if k not in ['id', 'match_type', 'authorship', 'rank_order', 'is_parent']
-         ]
-        self.assertTrue(any([ref.match_type for ref in refs]))
-        self.assertTrue(any([ref.authorship for ref in refs]))
-        self.assertTrue(all([isinstance(ref.rank_order, int) for ref in refs]))
-        self.assertTrue(all([ref.rank.lower() == ref.rank for ref in refs]))
-        self.assertTrue(len({(ref.valid, ref.rank_order) for ref in refs}) ==
-                        len(refs))
-
-        # Bug: Bad authorship value, equals scientific_name
-        bad_refs = [
-            ref for ref in refs
-            if ref.authorship
-                and ref.authorship == ref.scientific_name
-        ]
-        self.assertFalse(bad_refs)
     
     def test_from_cdpnq(self, name='Lestes vigilax'):
         refs = taxa_ref.TaxaRef.from_cdpnq(name)
@@ -122,6 +101,37 @@ class TestTaxaRef(unittest.TestCase):
     def test_from_cdpnq_no_match(self, name='Vincent Beauregard'):
         refs = taxa_ref.TaxaRef.from_cdpnq(name)
         self.assertFalse(refs)
+
+    # Genus Parus is related to either species from genus Poecile or Baeolophus
+    # and thus cannot be resolved to a single genus.
+    def test_from_cdpnq_synonym_invalid_genus_ambiguous(self, name='Parus'):
+        refs = taxa_ref.TaxaRef.from_cdpnq(name)
+        # Assert length is 0
+        self.assertEqual(len(refs), 0)
+
+    # Genus Parus is related to either species from genus Poecile or Baeolophus
+    # however, invalid species with resolved species should return a valid genus also (e.g. Parus atricapilla -> [Poecile atricapillus, Poecile])
+    def test_from_cdpnq_synonym_invalid_species_w_ambiguous_genus(self, name='Parus atricapilla'):
+        refs = taxa_ref.TaxaRef.from_cdpnq(name)
+        
+        # Assert that refs contains a valid genus, name should be Poecile
+        valid_genus_refs = [ref for ref in refs if ref.rank == 'genus' and ref.scientific_name == 'Poecile']
+        self.assertTrue(len(valid_genus_refs) > 0)
+
+        # Assert that refs contains a valid species, name should be Poecile atricapillus
+        valid_species_refs = [ref for ref in refs if ref.rank == 'species' and ref.scientific_name == 'Poecile atricapillus']
+        self.assertTrue(len(valid_species_refs) > 0)
+
+    # Invalid subspecies Chrysemys scripta is resolved to Trachemys scripta elegans
+    # Assert that it returns a valid genus and species and subspecies (with all match_type = None and synonym = False) and invalid species entries
+    def test_from_cdpnq_invalid_species_w_valid_ssp(self, name='Chrysemys scripta'):
+        refs = taxa_ref.TaxaRef.from_cdpnq(name)
+        self.assertTrue(len(refs) == 4)
+        valid_refs = [ref for ref in refs if ref.valid]
+        self.assertTrue(any([ref for ref in valid_refs if ref.rank == 'genus' and ref.scientific_name == 'Trachemys' and ref.match_type is None and ref.valid]))
+        self.assertTrue(any([ref for ref in valid_refs if ref.rank == 'species' and ref.scientific_name == 'Trachemys scripta' and ref.match_type is None and ref.valid]))
+        self.assertTrue(any([ref for ref in valid_refs if ref.rank == 'subspecies' and ref.scientific_name == 'Trachemys scripta elegans' and ref.match_type is None and ref.valid]))
+        self.assertTrue(any([ref for ref in refs if ref.rank == 'species' and ref.scientific_name == 'Chrysemys scripta' and not ref.valid and ref.match_type]))
     
     def test_from_all_sources_cdpnq(self, name='Libellula luctuosa'):
         refs = taxa_ref.TaxaRef.from_all_sources(name)
@@ -130,6 +140,19 @@ class TestTaxaRef(unittest.TestCase):
         # Assert any ref is from CDPNQ
         self.assertTrue(any([ref.source_id == 1002 for ref in refs]))
         self.assertTrue(any([ref.source_name == 'CDPNQ' for ref in refs]))
+
+    # Same than cdpnq invalid species w ambiguous genus but with an invalid species name, not in the cdpnq database : Poecile atricapillus
+    # Verify that it is resolved by the gbif and returns a valid genus and species (Poecile atricapillus, Poecile)
+    def test_from_all_sources_cdpnq_invalid_species_w_ambiguous_genus(self, name='Parus atricapillus'):
+        refs = taxa_ref.TaxaRef.from_all_sources(name)
+        
+        # Assert that refs contains a valid genus, name should be Poecile
+        valid_genus_refs = [ref for ref in refs if ref.rank == 'genus' and ref.scientific_name == 'Poecile' and ref.source_name == 'CDPNQ']
+        self.assertTrue(len(valid_genus_refs) > 0)
+
+        # Assert that refs contains a valid species, name should be Poecile atricapillus
+        valid_species_refs = [ref for ref in refs if ref.rank == 'species' and ref.scientific_name == 'Poecile atricapillus' and ref.source_name == 'CDPNQ']
+        self.assertTrue(len(valid_species_refs) > 0)
 
     def test_from_all_sources_cdpnq_fuzzy_synonym(self, name='Gomphus exils'):
         refs = taxa_ref.TaxaRef.from_all_sources(name)
@@ -152,7 +175,28 @@ class TestTaxaRef(unittest.TestCase):
         refs = taxa_ref.TaxaRef.from_all_sources(name)
         self.assertTrue(len(refs) > 1)
 
-    def test_from_gbif(self, name='Antigone canadensis'):
+    def test_from_gbif(self, name='Acer saccharum'):
+        refs = taxa_ref.TaxaRef.from_gbif(name)
+        self.assertTrue(len(refs) > 1)
+        [self.assertTrue(v) for ref in refs for k, v in vars(ref).items()
+         if k not in ['id', 'match_type', 'authorship', 'rank_order', 'is_parent']
+         ]
+        self.assertTrue(any([ref.match_type for ref in refs]))
+        self.assertTrue(any([ref.authorship for ref in refs]))
+        self.assertTrue(all([isinstance(ref.rank_order, int) for ref in refs]))
+        self.assertTrue(all([ref.rank.lower() == ref.rank for ref in refs]))
+        self.assertTrue(len({(ref.valid, ref.rank_order) for ref in refs}) ==
+                        len(refs))
+
+        # Bug: Bad authorship value, equals scientific_name
+        bad_refs = [
+            ref for ref in refs
+            if ref.authorship
+                and ref.authorship == ref.scientific_name
+        ]
+        self.assertFalse(bad_refs)
+
+    def test_from_gbif_antigone(self, name='Antigone canadensis'):
         refs = taxa_ref.TaxaRef.from_gbif(name)
         self.assertTrue(len(refs) > 1)
         [self.assertTrue(v) for ref in refs for k, v in vars(ref).items()

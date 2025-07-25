@@ -353,10 +353,15 @@ class TaxaRef:
         
         # Fuzzy match for custom sources
         if not any(ref.source_name in ('CDPNQ', 'Bryoquel') for ref in out):
-            fuzzy_names = list({(ref.scientific_name, ref.match_type) for ref in out
+            fuzzy_names = set({(ref.scientific_name, ref.match_type) for ref in out
                                if not ref.is_parent and ref.match_type != 'exact'})
         else : 
-            fuzzy_names = []
+            fuzzy_names = set()
+
+        # If input name is complex, then add exact match for fuzzy names
+        if is_complex(name):
+            fuzzy_names.update({(ref.scientific_name, ref.match_type) for ref in out
+                    if not ref.is_parent})
         
         if fuzzy_names:
             for fuzzy_name, match_type in fuzzy_names:

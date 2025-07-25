@@ -394,6 +394,18 @@ class TestTaxaRef(unittest.TestCase):
         )
 
 class TestComplex(unittest.TestCase):
+    # Test for Myotis complex entries from CDPNQ
+    def test_cdpnq_complex_myotis(self, name='Myotis lucifugus|Myotis septentrionalis|Myotis leibii'):
+        refs = taxa_ref.TaxaRef.from_all_sources(name)
+        cdpnq_refs = [ref for ref in refs if ref.source_name == 'CDPNQ' and ref.match_type == 'complex' and ref.valid and ref.rank == 'species']
+        self.assertEqual(len(cdpnq_refs), 3)
+
+    # Test for Lasiurus complex entries from CDPNQ
+    def test_cdpnq_complex_lasiurus(self, name='Lasiurus cinereus|Lasionycteris noctivagans'):
+        refs = taxa_ref.TaxaRef.from_all_sources(name)
+        cdpnq_refs = [ref for ref in refs if ref.source_name == 'CDPNQ' and ref.match_type == 'complex' and ref.valid and ref.rank == 'species']
+        self.assertEqual(len(cdpnq_refs), 2)
+
     def test_complex_is_true(self,
                              name='Lasiurus cinereus|Lasionycteris noctivagans'):
         out = taxa_ref.is_complex(name)

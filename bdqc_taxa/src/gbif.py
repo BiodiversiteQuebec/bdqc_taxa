@@ -58,17 +58,41 @@ class Species:
         results = _pagin_get_url_data(url)
         return results
 
-
     @classmethod
-    def match(cls, name: str = "", rank: str = "", strict: str = "", 
+    def match_v1(cls, name: str = "", rank: str = "", strict: str = "", 
         verbose: str = "", kingdom: str = "", phylum: str = "",
         sp_class: str = "", order: str = "", family: str = "",
         genus: str = ""):
+
+        import warnings
+        warnings.warn("Version 1 - Warning: this method will be removed and users are advised to migrate to the version 2 API v2/species/match supported by the Species.match method.", DeprecationWarning, stacklevel=2)
 
         arg_keys = signature(cls.match).parameters
         arg_values = locals()
         params = {k: arg_values[k] for k in arg_keys if arg_values[k]}
         url = f"{HOST}/v1/species/match"
+        results = _get_url_data(url, params)
+        return results
+
+    @classmethod
+    def match(cls, scientific_name: str = "", taxon_rank: str = "", strict: str = "", 
+        verbose: str = "", kingdom: str = "", phylum: str = "",
+        sp_class: str = "", order: str = "", family: str = "",
+        genus: str = ""):
+
+        params = {
+            "scientificName": scientific_name,
+            "taxonRank": taxon_rank,
+            "strict": strict,
+            "verbose": verbose,
+            "kingdom": kingdom,
+            "phylum": phylum,
+            "class": sp_class,
+            "order": order,
+            "family": family,
+            "genus": genus
+        }
+        url = f"{HOST}/v2/species/match"
         results = _get_url_data(url, params)
         return results
 

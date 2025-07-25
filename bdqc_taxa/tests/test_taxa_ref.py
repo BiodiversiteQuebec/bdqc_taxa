@@ -826,5 +826,204 @@ class TestParent(unittest.TestCase):
         # Assert any ref is from CDPNQ
         self.assertTrue(any([ref.source_name == 'CDPNQ' for ref in refs]))
 
+    # Test cases for GBIF bug #90: Limax and Trichocera failing to return accepted records
+    def test_from_gbif_limax_accepted_genus(self, name='Limax'):
+        """Test that GBIF returns accepted genus record for Limax, not just higherrank Animalia"""
+        refs = taxa_ref.TaxaRef.from_gbif(name)
+        self.assertTrue(len(refs) > 1)
+        
+        # Should have genus-level matches
+        genus_refs = [ref for ref in refs if ref.rank == 'genus']
+        self.assertTrue(len(genus_refs) > 0, "Should return at least one genus-level record")
+        
+        # Should not only return higherrank matches
+        non_higherrank_refs = [ref for ref in refs if ref.match_type != 'higherrank']
+        self.assertTrue(len(non_higherrank_refs) > 0, "Should return non-higherrank matches")
+        
+        # Check for accepted genus record
+        accepted_genus_refs = [
+            ref for ref in refs 
+            if ref.rank == 'genus' and ref.valid == True
+        ]
+        self.assertTrue(len(accepted_genus_refs) > 0, "Should return at least one accepted genus record")
+        
+        # Verify basic ref properties
+        [self.assertTrue(v) for ref in refs for k, v in vars(ref).items()
+         if k not in ['id', 'match_type', 'authorship', 'rank_order', 'is_parent', 'valid']
+        ]
+        self.assertTrue(all([isinstance(ref.rank_order, int) for ref in refs]))
+        self.assertTrue(all([ref.rank.lower() == ref.rank for ref in refs]))
+
+    # Test cases for GBIF bug #90: Limax and Trichocera failing to return accepted records
+    def test_from_gbif_trichocera_accepted_genus(self, name='Trichocera'):
+        """Test that GBIF returns accepted genus record for Trichocera, not just higherrank Animalia"""
+        refs = taxa_ref.TaxaRef.from_gbif(name)
+        self.assertTrue(len(refs) > 1)
+        
+        # Should have genus-level matches
+        genus_refs = [ref for ref in refs if ref.rank == 'genus']
+        self.assertTrue(len(genus_refs) > 0, "Should return at least one genus-level record")
+        
+        # Should not only return higherrank matches
+        non_higherrank_refs = [ref for ref in refs if ref.match_type != 'higherrank']
+        self.assertTrue(len(non_higherrank_refs) > 0, "Should return non-higherrank matches")
+        
+        # Check for accepted genus record
+        accepted_genus_refs = [
+            ref for ref in refs 
+            if ref.rank == 'genus' and ref.valid == True
+        ]
+        self.assertTrue(len(accepted_genus_refs) > 0, "Should return at least one accepted genus record")
+        
+        # Verify basic ref properties
+        [self.assertTrue(v) for ref in refs for k, v in vars(ref).items()
+         if k not in ['id', 'match_type', 'authorship', 'rank_order', 'is_parent', 'valid']
+        ]
+        self.assertTrue(all([isinstance(ref.rank_order, int) for ref in refs]))
+        self.assertTrue(all([ref.rank.lower() == ref.rank for ref in refs]))
+
+    # Test cases for GBIF bug #90: Limax and Trichocera failing to return accepted records
+    def test_from_all_sources_limax_accepted_genus(self, name='Limax'):
+        """Test that from_all_sources returns accepted genus record for Limax"""
+        refs = taxa_ref.TaxaRef.from_all_sources(name)
+        self.assertTrue(len(refs) > 1)
+        
+        # Should have GBIF refs
+        gbif_refs = [ref for ref in refs if ref.source_name == 'GBIF Backbone Taxonomy']
+        self.assertTrue(len(gbif_refs) > 0, "Should include GBIF references")
+        
+        # Should have genus-level matches from GBIF
+        gbif_genus_refs = [
+            ref for ref in gbif_refs 
+            if ref.rank == 'genus'
+        ]
+        self.assertTrue(len(gbif_genus_refs) > 0, "Should return at least one genus-level GBIF record")
+        
+        # Should not only return higherrank matches from GBIF
+        gbif_non_higherrank_refs = [
+            ref for ref in gbif_refs 
+            if ref.match_type != 'higherrank'
+        ]
+        self.assertTrue(len(gbif_non_higherrank_refs) > 0, "Should return non-higherrank GBIF matches")
+        
+        # Check for accepted genus record from GBIF
+        gbif_accepted_genus_refs = [
+            ref for ref in gbif_refs 
+            if ref.rank == 'genus' and ref.valid == True
+        ]
+        self.assertTrue(len(gbif_accepted_genus_refs) > 0, "Should return at least one accepted genus record from GBIF")
+
+    # Test cases for GBIF bug #90: Limax and Trichocera failing to return accepted records
+    def test_from_all_sources_trichocera_accepted_genus(self, name='Trichocera'):
+        """Test that from_all_sources returns accepted genus record for Trichocera"""
+        refs = taxa_ref.TaxaRef.from_all_sources(name)
+        self.assertTrue(len(refs) > 1)
+        
+        # Should have GBIF refs
+        gbif_refs = [ref for ref in refs if ref.source_name == 'GBIF Backbone Taxonomy']
+        self.assertTrue(len(gbif_refs) > 0, "Should include GBIF references")
+        
+        # Should have genus-level matches from GBIF
+        gbif_genus_refs = [
+            ref for ref in gbif_refs 
+            if ref.rank == 'genus'
+        ]
+        self.assertTrue(len(gbif_genus_refs) > 0, "Should return at least one genus-level GBIF record")
+        
+        # Should not only return higherrank matches from GBIF
+        gbif_non_higherrank_refs = [
+            ref for ref in gbif_refs 
+            if ref.match_type != 'higherrank'
+        ]
+        self.assertTrue(len(gbif_non_higherrank_refs) > 0, "Should return non-higherrank GBIF matches")
+        
+        # Check for accepted genus record from GBIF
+        gbif_accepted_genus_refs = [
+            ref for ref in gbif_refs 
+            if ref.rank == 'genus' and ref.valid == True
+        ]
+        self.assertTrue(len(gbif_accepted_genus_refs) > 0, "Should return at least one accepted genus record from GBIF")
+
+    # Test cases for GBIF bug #91: Oncophorus wahlenbergii raises an error
+    def test_from_gbif_oncophorus_wahlenbergii_species_record(self, name='Oncophorus wahlenbergii'):
+        """Test that GBIF returns species record for Oncophorus wahlenbergii"""
+        refs = taxa_ref.TaxaRef.from_gbif(name)
+        self.assertTrue(len(refs) >= 1)
+        
+        # Should have species-level matches
+        species_refs = [ref for ref in refs if ref.rank == 'species']
+        self.assertTrue(len(species_refs) > 0, "Should return at least one species-level record")
+        
+        # Verify basic ref properties
+        [self.assertTrue(v) for ref in refs for k, v in vars(ref).items()
+         if k not in ['id', 'match_type', 'authorship', 'rank_order', 'is_parent', 'valid']
+        ]
+        self.assertTrue(all([isinstance(ref.rank_order, int) for ref in refs]))
+        self.assertTrue(all([ref.rank.lower() == ref.rank for ref in refs]))
+
+        # Should have exact or close match for the species
+        species_name_refs = [
+            ref for ref in refs 
+            if ref.rank == 'species' and name.lower() in ref.scientific_name.lower()
+        ]
+        self.assertTrue(len(species_name_refs) > 0, "Should return species match containing the name")
+        
+    # Test cases for GBIF bug #91: Oncophorus wahlenbergii raises an error
+    def test_from_bryoquel_oncophorus_wahlenbergii_species_record(self, name='Oncophorus wahlenbergii'):
+        """Test that Bryoquel returns species record for Oncophorus wahlenbergii"""
+        refs = taxa_ref.TaxaRef.from_bryoquel(name)
+        self.assertTrue(len(refs) >= 1)
+        
+        # Should have species-level matches
+        species_refs = [ref for ref in refs if ref.rank == 'species']
+        self.assertTrue(len(species_refs) > 0, "Should return at least one species-level record")
+        
+        # Verify basic ref properties
+        [self.assertTrue(v) for ref in refs for k, v in vars(ref).items()
+         if k not in ['id', 'match_type', 'authorship', 'rank_order', 'is_parent', 'valid']
+        ]
+        self.assertTrue(all([isinstance(ref.rank_order, int) for ref in refs]))
+        self.assertTrue(all([ref.rank.lower() == ref.rank for ref in refs]))
+        self.assertTrue(all([ref.source_id == 1001 for ref in refs]))
+
+        # Should have exact match for the species
+        exact_species_refs = [
+            ref for ref in refs 
+            if ref.rank == 'species' and ref.scientific_name == name
+        ]
+        self.assertTrue(len(exact_species_refs) > 0, "Should return exact species match")
+
+    # Test cases for GBIF bug #91: Oncophorus wahlenbergii raises an error
+    def test_from_all_sources_oncophorus_wahlenbergii_species_record(self, name='Oncophorus wahlenbergii'):
+        """Test that from_all_sources returns species record for Oncophorus wahlenbergii"""
+        refs = taxa_ref.TaxaRef.from_all_sources(name)
+        self.assertTrue(len(refs) >= 1)
+        
+        # Should have Bryoquel refs
+        bryoquel_refs = [ref for ref in refs if ref.source_id == 1001]
+        self.assertTrue(len(bryoquel_refs) > 0, "Should include Bryoquel references")
+        
+        # Should have species-level matches from Bryoquel
+        bryoquel_species_refs = [
+            ref for ref in bryoquel_refs 
+            if ref.rank == 'species'
+        ]
+        self.assertTrue(len(bryoquel_species_refs) > 0, "Should return at least one species-level Bryoquel record")
+        
+        # Should have exact match for the species from Bryoquel
+        bryoquel_exact_species_refs = [
+            ref for ref in bryoquel_refs 
+            if ref.rank == 'species' and ref.scientific_name == name
+        ]
+        self.assertTrue(len(bryoquel_exact_species_refs) > 0, "Should return exact species match from Bryoquel")
+        
+        # Verify basic ref properties for Bryoquel refs
+        [self.assertTrue(v) for ref in bryoquel_refs for k, v in vars(ref).items()
+         if k not in ['id', 'match_type', 'authorship', 'rank_order', 'is_parent', 'valid']
+        ]
+        self.assertTrue(all([isinstance(ref.rank_order, int) for ref in bryoquel_refs]))
+        self.assertTrue(all([ref.rank.lower() == ref.rank for ref in bryoquel_refs]))
+
+
 if __name__ == '__main__':
     unittest.main()

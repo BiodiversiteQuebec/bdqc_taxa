@@ -28,13 +28,38 @@ ALTER FUNCTION rubus.__taxa_join_attributes(integer[])
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
--- DROP FUNCTION if exists api.match_taxa CASCADE;
-CREATE OR REPLACE FUNCTION api.match_taxa (taxa_name TEXT)
-RETURNS SETOF api.taxa
-AS $$
-select taxa.* from api.taxa, rubus.match_taxa_obs($1) taxa_obs
-WHERE id_taxa_obs = taxa_obs.id
-$$ LANGUAGE SQL STABLE;
+-- DROP FUNCTION IF EXISTS api.match_taxa(text);
+CREATE OR REPLACE FUNCTION api.match_taxa(
+	taxa_name text)
+    RETURNS SETOF api.taxa 
+    LANGUAGE 'sql'
+    COST 100
+    STABLE PARALLEL UNSAFE
+    ROWS 1000
+
+AS $BODY$
+WITH match_taxa_obs_id AS (
+    SELECT DISTINCT ref_lookup.id_taxa_obs
+    FROM rubus.taxa_ref AS matched_ref
+    JOIN rubus.taxa_obs_ref_lookup AS ref_lookup
+      ON matched_ref.id = ref_lookup.id_taxa_ref
+    WHERE matched_ref.scientific_name ILIKE $1
+
+    UNION
+
+    SELECT DISTINCT ref_lookup.id_taxa_obs
+    FROM rubus.taxa_vernacular AS matched_vernacular
+    JOIN rubus.taxa_ref_vernacular_lookup AS vernacular_lookup
+      ON matched_vernacular.id = vernacular_lookup.id_taxa_vernacular
+    JOIN rubus.taxa_obs_ref_lookup ref_lookup
+      ON vernacular_lookup.id_taxa_ref = ref_lookup.id_taxa_ref
+    WHERE matched_vernacular.name ILIKE $1
+)
+SELECT taxa.*
+FROM api.taxa
+JOIN match_taxa_obs_id
+  ON taxa.id_taxa_obs = match_taxa_obs_id.id_taxa_obs;
+$BODY$;
 
 ALTER FUNCTION api.match_taxa(text)
     OWNER TO coleo;
@@ -42,39 +67,6 @@ ALTER FUNCTION api.match_taxa(text)
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
--- DROP FUNCTION IF EXISTS rubus.match_taxa_obs(text);
-CREATE OR REPLACE FUNCTION rubus.match_taxa_obs(
-	taxa_name text	
-)
--- returns integer[]
-RETURNS SETOF taxa_obs AS $$
-    with match_taxa_obs as (
-        (
-            SELECT distinct(match_obs.id_taxa_obs) as id_taxa_obs
-            FROM rubus.taxa_ref AS matched_ref
-            LEFT JOIN rubus.taxa_obs_ref_lookup AS match_obs
-                ON matched_ref.id = match_obs.id_taxa_ref
-            WHERE matched_ref.scientific_name ILIKE $1
-        ) UNION (
-            select distinct(ref_lookup.id_taxa_obs) as id_taxa_obs
-            from rubus.taxa_vernacular
-            left join rubus.taxa_ref_vernacular_lookup vernacular_lookup
-                on taxa_vernacular.id = vernacular_lookup.id_taxa_vernacular
-            left join rubus.taxa_obs_ref_lookup ref_lookup
-                on vernacular_lookup.id_taxa_ref = ref_lookup.id_taxa_ref
-            where taxa_vernacular.name ILIKE $1
-        )
-    )
-    select distinct on (id) taxa_obs.*
-    from taxa_obs, match_taxa_obs
-    where match_taxa_obs.id_taxa_obs = taxa_obs.id
-$$ LANGUAGE sql;
-
-ALTER FUNCTION rubus.match_taxa_obs(text)
-    OWNER TO coleo;
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------------------------------------------------------
 
 -- DROP FUNCTION IF EXISTS rubus.match_taxa_groups(integer[]);
 CREATE OR REPLACE FUNCTION rubus.match_taxa_groups(

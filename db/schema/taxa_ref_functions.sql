@@ -302,7 +302,7 @@ BEGIN
             PERFORM rubus.insert_taxa_vernacular_from_taxa_ref(taxa_ref_record.id_taxa_ref, taxa_ref_record.scientific_name, taxa_ref_record.rank);
         EXCEPTION
             WHEN OTHERS THEN
-            RAISE NOTICE 'Error inserting record with id % and scientific name %', taxa_ref_record.id, taxa_ref_record.scientific_name;
+            RAISE NOTICE 'Error inserting record with id % and scientific name %', taxa_ref_record.id_taxa_ref, taxa_ref_record.scientific_name;
             CONTINUE;
         END;
     END LOOP;

@@ -16,7 +16,7 @@ class TestSpecies(TestCase):
                                  'numDescendants', 'issues']]))
 
     def test_match_from_name(self, name='Antigone canadensis'):
-        result = Species.match(name=name)
+        result = Species.match(scientific_name=name)
         self.assertIsInstance(result, dict)
         self.assertTrue(all(k in result.keys() for k in [
             'usageKey', 'scientificName'
@@ -26,7 +26,7 @@ class TestSpecies(TestCase):
 
     def test_match_from_name_kingdom(self,
                                      name='Coleoptera', kingdom='Plantae'):
-        result = Species.match(name=name, kingdom = kingdom)
+        result = Species.match(scientific_name=name, kingdom = kingdom)
         self.assertIsInstance(result, dict)
         self.assertTrue(all(k in result.keys() for k in [
             'usageKey', 'scientificName'
@@ -55,13 +55,22 @@ class TestSpecies(TestCase):
     
     # Regression test : Should return subsp. record
     def test_species_match_no_rank(self, name='Epilobium ciliatum ciliatum'):
-        result = Species.match(name=name)
+        result = Species.match(scientific_name=name)
         self.assertFalse(result['rank'] == 'SUBSPECIES')
     
     def test_species_match_rank(self, name='Epilobium ciliatum ciliatum', rank='SUBSPECIES'):
-        result = Species.match(name=name, rank=rank)
+        result = Species.match(scientific_name=name, rank=rank)
         self.assertTrue(result['rank'] == 'SUBSPECIES')
     # Edge case with no rank returns most precise possible answer
     def test_species_match_bad_rank(self, name='Epilobium ciliatum ciliatum', rank='KINGDOM'):
-        result = Species.match(name=name, rank=rank)
+        result = Species.match(scientific_name=name, rank=rank)
         self.assertTrue(result['rank'] == 'SPECIES')
+
+    def test_species_match_bug_limax(self, name='Limax'):
+        results = Species.match(scientific_name=name)
+        self.assertIsInstance(results, List)
+        self.assertTrue(len(results) > 0)
+        self.assertTrue(all(k in results[0].keys() for k in [
+            'usageKey', 'scientificName', 'rank'
+        ]))
+        self.assertTrue(results[0]['rank'] == 'GENUS')

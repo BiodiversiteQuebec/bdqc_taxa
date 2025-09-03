@@ -6,6 +6,7 @@ from inspect import signature
 HOST = "https://api.gbif.org"
 LIMIT = 100
 RESP_RESULT_KEY = 'results'
+GBIF_TAXONOMIC_BACKBONE_DATASET_KEY = 'd7dddbf4-2cf0-4f39-9b2a-bb099caae36c'
 
 
 def _get_url_data(url, params: dict = None, limit: int = None, offset: int = 0):
@@ -69,13 +70,24 @@ class Species:
 
         arg_keys = signature(cls.match).parameters
         arg_values = locals()
-        params = {k: arg_values[k] for k in arg_keys if arg_values[k]}
+        params = {
+            "name": name,
+            "rank": rank,
+            "strict": strict,
+            "verbose": verbose,
+            "kingdom": kingdom,
+            "phylum": phylum,
+            "class": sp_class,
+            "order": order,
+            "family": family,
+            "genus": genus
+        }
         url = f"{HOST}/v1/species/match"
         results = _get_url_data(url, params)
         return results
 
     @classmethod
-    def match(cls, scientific_name: str = "", taxon_rank: str = "", strict: str = "", 
+    def match_v2(cls, scientific_name: str = "", taxon_rank: str = "", strict: str = "", 
         verbose: str = "", kingdom: str = "", phylum: str = "",
         sp_class: str = "", order: str = "", family: str = "",
         genus: str = ""):
@@ -93,6 +105,31 @@ class Species:
             "genus": genus
         }
         url = f"{HOST}/v2/species/match"
+        results = _get_url_data(url, params)
+        return results
+    
+    @classmethod
+    def match(cls, scientific_name: str = "", taxon_rank: str = "", **kwargs):
+        """
+        Match a scientific name to a GBIF species record.
+        """
+        if not scientific_name:
+            raise ValueError("scientific_name must be provided")
+        
+        return cls.match_v1(name=scientific_name, rank=taxon_rank, **kwargs)
+    
+    @classmethod
+    def search(cls, query: str = "", dataset_key: str = GBIF_TAXONOMIC_BACKBONE_DATASET_KEY,
+               **kwargs):
+        
+        params = {
+            "q": query,
+            "datasetKey": dataset_key
+        }
+
+        params.update(kwargs)
+
+        url = f"{HOST}/v1/species/search"
         results = _get_url_data(url, params)
         return results
 

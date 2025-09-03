@@ -225,7 +225,10 @@ class TaxaRef:
                 "is_parent": is_parent
             }
             out.append(cls(**out_kwargs))
-            result = gbif.Species.get(match_species['acceptedUsageKey'])
+            if "acceptedUsageKey" in match_species.keys():
+                result = gbif.Species.get(match_species['acceptedUsageKey'])
+            else:
+                result = gbif.Species.get(result['acceptedKey'])
 
         # Create rows for valid taxon
         classification_srids = [

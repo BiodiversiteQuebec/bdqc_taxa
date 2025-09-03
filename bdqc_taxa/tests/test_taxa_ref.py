@@ -393,6 +393,10 @@ class TestTaxaRef(unittest.TestCase):
                     res.source_name == 'CDPNQ' for res in results)
         )
 
+    def test_matchspecies_no_accepted_usage_key(self, name='Oncophorus wahlenbergii'):
+        results = taxa_ref.TaxaRef._from_gbif_singleton(name)
+        self.assertTrue(len(results) > 0)
+
 class TestComplex(unittest.TestCase):
     # Test for Myotis complex entries from CDPNQ
     def test_cdpnq_complex_myotis(self, name='Myotis lucifugus|Myotis septentrionalis|Myotis leibii'):

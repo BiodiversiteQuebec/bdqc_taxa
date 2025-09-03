@@ -28,8 +28,14 @@ def search_entities(query, language="en", rank:Optional[str] = None) -> dict:
         "limit": 50
     }
 
+    headers = {
+        "User-Agent": "bdqc_taxa/1.0 (https://biodiversite-quebec.ca/; info@biodiversite-quebec.ca)"
+    }
+
     url = BASE_URL + urllib.parse.urlencode(params)
-    response = urllib.request.urlopen(url).read()
+    req = urllib.request.Request(url, headers=headers)
+    
+    response = urllib.request.urlopen(req).read()
     data = json.loads(response)
 
     # Raise an exception if the request was not successful
@@ -61,9 +67,15 @@ def get_entities(id: Union[str, List[str]], languages=["en, fr"]):
         "languages": "|".join(languages),
         "format": "json"
     }
-    
+
+    headers = {
+        "User-Agent": "bdqc_taxa/1.0 (https://biodiversite-quebec.ca/; info@biodiversite-quebec.ca)"
+    }
+
     url = BASE_URL + urllib.parse.urlencode(params)
-    response = urllib.request.urlopen(url).read()
+    req = urllib.request.Request(url, headers=headers)
+
+    response = urllib.request.urlopen(req).read()
     data = json.loads(response)
 
     # Raise an exception if the request was not successful

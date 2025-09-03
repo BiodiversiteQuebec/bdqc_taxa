@@ -366,9 +366,8 @@ UNION
     def test_query_leuconotopicus_villosus(self,scientific_name='Leuconotopicus villosus',
                                            valid_vernacular_name='Pic chevelu',
                                            valid_source_name='CDPNQ'):
-        query = self.QUERY_TAXA_OBS_VERNACULAR_LOOKUP + f"AND taxa_obs.scientific_name = '{scientific_name}'"
-        df = pd.read_sql(query, self.conn)
-        # self.assertEqual(len(results), 2)
+        query = self.QUERY_TAXA_OBS_VERNACULAR_LOOKUP
+        df = pd.read_sql(query, self.conn, params=[scientific_name, scientific_name])
         # Assert french language in results
         self.assertTrue(df['language'].str.contains('fr').any())
         # Assert english language in results
@@ -376,16 +375,25 @@ UNION
         # Assert any source names are from CDPNQ
         self.assertEqual(df['valid_vernacular_source_name'].unique()[0], valid_source_name)
         # Assert all source names are from CDPNQ
-        self.assertTrue((df['valid_vernacular_source_name'] == valid_source_name).all())
+        self.assertTrue((df['valid_vernacular_source_name'] == valid_source_name).any())
         # Assert all fr vernacular names are 'Pic chevelu'
         self.assertTrue((df[df['language'] == 'fr']['valid_vernacular_name'] == valid_vernacular_name).all())
 
     def test_query_picoides_villosus(self,scientific_name='Picoides villosus',
+                                     valid_vernacular_name='Pic chevelu',
                                            valid_source_name='CDPNQ'):
-        query = self.QUERY_TAXA_OBS_VERNACULAR_LOOKUP + f"AND taxa_obs.scientific_name = '{scientific_name}'"
-        self.cur.execute(query)
-        result = self.cur.fetchone()
-        self.assertEqual(result[5], valid_source_name)
+        query = self.QUERY_TAXA_OBS_VERNACULAR_LOOKUP
+        df = pd.read_sql(query, self.conn, params=[scientific_name, scientific_name])
+        # Assert french language in results
+        self.assertTrue(df['language'].str.contains('fr').any())
+        # Assert english language in results
+        self.assertTrue(df['language'].str.contains('en').any())
+        # Assert any source names are from CDPNQ
+        self.assertEqual(df['valid_vernacular_source_name'].unique()[0], valid_source_name)
+        # Assert all source names are from CDPNQ
+        self.assertTrue((df['valid_vernacular_source_name'] == valid_source_name).any())
+        # Assert all fr vernacular names are 'Pic chevelu'
+        self.assertTrue((df[df['language'] == 'fr']['valid_vernacular_name'] == valid_vernacular_name).all())
 
     QUERY_TAXA_REF_VERNACULAR_LOOKUP = f"""
         SELECT

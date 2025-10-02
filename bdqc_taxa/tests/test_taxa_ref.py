@@ -396,6 +396,16 @@ class TestTaxaRef(unittest.TestCase):
     def test_matchspecies_no_accepted_usage_key(self, name='Oncophorus wahlenbergii'):
         results = taxa_ref.TaxaRef._from_gbif_singleton(name)
         self.assertTrue(len(results) > 0)
+ 
+    def test_lowercase(self, name='canis latrans'):
+        results = taxa_ref.TaxaRef.from_all_sources(name)
+        cdpnq_results = [res for res in results if res.source_name == 'CDPNQ' and res.valid and res.rank == 'species']
+        self.assertTrue(len(cdpnq_results) >= 1)
+    
+    def test_canis_latrans_no_canis_lupus(self, name='canis latrans'):
+        results = taxa_ref.TaxaRef.from_all_sources(name)
+        canis_lupus_results = [res for res in results if res.scientific_name == 'Canis lupus']
+        self.assertTrue(len(canis_lupus_results) == 0)
 
 class TestComplex(unittest.TestCase):
     # Test for Myotis complex entries from CDPNQ

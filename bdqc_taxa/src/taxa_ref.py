@@ -349,6 +349,10 @@ class TaxaRef:
 
     @classmethod
     def from_all_sources(cls, name: str, authorship: str = None, parent_taxa: str = None):
+        # Capitalize first letter
+        name = name.strip()
+        name = name[0].upper() + name[1:]
+            
         out = cls.from_global_names(name, authorship)
         out.extend(cls.from_gbif(name, authorship))
         out.extend(cls.from_bryoquel(name)) # exact match only

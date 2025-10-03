@@ -31,10 +31,13 @@ setuptools.setup(
         'bdqc_taxa': ['../custom_sources.sqlite', 'custom_sources.sqlite']
     },
     python_requires=">=3.6",
+    install_requires=[
+        "psycopg2"
+    ],
     extras_require={
         'dev': [
             'pandas',
             'numpy'
         ],
-    },
+    }
 )

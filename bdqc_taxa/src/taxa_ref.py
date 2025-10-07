@@ -359,17 +359,29 @@ class TaxaRef:
         out.extend(cls.from_cdpnq(name)) # exact match only
         
         # Fuzzy match for custom sources
+        fuzzy_names = set()
         if not any(ref.source_name in ('CDPNQ', 'Bryoquel') for ref in out):
-            fuzzy_names = set({(ref.scientific_name, ref.match_type) for ref in out
-                               if not ref.is_parent and ref.match_type != 'exact'})
-        else : 
-            fuzzy_names = set()
+            # Base fuzzy names
+            fuzzy_names = {
+                (ref.scientific_name, ref.match_type) for ref in out
+                if not ref.is_parent and ref.match_type != 'exact'
+            }
+            
+            # If input name is complex, then add exact match for fuzzy names
+            if is_complex(name):
+                fuzzy_names.update({
+                    (ref.scientific_name, ref.match_type) for ref in out
+                    if not ref.is_parent
+                })
+                
+            # If subspecies, then add species level fuzzy names
+            subspecies_sources = {ref.source_name for ref in out if ref.rank == 'subspecies'}
+            species_parents = {
+                (ref.scientific_name, ref.match_type) for ref in out
+                if ref.is_parent and ref.rank == 'species' and ref.match_type is None and ref.source_name in subspecies_sources
+            }
+            fuzzy_names.update(species_parents)
 
-        # If input name is complex, then add exact match for fuzzy names
-        if is_complex(name):
-            fuzzy_names.update({(ref.scientific_name, ref.match_type) for ref in out
-                    if not ref.is_parent})
-        
         if fuzzy_names:
             for fuzzy_name, match_type in fuzzy_names:
                 out.extend(cls.from_custom_sources_fuzzy_matched(fuzzy_name, match_type))

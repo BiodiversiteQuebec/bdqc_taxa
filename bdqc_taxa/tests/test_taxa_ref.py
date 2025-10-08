@@ -411,8 +411,8 @@ class TestTaxaRef(unittest.TestCase):
         results = taxa_ref.TaxaRef.from_all_sources(name, authorship)
         cdpnq_results = [res for res in results if res.source_name == 'CDPNQ']
         self.assertTrue(len(cdpnq_results) > 1)
-        self.assertTrue(any([res for res in cdpnq_results if res.rank == 'genus' and res.scientific_name == 'Catharus']))
-        self.assertTrue(any([res for res in cdpnq_results if res.rank == 'species' and res.scientific_name == 'Catharus ustulatus']))
+        self.assertTrue(any([res for res in cdpnq_results if res.rank == 'genus' and res.is_parent and res.scientific_name == 'Catharus']))
+        self.assertTrue(any([res for res in cdpnq_results if res.rank == 'species' and not res.is_parent and res.scientific_name == 'Catharus ustulatus']))
 
 class TestComplex(unittest.TestCase):
     # Test for Myotis complex entries from CDPNQ

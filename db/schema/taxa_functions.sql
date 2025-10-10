@@ -84,7 +84,7 @@ WITH match_taxa_obs AS (
     SELECT DISTINCT id_taxa_obs
     FROM match_pref
 ) 
-SELECT *
+SELECT taxa.*
 FROM api.taxa
 JOIN match_pref_distinct ON taxa.id_taxa_obs = match_pref_distinct.id_taxa_obs
 

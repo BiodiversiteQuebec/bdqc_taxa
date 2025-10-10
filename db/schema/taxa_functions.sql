@@ -38,27 +38,56 @@ CREATE OR REPLACE FUNCTION api.match_taxa(
     ROWS 1000
 
 AS $BODY$
-WITH match_taxa_obs_id AS (
-    SELECT DISTINCT ref_lookup.id_taxa_obs
+WITH match_taxa_obs AS (
+    SELECT ref_lu.id_taxa_obs
     FROM rubus.taxa_ref AS matched_ref
-    JOIN rubus.taxa_obs_ref_lookup AS ref_lookup
-      ON matched_ref.id = ref_lookup.id_taxa_ref
+        JOIN rubus.taxa_obs_ref_lookup ref_lu ON matched_ref.id = ref_lu.id_taxa_ref
     WHERE matched_ref.scientific_name ILIKE $1
+        AND ref_lu.match_type IS DISTINCT FROM 'complex'
 
-    UNION
+    UNION ALL
 
-    SELECT DISTINCT ref_lookup.id_taxa_obs
+    SELECT ref_lu.id_taxa_obs
     FROM rubus.taxa_vernacular AS matched_vernacular
-    JOIN rubus.taxa_ref_vernacular_lookup AS vernacular_lookup
-      ON matched_vernacular.id = vernacular_lookup.id_taxa_vernacular
-    JOIN rubus.taxa_obs_ref_lookup ref_lookup
-      ON vernacular_lookup.id_taxa_ref = ref_lookup.id_taxa_ref
+        JOIN rubus.taxa_ref_vernacular_lookup AS vern_lu ON matched_vernacular.id = vern_lu.id_taxa_vernacular
+        JOIN rubus.taxa_obs_ref_lookup ref_lu ON vern_lu.id_taxa_ref = ref_lu.id_taxa_ref
     WHERE matched_vernacular.name ILIKE $1
-)
-SELECT taxa.*
+        AND ref_lu.match_type IS DISTINCT FROM 'complex'
+), match_taxa_obs_distinct AS (
+    SELECT DISTINCT id_taxa_obs
+    FROM match_taxa_obs
+), match_pref AS (
+    SELECT 
+        ref_pref.id_taxa_obs
+    FROM match_taxa_obs_distinct
+        JOIN api.taxa USING (id_taxa_obs)
+        JOIN rubus.taxa_obs_ref_preferred ref_pref ON taxa.valid_scientific_name = ref_pref.scientific_name
+
+    UNION ALL
+
+    SELECT
+        ref_pref.id_taxa_obs
+    FROM match_taxa_obs_distinct
+        JOIN api.taxa USING (id_taxa_obs)
+        JOIN rubus.taxa_ref_vernacular_preferred vern_pref ON taxa.vernacular_en = vern_pref.vernacular_en 
+        JOIN rubus.taxa_obs_ref_preferred ref_pref ON vern_pref.id_taxa_ref = ref_pref.id_taxa_ref
+
+    UNION ALL
+
+    SELECT
+        ref_pref.id_taxa_obs
+    FROM match_taxa_obs_distinct
+        JOIN api.taxa USING (id_taxa_obs)
+        JOIN rubus.taxa_ref_vernacular_preferred vern_pref ON taxa.vernacular_fr = vern_pref.vernacular_fr
+        JOIN rubus.taxa_obs_ref_preferred ref_pref ON vern_pref.id_taxa_ref = ref_pref.id_taxa_ref
+), match_pref_distinct AS (
+    SELECT DISTINCT id_taxa_obs
+    FROM match_pref
+) 
+SELECT *
 FROM api.taxa
-JOIN match_taxa_obs_id
-  ON taxa.id_taxa_obs = match_taxa_obs_id.id_taxa_obs;
+JOIN match_pref_distinct ON taxa.id_taxa_obs = match_pref_distinct.id_taxa_obs
+
 $BODY$;
 
 ALTER FUNCTION api.match_taxa(text)

@@ -407,6 +407,13 @@ class TestTaxaRef(unittest.TestCase):
         canis_lupus_results = [res for res in results if res.scientific_name == 'Canis lupus']
         self.assertTrue(len(canis_lupus_results) == 0)
 
+    def test_catharus_swainsoni_cdpnq_subsp_processing(self, name='Catharus swainsoni', authorship='(Tschudi, 1845)', parent_taxa='Chordata'):
+        results = taxa_ref.TaxaRef.from_all_sources(name, authorship)
+        cdpnq_results = [res for res in results if res.source_name == 'CDPNQ']
+        self.assertTrue(len(cdpnq_results) > 1)
+        self.assertTrue(any([res for res in cdpnq_results if res.rank == 'genus' and res.is_parent and res.scientific_name == 'Catharus']))
+        self.assertTrue(any([res for res in cdpnq_results if res.rank == 'species' and not res.is_parent and res.scientific_name == 'Catharus ustulatus']))
+
 class TestComplex(unittest.TestCase):
     # Test for Myotis complex entries from CDPNQ
     def test_cdpnq_complex_myotis(self, name='Myotis lucifugus|Myotis septentrionalis|Myotis leibii'):

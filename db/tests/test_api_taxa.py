@@ -110,7 +110,7 @@ class TestTaxa(unittest.TestCase):
             SELECT *
             FROM api.taxa
             WHERE valid_scientific_name ILIKE '% %'
-                AND rank NOT IN ('species','subspecies','variety')
+                AND rank NOT IN ('species','subspecies','variety','form')
                 AND observed_scientific_name != 'incertae sedis'
             """
         df = pd.read_sql(query, self.conn)

@@ -33,9 +33,9 @@ class TestTaxa(unittest.TestCase):
         self.assertTrue(result[1])
 
     def test_valid_scientific_name_leuconotopicus_villosus_septentrionalis(self):
-        self.cur.execute("SELECT valid_scientific_name, valid_scientific_name = 'Leuconotopicus villosus septentrionalis' AS test_pass FROM api.taxa WHERE observed_scientific_name = 'Leuconotopicus villosus septentrionalis'")
+        self.cur.execute("SELECT valid_scientific_name, valid_scientific_name = 'Dryobates villosus' AS test_pass FROM api.taxa WHERE observed_scientific_name = 'Leuconotopicus villosus septentrionalis'")
         result = self.cur.fetchone()
-        self.assertEqual(result[0], 'Leuconotopicus villosus septentrionalis')
+        self.assertEqual(result[0], 'Dryobates villosus')
         self.assertTrue(result[1])
 
     def test_valid_scientific_name_dendrocopos_villosus(self):

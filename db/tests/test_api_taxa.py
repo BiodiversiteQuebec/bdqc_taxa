@@ -53,6 +53,33 @@ class TestTaxa(unittest.TestCase):
         df = pd.read_sql(query, self.conn)
         self.assertEqual(len(df), 0)
 
+    def test_species_prefix_in_subspecies_valid_sciname(self):
+        query = """
+            SELECT *
+            FROM rubus.taxa_view
+            WHERE rank = 'subspecies'
+              AND (
+                split_part(valid_scientific_name, ' ', 1) || ' ' || split_part(valid_scientific_name, ' ', 2)
+              ) <> species;
+        """
+        df = pd.read_sql(query, self.conn)
+        self.assertEqual(len(df), 0)
+
+    def test_same_observed_sciname_same_valid_sciname(self):
+        query = """
+            SELECT *
+            FROM api.taxa
+            WHERE observed_scientific_name IN (
+                SELECT observed_scientific_name
+                FROM api.taxa
+                GROUP BY observed_scientific_name
+                HAVING COUNT(DISTINCT valid_scientific_name) > 1
+            )
+            ORDER BY observed_scientific_name, valid_scientific_name;
+        """
+        df = pd.read_sql(query, self.conn)
+        self.assertEqual(len(df), 0)
+
     def test_same_vernacular_for_same_valid_scientific_name(self):
         query = """
             SELECT *

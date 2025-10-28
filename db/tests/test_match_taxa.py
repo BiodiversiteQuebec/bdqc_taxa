@@ -35,3 +35,8 @@ class TestMatchTaxa(unittest.TestCase):
         query = self.QUERY_MATCH_TAXA
         df = pd.read_sql(query, self.conn, params = (taxa_name,))
         self.assertTrue('subspecies' not in df['rank'].values)
+
+    def test_poa_nemoralis_only(self, taxa_name='Poa nemoralis'):
+        query = self.QUERY_MATCH_TAXA
+        df_poa_nemoralis = pd.read_sql(query, self.conn, params = (taxa_name,))
+        self.assertTrue((df_poa_nemoralis['valid_scientific_name'] == 'Poa nemoralis').all())

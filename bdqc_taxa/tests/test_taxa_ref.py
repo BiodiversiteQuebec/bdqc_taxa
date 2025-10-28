@@ -402,6 +402,11 @@ class TestTaxaRef(unittest.TestCase):
         cdpnq_results = [res for res in results if res.source_name == 'CDPNQ' and res.valid and res.rank == 'species']
         self.assertTrue(len(cdpnq_results) >= 1)
     
+    def test_dryobates_villosus_Aves(self, name='dryobates villosus', parent_taxa='Aves'):
+        results = taxa_ref.TaxaRef.from_all_sources(name, parent_taxa=parent_taxa)
+        cdpnq_results = [res for res in results if res.source_name == 'CDPNQ']
+        self.assertTrue(len(cdpnq_results) >= 1)
+    
     def test_canis_latrans_no_canis_lupus(self, name='canis latrans'):
         results = taxa_ref.TaxaRef.from_all_sources(name)
         canis_lupus_results = [res for res in results if res.scientific_name == 'Canis lupus']

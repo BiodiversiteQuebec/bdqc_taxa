@@ -24,25 +24,25 @@ SOURCES_PARENT_CLASSIFICATION_SRIDS = [
     {
         'source_name': 'VASCAN',
         'ranks': ['kingdom', 'phylum'],
-        'scienfitic_name': ['Plantae', 'Tracheophyta']
+        'scientific_name': ['Plantae', 'Tracheophyta']
     },
     # Only Bryoquel
     {
         'source_name': 'Bryoquel',
         'ranks': ['kingdom', 'phylum'],
-        'scienfitic_name': ['Plantae', 'Bryophyta']
+        'scientific_name': ['Plantae', 'Bryophyta']
     },
     # Only CDPNQ mammals
     {
         'source_name': 'CDPNQ',
-        'ranks': ['kingdom', 'phylum', 'class'],
-        'scienfitic_name': ['Animalia', 'Chordata', 'Mammalia']
+        'ranks': ['kingdom', 'phylum', 'class', 'class', 'class', 'class'],
+        'scientific_name': ['Animalia', 'Chordata', 'Mammalia', 'Aves', 'Amphibia', 'Reptilia']
     },
     # Only CDPNQ odonata
     {
         'source_name': 'CDPNQ',
         'ranks': ['kingdom', 'phylum', 'class', 'order'],
-        'scienfitic_name': ['Animalia', 'Arthropoda', 'Insecta', 'Odonata']
+        'scientific_name': ['Animalia', 'Arthropoda', 'Insecta', 'Odonata']
     }
 ]
 
@@ -320,7 +320,7 @@ class TaxaRef:
             for source in SOURCES_PARENT_CLASSIFICATION_SRIDS:
                 # Check if parent is listed for sources without whole branch
                 if ref.source_name == source['source_name'] and \
-                        parent_taxa in source['scienfitic_name']:
+                        parent_taxa in source['scientific_name']:
                     # Add ref to keep_ids
                     keep_ids.update([ref.source_record_id])
 

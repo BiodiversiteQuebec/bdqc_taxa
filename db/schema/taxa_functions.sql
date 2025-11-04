@@ -38,38 +38,40 @@ CREATE OR REPLACE FUNCTION api.match_taxa(
     ROWS 1000
 
 AS $BODY$
-WITH match_pref AS (
-    SELECT ref_pref.scientific_name
-    FROM rubus.taxa_ref AS matched_ref
-        JOIN rubus.taxa_obs_ref_lookup ref_lu ON matched_ref.id = ref_lu.id_taxa_ref
-        JOIN rubus.taxa_obs_ref_preferred ref_pref using (id_taxa_obs)
-        JOIN rubus.taxa_ref_sources src ON matched_ref.source_name = src.source_name
-    WHERE matched_ref.scientific_name ILIKE $1
-        AND ref_lu.match_type IS DISTINCT FROM 'complex'
-        AND is_match IS TRUE
-        AND (ref_lu.id_taxa_obs, src.source_priority) IN (
-          SELECT ref_lu2.id_taxa_obs, min(src2.source_priority)
-          FROM rubus.taxa_obs_ref_lookup ref_lu2
-          JOIN rubus.taxa_ref ON taxa_ref.id = ref_lu2.id_taxa_ref
-          JOIN rubus.taxa_ref_sources src2 ON taxa_ref.source_name = src2.source_name
-          GROUP BY ref_lu2.id_taxa_obs
-        )
-
-    UNION ALL
-
-    SELECT ref_pref.scientific_name
-    FROM rubus.taxa_vernacular AS matched_vernacular
-        JOIN rubus.taxa_ref_vernacular_lookup AS vern_lu ON matched_vernacular.id = vern_lu.id_taxa_vernacular
-        JOIN rubus.taxa_obs_ref_lookup ref_lu ON vern_lu.id_taxa_ref = ref_lu.id_taxa_ref
-        JOIN rubus.taxa_obs_ref_preferred ref_pref ON ref_pref.id_taxa_ref = vern_lu.id_taxa_ref
-    WHERE matched_vernacular.name ILIKE $1
-        AND matched_vernacular.preferred IS TRUE
-        AND ref_lu.match_type IS DISTINCT FROM 'complex'
-        AND ref_pref.is_match IS TRUE
-)
-SELECT distinct on (id_taxa_obs) taxa.*
-FROM api.taxa
-JOIN match_pref ON taxa.valid_scientific_name = match_pref.scientific_name
+  WITH matched_taxa_obs AS (
+      SELECT DISTINCT id_taxa_obs
+      FROM rubus.taxa_ref mref
+      JOIN rubus.taxa_obs_ref_lookup mlu
+          ON mref.id = mlu.id_taxa_ref
+          AND is_parent IS false
+          AND match_type IS NOT NULL
+          AND match_type <> 'complex'
+      WHERE mref.scientific_name ILIKE $1
+  ), children_taxa_obs AS (
+      SELECT DISTINCT id_taxa_obs
+      FROM rubus.taxa_ref mref
+      JOIN rubus.taxa_obs_ref_lookup mlu
+          ON mref.id = mlu.id_taxa_ref
+          AND is_parent IS true
+      WHERE mref.scientific_name ILIKE $1
+  ), pref_synonyms AS (
+      SELECT DISTINCT syn_pref.id_taxa_obs
+      FROM (
+           SELECT id_taxa_obs FROM matched_taxa_obs
+             UNION
+            SELECT id_taxa_obs FROM children_taxa_obs
+            ) AS all_obs
+      JOIN rubus.taxa_obs_ref_preferred mpref
+          ON all_obs.id_taxa_obs = mpref.id_taxa_obs
+          AND mpref.is_match
+      JOIN rubus.taxa_obs_ref_preferred syn_pref
+          ON mpref.id_taxa_ref = syn_pref.id_taxa_ref
+          AND syn_pref.is_match IS true
+  )
+  SELECT taxa.*
+  FROM pref_synonyms
+  JOIN api.taxa USING (id_taxa_obs)
+$BODY$;
 
 ALTER FUNCTION api.match_taxa(text)
     OWNER TO coleo;

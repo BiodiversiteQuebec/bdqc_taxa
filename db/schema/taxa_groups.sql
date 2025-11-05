@@ -83,7 +83,6 @@ VALUES
 -- DROP TABLE IF EXISTS rubus.taxa_group_members CASCADE;
 CREATE TABLE rubus.taxa_group_members (
     short varchar(20),
-    scientific_name text,
     id_taxa_obs NOT NULL
 );
 

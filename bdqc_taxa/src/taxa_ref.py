@@ -35,8 +35,8 @@ SOURCES_PARENT_CLASSIFICATION_SRIDS = [
     # Only CDPNQ mammals
     {
         'source_name': 'CDPNQ',
-        'ranks': ['kingdom', 'phylum', 'class', 'class', 'class', 'class'],
-        'scientific_name': ['Animalia', 'Chordata', 'Mammalia', 'Aves', 'Amphibia', 'Reptilia']
+        'ranks': ['kingdom', 'phylum', 'class', 'class', 'class', 'class', 'order'],
+        'scientific_name': ['Animalia', 'Chordata', 'Mammalia', 'Aves', 'Amphibia', 'Reptilia', 'Chiroptera']
     },
     # Only CDPNQ odonata
     {

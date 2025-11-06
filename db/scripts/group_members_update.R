@@ -1,13 +1,13 @@
 ################################################################################
-# This script updates the taxa_groups_members
+# This script updates the rubus.taxa_groups_members table
 #
 # 1. This script extracts the list of threatened species in Quebec from the Quebec
 # government website. The data is extracted from the following pages:
 # - Faune: https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques
 # - Flore: https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/flore
-# the data is prepared for injection in the taxa_group_members table of the ATLas database
+# the data is prepared for injection in the rubus.taxa_group_members table of the Atlas database
 #
-# 2. This scriptn extracts the list of invasive species in Quebec from the Quebec
+# 2. This script extracts the list of invasive species in Quebec from the Quebec
 # government website. The data is extracted from the following pages:
 # - Liste des principales espèces exotiques envahissantes: https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques/gestion-especes-exotiques-envahissantes-animales/liste-especes
 # - Liste des espèces exotiques envahissantes répertoriées dans Sentinelle: https://www.donneesquebec.ca/recherche/dataset/31f841b6-a544-47f9-93fb-b111a46fc654/resource/ac4aeddf-13ed-4d80-9ca3-28ca9ed77b14/download/sentinelle_liste_sp.csv
@@ -25,32 +25,31 @@
 
 ################################################################################
 # 1. CDPNQ EMV
-################################################################################ 
+################################################################################
 
 #================================================================================================
 # 0. Setup
 #================================================================================================
 library(rvest)
-library(dplyr)
 library(RPostgreSQL)
 
 # Load .env file
 readRenviron("~/.env")
 
 # Constants
-URL_FAUNE <- "https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques/especes-fauniques-menacees-vulnerables/liste"
-DIV_FAUNE_LISTS <- c(
-    "CDPNQ_ENDANGERED"="#c159706",
-    "CDPNQ_VUL"="#c159753",
-    "CDPNQ_SUSC"="#c159756"
+url_faune <- "https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques/especes-fauniques-menacees-vulnerables/liste"
+div_faune_lists <- c(
+  "CDPNQ_ENDANGERED" = "#c159706",
+  "CDPNQ_VUL" = "#c159753",
+  "CDPNQ_SUSC" = "#c159756"
 )
 
-URL_FLORE <- "https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/flore/especes-floristiques-menacees-ou-vulnerables/liste-especes"
-DIV_FLORE_LISTS <- c(
-    "CDPNQ_ENDANGERED"="#c293495",
-    "CDPNQ_VUL"="#c293496",
-    "CDPNQ_VUL_HARVEST"="#c293497",
-    "CDPNQ_SUSC"="#c293498"
+url_flore <- "https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/flore/especes-floristiques-menacees-ou-vulnerables/liste-especes"
+div_flore_lists <- c(
+  "CDPNQ_ENDANGERED" = "#c293495",
+  "CDPNQ_VUL" = "#c293496",
+  "CDPNQ_VUL_HARVEST" = "#c293497",
+  "CDPNQ_SUSC" = "#c293498"
 )
 
 #================================================================================================
@@ -58,75 +57,84 @@ DIV_FLORE_LISTS <- c(
 #================================================================================================
 
 extract_table_data <- function(table, list_name) {
-    species <- table %>% html_nodes("tbody tr") %>% html_nodes("td:nth-child(1)") %>% html_text(trim = TRUE)
-    scientific_names <- table %>% html_nodes("tbody tr") %>% html_nodes("td:nth-child(2)") %>% html_text(trim = TRUE)
-    category_faune <- table %>% html_node("caption") %>% html_text(trim = TRUE)
-    category_flore <- table %>% html_node("h2") %>% html_text(trim = TRUE)
-    category <- ifelse(!is.na(category_faune), category_faune, category_flore)
-    parent_scientific_name <- ifelse(!is.na(category_faune), "Animalia", "Plantae")
-    data.frame(vernacular_fr = species, scientific_name = scientific_names, short = list_name, category = category, parent_scientific_name=parent_scientific_name, stringsAsFactors = FALSE)
+
+  vernacular_name <- table |> html_nodes("tbody tr td:nth-child(1)") |> html_text(trim = TRUE)
+  scientific_name <- table |> html_nodes("tbody tr td:nth-child(2)") |> html_text(trim = TRUE)
+  category_faune <- table |> html_node("caption") |> html_text(trim = TRUE)
+  category_flore <- table |> html_node("h3") |> html_text(trim = TRUE)
+  category <- ifelse(!is.na(category_faune), category_faune, category_flore)
+  parent_scientific_name <- ifelse(!is.na(category_faune), "Animalia", "Plantae")
+
+  data.frame(vernacular_fr = vernacular_name,
+             scientific_name = scientific_name,
+             short = list_name,
+             category = category,
+             parent_scientific_name = parent_scientific_name,
+             stringsAsFactors = FALSE)
 }
 
 define_taxonomic_level <- function(data) {
-    data$TaxonomicLevel <- ifelse(grepl("population", data$vernacular_fr, ignore.case = TRUE), "population",
-                                  ifelse(grepl("var\\.", data$scientific_name, ignore.case = TRUE), "variety",
-                                         ifelse(grepl("subsp\\.", data$scientific_name, ignore.case = TRUE), "subspecies",
-                                            ifelse(nchar(gsub("[^ ]", "", data$scientific_name, ignore.case = TRUE)) == 2, "subspecies", "species"))))
-    return(data)
+  data <- data |>
+    dplyr::mutate(taxonomic_level = dplyr::case_when(
+      grepl("population", vernacular_fr, ignore.case = TRUE) ~ "population",
+      grepl("var\\.", scientific_name, ignore.case = TRUE) ~ "variety",
+      grepl("subsp\\.", scientific_name, ignore.case = TRUE) ~ "subspecies",
+      nchar(gsub("[^ ]", "", scientific_name, ignore.case = TRUE)) == 2 ~ "subspecies",
+      TRUE ~ "species"
+    ))
 }
 
 extract_data <- function(url, div_lists) {
-    page <- read_html(url)
-    data <- lapply(names(div_lists), function(list_name) {
-        div_id <- div_lists[[list_name]]
-        tables <- page %>% html_elements(div_id)
-        lapply(tables, extract_table_data, list_name = list_name)
-    }) %>% bind_rows()
-    data <- define_taxonomic_level(data)
-    return(data)
+  page <- read_html(url)
+  data <- lapply(names(div_lists), function(list_name) {
+    div_id <- div_lists[[list_name]]
+    tables <- page |> html_elements(div_id) |> html_elements("table")
+    lapply(tables, extract_table_data, list_name = list_name)
+  }) |>
+    dplyr::bind_rows()
+  data <- define_taxonomic_level(data)
 }
 
 inject_data <- function(con, data, group_name = NULL) {
-    for (i in 1:nrow(data)) {
-        ## Insert as its group defined in the short column
-        query <- sprintf(
-            "INSERT INTO taxa_group_members (short, scientific_name) VALUES ('%s', '%s') ON CONFLICT DO NOTHING;",
-            data$short[i], data$scientific_name[i]
-        )
-        res <- dbExecute(con, query)
-        if (res == 0) {
-            print(sprintf("The species %s is already in the database", data$scientific_name[i]))
-        }
-        ## Insert as a member of a larger group if defined
-        if (!is.null(group_name)) {
-            query <- sprintf(
-                "INSERT INTO taxa_group_members (short, scientific_name) VALUES ('%s', '%s') ON CONFLICT DO NOTHING;",
-                group_name, data$scientific_name[i]
-            )
-            res <- dbExecute(con, query)
-            if (res == 0) {
-                print(sprintf("The species %s is already in the database", data$scientific_name[i]))
-            }
-        }
-        ## Insert into taxa_obs
-        query <- sprintf(
-            "INSERT INTO taxa_obs (scientific_name, rank, parent_scientific_name) VALUES ('%s', '%s', '%s') ON CONFLICT DO NOTHING;",
-            data$scientific_name[i], data$TaxonomicLevel[i], data$parent_scientific_name[i]
-        )
-        dbExecute(con, query)
+  for (i in seq_len(nrow(data))) {
+    ## Insert as its group defined in the short column
+    query <- sprintf(
+      "INSERT INTO taxa_group_members (short, scientific_name) VALUES ('%s', '%s') ON CONFLICT DO NOTHING;",
+      data$short[i], data$scientific_name[i]
+    )
+    res <- dbExecute(con, query)
+    if (res == 0) {
+      print(sprintf("The species %s is already in the database", data$scientific_name[i]))
     }
+    ## Insert as a member of a larger group if defined
+    if (!is.null(group_name)) {
+      query <- sprintf(
+        "INSERT INTO taxa_group_members (short, scientific_name) VALUES ('%s', '%s') ON CONFLICT DO NOTHING;",
+        group_name, data$scientific_name[i]
+      )
+      res <- dbExecute(con, query)
+      if (res == 0) {
+        print(sprintf("The species %s is already in the database", data$scientific_name[i]))
+      }
+    }
+    ## Insert into taxa_obs
+    query <- sprintf(
+      "INSERT INTO taxa_obs (scientific_name, rank, parent_scientific_name) VALUES ('%s', '%s', '%s') ON CONFLICT DO NOTHING;",
+      data$scientific_name[i], data$TaxonomicLevel[i], data$parent_scientific_name[i]
+    )
+    dbExecute(con, query)
+  }
 }
 
 #================================================================================================
 # 2. Main Script
 #================================================================================================
-
 # Extract data for faune and flore
-faune_data <- extract_data(URL_FAUNE, DIV_FAUNE_LISTS)
-flore_data <- extract_data(URL_FLORE, DIV_FLORE_LISTS)
+faune_data <- extract_data(url_faune, div_faune_lists)
+flore_data <- extract_data(url_flore, div_flore_lists)
 
 # Combine the data
-CDPNQ_EMV <- rbind(faune_data, flore_data)
+cdpnq_emv <- rbind(faune_data, flore_data)
 
 # Display the data
 print(CDPNQ_EMV)

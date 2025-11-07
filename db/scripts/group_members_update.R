@@ -13,11 +13,11 @@
 # - Liste des espèces exotiques envahissantes répertoriées dans Sentinelle: https://www.donneesquebec.ca/recherche/dataset/31f841b6-a544-47f9-93fb-b111a46fc654/resource/ac4aeddf-13ed-4d80-9ca3-28ca9ed77b14/download/sentinelle_liste_sp.csv
 #
 # Required environment variables:
-# - ATLAS_STAGING_DATABASE
-# - ATLAS_STAGING_HOSTNAME
-# - ATLAS_STAGING_PORT
-# - ATLAS_STAGING_USER
-# - ATLAS_STAGING_PASSWORD
+# - POSTGRES_DB
+# - POSTGRES_HOST
+# - POSTGRES_PORT
+# - POSTGRES_USER
+# - POSTGRES_PASSWORD
 #
 # Author: Victor Cameron
 # Date: 2025-01-27
@@ -31,10 +31,10 @@
 # 0. Setup
 #================================================================================================
 library(rvest)
-library(RPostgreSQL)
+library(RPostgres)
 
 # Load .env file
-readRenviron("~/.env")
+readRenviron(".env")
 
 # Constants
 url_faune <- "https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques/especes-fauniques-menacees-vulnerables/liste"
@@ -57,7 +57,6 @@ div_flore_lists <- c(
 #================================================================================================
 
 extract_table_data <- function(table, list_name) {
-
   vernacular_name <- table |> html_nodes("tbody tr td:nth-child(1)") |> html_text(trim = TRUE)
   scientific_name <- table |> html_nodes("tbody tr td:nth-child(2)") |> html_text(trim = TRUE)
   category_faune <- table |> html_node("caption") |> html_text(trim = TRUE)
@@ -75,8 +74,8 @@ extract_table_data <- function(table, list_name) {
 
 define_taxonomic_level <- function(data) {
   data <- data |>
-    dplyr::mutate(taxonomic_level = dplyr::case_when(
-      grepl("population", vernacular_fr, ignore.case = TRUE) ~ "population",
+    dplyr::mutate(rank = dplyr::case_when(
+      #grepl("population", vernacular_fr, ignore.case = TRUE) ~ "population",
       grepl("var\\.", scientific_name, ignore.case = TRUE) ~ "variety",
       grepl("subsp\\.", scientific_name, ignore.case = TRUE) ~ "subspecies",
       nchar(gsub("[^ ]", "", scientific_name, ignore.case = TRUE)) == 2 ~ "subspecies",
@@ -95,35 +94,23 @@ extract_data <- function(url, div_lists) {
   data <- define_taxonomic_level(data)
 }
 
-inject_data <- function(con, data, group_name = NULL) {
-  for (i in seq_len(nrow(data))) {
-    ## Insert as its group defined in the short column
-    query <- sprintf(
-      "INSERT INTO taxa_group_members (short, scientific_name) VALUES ('%s', '%s') ON CONFLICT DO NOTHING;",
-      data$short[i], data$scientific_name[i]
-    )
-    res <- dbExecute(con, query)
-    if (res == 0) {
-      print(sprintf("The species %s is already in the database", data$scientific_name[i]))
-    }
-    ## Insert as a member of a larger group if defined
-    if (!is.null(group_name)) {
-      query <- sprintf(
-        "INSERT INTO taxa_group_members (short, scientific_name) VALUES ('%s', '%s') ON CONFLICT DO NOTHING;",
-        group_name, data$scientific_name[i]
-      )
-      res <- dbExecute(con, query)
-      if (res == 0) {
-        print(sprintf("The species %s is already in the database", data$scientific_name[i]))
-      }
-    }
-    ## Insert into taxa_obs
-    query <- sprintf(
-      "INSERT INTO taxa_obs (scientific_name, rank, parent_scientific_name) VALUES ('%s', '%s', '%s') ON CONFLICT DO NOTHING;",
-      data$scientific_name[i], data$TaxonomicLevel[i], data$parent_scientific_name[i]
-    )
-    dbExecute(con, query)
-  }
+inject_data <- function(con, data) {
+  query <- "
+  SELECT rubus.insert_taxa_obs_group_member(
+    short_group:= $1,
+    scientific_name := $2,
+    rank := $3,
+    parent_scientific_name := $4);
+  "
+
+  apply(data, 1, function(x) {
+    dbExecute(con, query, params = list(
+        x[["short"]],
+        x[["scientific_name"]],
+        x[["rank"]],
+        x[["parent_scientific_name"]]
+    ))
+  })
 }
 
 #================================================================================================
@@ -136,34 +123,25 @@ flore_data <- extract_data(url_flore, div_flore_lists)
 # Combine the data
 cdpnq_emv <- rbind(faune_data, flore_data)
 
-# Display the data
-print(CDPNQ_EMV)
-write.csv(CDPNQ_EMV, "taxa_group_members_CDPNQ_EMV.csv", row.names = FALSE)
-
 # Connect to the database
 drv <- dbDriver("PostgreSQL")
 print("Connecting to Database…")
-con <- dbConnect(drv, dbname = Sys.getenv("ATLAS_STAGING_DATABASE"),
-                host = Sys.getenv("ATLAS_STAGING_HOSTNAME"), port = Sys.getenv("ATLAS_STAGING_PORT"),
-                user = Sys.getenv("ATLAS_STAGING_USER"), password = Sys.getenv("ATLAS_STAGING_PASSWORD"))
+con <- dbConnect(drv, dbname = Sys.getenv("POSTGRES_DB"),
+                 host = Sys.getenv("POSTGRES_HOST"), port = Sys.getenv("POSTGRES_PORT"),
+                 user = Sys.getenv("POSTGRES_USER"), password = Sys.getenv("POSTGRES_PASSWORD"))
 
 # Remove old data
-DELETE_old_CDPNQ <- "
-    DELETE 
-    FROM taxa_group_members 
-    WHERE short IN ('CDPNQ_ENDANGERED', 'CDPNQ_VUL', 'CDPNQ_SUSC', 'CDPNQ_EMV', 'CDPNQ_VUL_HARVEST');
-"
-DELETE_old_CDPNQ <- paste(unlist(strsplit(DELETE_old_CDPNQ, "\n")), collapse = " ")
-response_delete_old_CDPNQ <- dbExecute(con, DELETE_old_CDPNQ)
+delete_old_emv_grp <- "DELETE FROM taxa_group_members WHERE short IN ('CDPNQ_ENDANGERED', 'CDPNQ_VUL', 'CDPNQ_SUSC', 'CDPNQ_EMV', 'CDPNQ_VUL_HARVEST');"
+resp_delete_old_cdpnq <- dbExecute(con, delete_old_emv_grp)
 
 # Inject new data
-inject_data(con, CDPNQ_EMV, "CDPNQ_EMV")
+inject_data(con, cdpnq_emv)
 
 
 ################################################################################
 # 2. Invasive species
 #
-# Deux sources : 
+# Deux sources :
 # - Liste des principales espèces exotiques envahissantes: https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques/gestion-especes-exotiques-envahissantes-animales/liste-especes
 # - Liste des espèces exotiques envahissantes répertoriées dans Sentinelle: https://www.donneesquebec.ca/recherche/dataset/31f841b6-a544-47f9-93fb-b111a46fc654/resource/ac4aeddf-13ed-4d80-9ca3-28ca9ed77b14/download/sentinelle_liste_sp.csv
 #
@@ -179,59 +157,63 @@ inject_data(con, CDPNQ_EMV, "CDPNQ_EMV")
 #================================================================================================
 
 library(rvest)
-library(dplyr)
-library(RPostgreSQL)
+library(RPostgres)
 
 # Load .env file
 readRenviron("~/.env")
 
 # Constants
-URL_LISTE_QC <- "https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques/gestion-especes-exotiques-envahissantes-animales/liste-especes"
-DIV_TABLES <- c(
-    "faune"="#c306328",
-    "flore"="#c306329",
-    "champignons"="#c150579"
+url_liste_qc <- "https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques/gestion-especes-exotiques-envahissantes-animales/liste-especes"
+div_tables <- c(
+  "faune" = "#c306328",
+  "flore" = "#c306329",
+  "champignons" = "#c150579"
 )
 
-URL_SENTINELLE <- "https://www.donneesquebec.ca/recherche/dataset/31f841b6-a544-47f9-93fb-b111a46fc654/resource/ac4aeddf-13ed-4d80-9ca3-28ca9ed77b14/download/sentinelle_liste_sp.csv"
+url_sentinelle <- "https://stqc380donopppdtce01.blob.core.windows.net/donnees-ouvertes/Especes_exo_envahissantes/especes_exo_envahissantes.json"
 
+url_aquatique <- "https://diffusion.mffp.gouv.qc.ca/Diffusion/DonneeGratuite/Faune/EAE_faunique/CSV/BD_EAE_faunique_Quebec.csv"
 
 #================================================================================================
 # 1. Functions
 #================================================================================================
 
 # Function to extract data from the principal invasive species list
-extract_data_from_principal_list <- function(table, list_name) {
-    species <- table %>% html_nodes("tbody tr") %>% html_nodes("td:nth-child(1)") %>% html_text(trim = TRUE)
-    scientific_names <- table %>% html_nodes("tbody tr") %>% html_nodes("td:nth-child(2)") %>% html_text(trim = TRUE)
-    category_presence <- table %>% html_nodes("tbody tr") %>% html_nodes("td:nth-child(3)") %>% html_text(trim = TRUE)
-    parent_scientific_name <- ifelse(list_name == "faune", "Animalia", ifelse(list_name == "flore", "Plantae", "Fungi"))
-    data.frame(vernacular_fr = species, scientific_name = scientific_names, short = "PRINCIPAL_INVASIVE", parent_scientific_name=parent_scientific_name, category_presence = category_presence, stringsAsFactors = FALSE)
+extract_data_principal <- function(table, list_name) {
+  scientific_name <- table |> html_nodes("tbody tr td:nth-child(2)") |> html_text(trim = TRUE)
+  parent_scientific_name <- ifelse(list_name == "faune", "Animalia", ifelse(list_name == "flore", "Plantae", "Fungi"))
+
+  data.frame(scientific_name = scientific_name,
+             short = "PRINCIPAL_INVASIVE",
+             parent_scientific_name = parent_scientific_name,
+             stringsAsFactors = FALSE)
 }
 
 # Function to extract data from Sentinelle
-extract_data_from_sentinelle <- function(url) {
-    sentinelle_data <- read.csv(url, quote = "", sep=",")
-    data <- sentinelle_data %>% select(vernacular_fr = Nom_francais, scientific_name = Nom_latin, parent_scientific_name = Regne) %>% mutate(short = "SENTINELLE_INVASIVE")
-    data$scientific_name <- gsub('\"', "", data$scientific_name)
-    data <- data[data$vernacular_fr != "Espèce non répertoriée",]
-    data$parent_scientific_name <- ifelse(data$parent_scientific_name == "Faune", "Animalia", "Plantae")
-    return(data)
+extract_data_sentinelle <- function(url) {
+  sentinelle_data <- jsonlite::fromJSON(url)$features$properties |>
+    dplyr::select(scientific_name = Nom_espece_latin) |>
+    dplyr::distinct() |>
+    dplyr::mutate(short = "SENTINELLE_INVASIVE",
+                  parent_scientific_name = NA)
+}
+
+# Function to extract data from Aquatique envahissante
+extract_data_aquatic <- function(url) {
+  aquatic_data <- read.csv(url) |>
+    dplyr::select(scientific_name = especes) |>
+    dplyr::distinct() |>
+    dplyr::mutate(short = "AQUATIC_INVASIVE",
+                  parent_scientific_name = NA)
+
 }
 
 # Function to clean and fix scientific names
 clean_scientific_names <- function(data) {
-    data[data$scientific_name == "Lymantria dispar asiatica, L. dispar japonica", "scientific_name"] <- "Lymantria dispar asiatica"
-    data <- rbind(data, data.frame(vernacular_fr = "Spongieuse asiatique", scientific_name = "Lymantria dispar japonica", short = "PRINCIPAL_INVASIVE", parent_scientific_name = "Animalia", category_presence = "Absente", stringsAsFactors = FALSE))
-    data <- data[!is.na(data$scientific_name),]
-    data <- data[data$vernacular_fr != "Vers de terre (regroupe plusieurs espèces)",]
-    return(data)
-}
-
-# Function to delete old data from the database
-delete_old_data <- function(con, group_name) {
-    query <- sprintf("DELETE FROM taxa_group_members WHERE short IN ('%s');", group_name)
-    dbExecute(con, query)
+  data[data$scientific_name == "Lymantria dispar asiatica, L. dispar japonica", "scientific_name"] <- "Lymantria dispar asiatica"
+  data <- rbind(data, data.frame(scientific_name = "Lymantria dispar japonica", short = "PRINCIPAL_INVASIVE", parent_scientific_name = "Animalia", stringsAsFactors = FALSE))
+  data <- data[!is.na(data$scientific_name), ]
+  data <- data[data$scientific_name != "", ]
 }
 
 #================================================================================================
@@ -239,35 +221,38 @@ delete_old_data <- function(con, group_name) {
 #================================================================================================
 
 # Extract data for principal invasive species
-page <- read_html(URL_LISTE_QC)
-EEE_principales_data <- lapply(names(DIV_TABLES), function(list_name) {
-    div_id <- DIV_TABLES[[list_name]]
-    tables <- page %>% html_nodes(paste0(div_id, " table"))
-    lapply(tables, function(tbl) extract_data_from_principal_list(tbl, list_name = list_name))
-}) %>% bind_rows()
-EEE_principales_data <- clean_scientific_names(EEE_principales_data)
+page <- read_html(url_liste_qc)
+eee_principales_data <- lapply(names(div_tables), function(list_name) {
+  div_id <- div_tables[[list_name]]
+  tables <- page |> html_nodes(paste0(div_id, " table"))
+  lapply(tables, function(tbl) extract_data_principal(tbl, list_name = list_name))
+}) |>
+  dplyr::bind_rows()
+eee_principales_data <- clean_scientific_names(eee_principales_data)
 
 # Extract data from Sentinelle
-EEE_sentinelle_data <- extract_data_from_sentinelle(URL_SENTINELLE)
+eee_sentinelle_data <- extract_data_sentinelle(url_sentinelle)
+
+# Extract data from Aquatique envahissante
+eee_aquatic_data <- extract_data_aquatic(url_aquatique)
 
 # Combine the data and remove duplicates
-EEE_ALL <- rbind(EEE_principales_data[,c("vernacular_fr", "scientific_name", "short", "parent_scientific_name")], EEE_sentinelle_data[,c("vernacular_fr", "scientific_name", "short", "parent_scientific_name")])
-EEE_ALL <- EEE_ALL[!duplicated(EEE_ALL$scientific_name),]
-EEE_ALL$short <- "INVASIVE_SPECIES"
+eee_all <- dplyr::bind_rows(eee_principales_data, eee_sentinelle_data, eee_aquatic_data) |>
+  dplyr::distinct(scientific_name, .keep_all = TRUE) |>
+  dplyr::mutate(short = "INVASIVE_SPECIES")
 
 # Connect to the database
 drv <- dbDriver("PostgreSQL")
 print("Connecting to Database…")
-con <- dbConnect(drv, dbname = Sys.getenv("ATLAS_STAGING_DATABASE"),
-                host = Sys.getenv("ATLAS_STAGING_HOSTNAME"), port = Sys.getenv("ATLAS_STAGING_PORT"),
-                user = Sys.getenv("ATLAS_STAGING_USER"), password = Sys.getenv("ATLAS_STAGING_PASSWORD"))
+con <- dbConnect(drv, dbname = Sys.getenv("POSTGRES_DB"),
+                 host = Sys.getenv("POSTGRES_HOST"), port = Sys.getenv("POSTGRES_PORT"),
+                 user = Sys.getenv("POSTGRES_USER"), password = Sys.getenv("POSTGRES_PASSWORD"))
 
 # Delete old data
-delete_old_data(con, "PRINCIPAL_INVASIVE")
-delete_old_data(con, "SENTINELLE_INVASIVE")
-delete_old_data(con, "INVASIVE_SPECIES")
+delete_old_invasive_grp <- "DELETE FROM taxa_group_members WHERE short IN ('PRINCIPAL_INVASIVE', 'SENTINELLE_INVASIVE', 'INVASIVE_SPECIES', 'AQUATIC_INVASIVE');"
 
 # Inject new data
-inject_data(con, EEE_principales_data, "PRINCIPAL_INVASIVE")
-inject_data(con, EEE_sentinelle_data, "SENTINELLE_INVASIVE")
-inject_data(con, EEE_ALL, "INVASIVE_SPECIES")
+inject_data(con, eee_principales_data, "PRINCIPAL_INVASIVE")
+inject_data(con, eee_sentinelle_data, "SENTINELLE_INVASIVE")
+inject_data(con, eee_aquatic_data, "AQUATIC_INVASIVE")
+inject_data(con, eee_ALL, "INVASIVE_SPECIES")

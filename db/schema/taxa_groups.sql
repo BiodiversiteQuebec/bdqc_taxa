@@ -133,9 +133,9 @@ BEGIN
     -- 3.2. Récupérer l'id du taxa_obs
     SELECT id INTO taxa_obs_id FROM public.taxa_obs t
       WHERE t.scientific_name = $2
-        AND COALESCE(t.authorship, '') = $3
-        AND COALESCE(t.rank, '') = $4
-        AND COALESCE(t.parent_scientific_name, '') = $5
+        AND t.authorship = $3
+        AND t.rank = $4
+        AND t.parent_scientific_name = $5
       LIMIT 1;
 
     -- 3.3. Insérer dans taxa_group_members avec id_taxa_obs

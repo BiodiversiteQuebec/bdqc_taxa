@@ -107,8 +107,8 @@ inject_data <- function(con, data) {
     dbExecute(con, query, params = list(
         x[["short"]],
         x[["scientific_name"]],
-        x[["rank"]],
-        x[["parent_scientific_name"]]
+        ifelse(is.na(x[["rank"]]), "", x[["rank"]]),
+        ifelse(is.na(x[["parent_scientific_name"]]), "", x[["parent_scientific_name"]])
     ))
   })
 }

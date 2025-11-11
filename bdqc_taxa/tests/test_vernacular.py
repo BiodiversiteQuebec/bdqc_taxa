@@ -160,12 +160,17 @@ class TestVernacular(TestCase):
         self.assertFalse(any([bad_name in vn.name for vn in results]))
         
     def test_gbif_with_rank_epilobium(self, name='Epilobium ciliatum ciliatum', rank='subspecies'):
-        result = Vernacular.from_gbif_match(name, rank)
+        result = Vernacular.from_gbif_match(name, rank = rank)
         self.assertTrue(all([vn.rank == 'subspecies' for vn in result]))
         
     def test_wikidata_bad_rank_no_error(self, name='Embryophyta', rank='superdivision'):
         # Rank not in the list of accepted ranks in wikidata and it previously failed
         Vernacular.from_match(name=name, rank=rank)
+
+    def test_arenaria_humifusa_authorship_vascan_match(self, name='Arenaria humifusa', authorship='Wahlenb.'):
+        results = Vernacular.from_match(name=name, authorship=authorship)
+        self.assertVernacularList(results)
+        self.assertTrue(any([vn.source == 'Database of Vascular Plants of Canada (VASCAN)' for vn in results]))
 
 class TestInitcap(TestCase):
     def test_initcap_vernacular(self, text = 'Vincent Beauregard'):

@@ -168,6 +168,8 @@ class TestVernacular(TestCase):
         Vernacular.from_match(name=name, rank=rank)
 
     def test_arenaria_humifusa_authorship_vascan_match(self, name='Arenaria humifusa', authorship='Wahlenb.'):
+        # Test authorship parameter in bdqc wrapper
+        # Arenaria humifusa has ambiguous authorship and GBIF returns different vernacular matches depending on authorship
         results = Vernacular.from_match(name=name, authorship=authorship)
         self.assertVernacularList(results)
         self.assertTrue(any([vn.source == 'Database of Vascular Plants of Canada (VASCAN)' for vn in results]))

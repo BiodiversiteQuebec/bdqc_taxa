@@ -174,6 +174,10 @@ class TestVernacular(TestCase):
         self.assertVernacularList(results)
         self.assertTrue(any([vn.source == 'Database of Vascular Plants of Canada (VASCAN)' for vn in results]))
 
+    def test_arenaria_genus_authorship(self, name='Arenaria', authorship='L.', rank='genus'):
+        results = Vernacular.from_match(name=name, authorship=authorship, rank=rank)
+        self.assertVernacularList(results)
+        
 class TestInitcap(TestCase):
     def test_initcap_vernacular(self, text = 'Vincent Beauregard'):
         self.assertEqual(initcap_vernacular(text), 'Vincent beauregard')

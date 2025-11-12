@@ -37,7 +37,7 @@ ALTER FUNCTION rubus.refresh_taxa_vernacular()
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
---DROP FUNCTION IF EXISTS rubus.insert_taxa_vernacular_from_taxa_ref(integer, text, text);
+--DROP FUNCTION IF EXISTS rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text, text);
 CREATE OR REPLACE FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(
     id_taxa_ref integer[],
 	scientific_name text,
@@ -92,13 +92,13 @@ BEGIN
 END;
 $BODY$;
 
-ALTER FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text)
+ALTER FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text, text)
     OWNER TO coleo;
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
---DROP FUNCTION IF EXISTS rubus.taxa_vernacular_from_match(text, text);
+--DROP FUNCTION IF EXISTS rubus.taxa_vernacular_from_match(text, text, text);
 CREATE OR REPLACE FUNCTION rubus.taxa_vernacular_from_match(
 	scientific_name text,
     authorship text DEFAULT NULL,
@@ -111,7 +111,7 @@ out = Vernacular.from_match(scientific_name, authorship, rank)
 return out
 $BODY$;
 
-ALTER FUNCTION rubus.taxa_vernacular_from_match(text, text)
+ALTER FUNCTION rubus.taxa_vernacular_from_match(text, text, text)
     OWNER TO coleo;
 
 --------------------------------------------------------------------------

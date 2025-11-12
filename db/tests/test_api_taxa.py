@@ -33,9 +33,9 @@ class TestTaxa(unittest.TestCase):
         self.assertTrue(result[1])
 
     def test_valid_scientific_name_leuconotopicus_villosus_septentrionalis(self):
-        self.cur.execute("SELECT valid_scientific_name, valid_scientific_name = 'Leuconotopicus villosus septentrionalis' AS test_pass FROM api.taxa WHERE observed_scientific_name = 'Leuconotopicus villosus septentrionalis'")
+        self.cur.execute("SELECT valid_scientific_name, valid_scientific_name = 'Dryobates villosus' AS test_pass FROM api.taxa WHERE observed_scientific_name = 'Leuconotopicus villosus septentrionalis'")
         result = self.cur.fetchone()
-        self.assertEqual(result[0], 'Leuconotopicus villosus septentrionalis')
+        self.assertEqual(result[0], 'Dryobates villosus')
         self.assertTrue(result[1])
 
     def test_valid_scientific_name_dendrocopos_villosus(self):
@@ -53,6 +53,38 @@ class TestTaxa(unittest.TestCase):
         df = pd.read_sql(query, self.conn)
         self.assertEqual(len(df), 0)
 
+    # Test failing with 18 entries
+    def test_species_prefix_in_subspecies_valid_sciname(self):
+        query = """
+            SELECT *
+            FROM rubus.taxa_view
+            WHERE rank = 'subspecies'
+              AND (
+                split_part(valid_scientific_name, ' ', 1) || ' ' || split_part(valid_scientific_name, ' ', 2)
+              ) <> species;
+        """
+        df = pd.read_sql(query, self.conn)
+        self.assertEqual(len(df), 0)
+
+    # Test failing because entries in taxa_obs with same sciname
+    # but different authorship are matching differently...
+    def test_same_observed_sciname_same_valid_sciname(self):
+        query = """
+            SELECT *
+            FROM api.taxa
+            WHERE observed_scientific_name IN (
+                SELECT observed_scientific_name
+                FROM api.taxa
+                GROUP BY observed_scientific_name
+                HAVING COUNT(DISTINCT valid_scientific_name) > 1
+            )
+            ORDER BY observed_scientific_name, valid_scientific_name;
+        """
+        df = pd.read_sql(query, self.conn)
+        self.assertEqual(len(df), 0)
+
+    # Test failing because scientific name entries with same name
+    # but different ranks, are matching differently for vernacular...
     def test_same_vernacular_for_same_valid_scientific_name(self):
         query = """
             SELECT *
@@ -95,7 +127,9 @@ class TestTaxa(unittest.TestCase):
         """
         df = pd.read_sql(query, self.conn)
         self.assertEqual(len(df), 0)
-        
+
+    # Test failing because 8 taxa_obs entries
+    # have '_' in them.
     def test_wrong_sciname_parsing(self):
         query = """
             SELECT *
@@ -110,7 +144,7 @@ class TestTaxa(unittest.TestCase):
             SELECT *
             FROM api.taxa
             WHERE valid_scientific_name ILIKE '% %'
-                AND rank NOT IN ('species','subspecies','variety')
+                AND rank NOT IN ('species','subspecies','variety','form')
                 AND observed_scientific_name != 'incertae sedis'
             """
         df = pd.read_sql(query, self.conn)
@@ -135,7 +169,8 @@ class TestObsRefpreferredLookup(unittest.TestCase):
         result = self.cur.fetchone()
         self.assertTrue(result[0])
 
-# Normal that this test fails as a couple of taxa_obs do not get parsed in the pipeline
+    # Test failing as not all taxa_obs make it through the pipeline
+    # Currently 238
     def test_all_taxa_obs_in_preferred(self):
         query = """
             SELECT
@@ -162,6 +197,8 @@ class TestObsRefpreferredLookup(unittest.TestCase):
         # 27 is the number of taxa_obs that have no match
         self.assertLessEqual(result[0] - result[1], 27)
 
+    # Test failing mostly because of GBIF shenanigans (580) (messy gbif backbone)
+    # But some (44) have real issues to investigate
     def test_species_genus_same_root(self):
         query = """
             SELECT
@@ -288,9 +325,10 @@ class TestObsRefpreferredLookup(unittest.TestCase):
         LEFT JOIN rubus.taxa_ref valid_ref ON valid_lu.id_taxa_ref = valid_ref.id
         WHERE valid_lu.is_match IS TRUE
         """
-        # TESTS TO BE DONE
-        # -- CDPNQ refs = CDPNQ refs
 
+    # Currently failing because there is two ambiguous genus
+    # matching CDPNQ and VASCAN (Arenaria & Liparis)
+    # genus present in two kingdom (Animalia & Plantae)
     def test_vascan_taxa_ref_always_valid(self, source_name='VASCAN'):
         query = self.QUERY_TAXA_REF_JOIN + f"AND obs_ref.source_name = '{source_name}'"
         df = pd.read_sql(query, self.conn)
@@ -356,13 +394,15 @@ UNION
         self.assertTrue(df['language'].str.contains('fr').any())
         # Assert english language in results
         self.assertTrue(df['language'].str.contains('en').any())
+        # Assert any ranks are at the species level
+        self.assertTrue(df['valid_vernacular_rank'].str.contains('species').any())
         # Assert any source names are from VASCAN
-        self.assertEqual(df['valid_vernacular_source_name'].unique()[0], valid_source_name)
-        # Assert all source names are from VASCAN
-        self.assertTrue((df['valid_vernacular_source_name'] == valid_source_name).all())
-        # Assert all fr vernacular names are 'Actée à gros pédicelles'
-        self.assertTrue((df[df['language'] == 'fr']['valid_vernacular_name'] == valid_vernacular_name).all())
-            
+        self.assertIn(valid_source_name, df['valid_vernacular_source_name'].unique())
+        # Assert all entries for species level is from VASCAN
+        self.assertTrue(set(df.loc[df['valid_vernacular_rank'] == 'species', 'valid_vernacular_source_name'].dropna().unique()) <= {valid_source_name})
+        # Assert all french species vernacular names are 'Actée à gros pédicelles'
+        self.assertTrue(set(df.loc[(df['language'] == 'fra') & (df['valid_vernacular_rank'] == 'species'), 'valid_vernacular_name'].dropna().unique()) <= {valid_vernacular_name})
+
     def test_query_leuconotopicus_villosus(self,scientific_name='Leuconotopicus villosus',
                                            valid_vernacular_name='Pic chevelu',
                                            valid_source_name='CDPNQ'):
@@ -372,12 +412,14 @@ UNION
         self.assertTrue(df['language'].str.contains('fr').any())
         # Assert english language in results
         self.assertTrue(df['language'].str.contains('en').any())
+        # Assert any ranks are at the species level
+        self.assertTrue(df['valid_vernacular_rank'].str.contains('species').any())
         # Assert any source names are from CDPNQ
-        self.assertEqual(df['valid_vernacular_source_name'].unique()[0], valid_source_name)
-        # Assert all source names are from CDPNQ
-        self.assertTrue((df['valid_vernacular_source_name'] == valid_source_name).any())
-        # Assert all fr vernacular names are 'Pic chevelu'
-        self.assertTrue((df[df['language'] == 'fr']['valid_vernacular_name'] == valid_vernacular_name).all())
+        self.assertIn(valid_source_name, df['valid_vernacular_source_name'].unique())
+        # Assert all entries for species level is from CDPNQ
+        self.assertTrue(set(df.loc[df['valid_vernacular_rank'] == 'species', 'valid_vernacular_source_name'].dropna().unique()) <= {valid_source_name})
+        # Assert all french species vernacular names are 'Pic chevelu'
+        self.assertTrue(set(df.loc[(df['language'] == 'fra') & (df['valid_vernacular_rank'] == 'species'), 'valid_vernacular_name'].dropna().unique()) <= {valid_vernacular_name})
 
     def test_query_picoides_villosus(self,scientific_name='Picoides villosus',
                                      valid_vernacular_name='Pic chevelu',
@@ -388,16 +430,17 @@ UNION
         self.assertTrue(df['language'].str.contains('fr').any())
         # Assert english language in results
         self.assertTrue(df['language'].str.contains('en').any())
+        # Assert any ranks are at the species level
+        self.assertTrue(df['valid_vernacular_rank'].str.contains('species').any())
         # Assert any source names are from CDPNQ
-        self.assertEqual(df['valid_vernacular_source_name'].unique()[0], valid_source_name)
-        # Assert all source names are from CDPNQ
-        self.assertTrue((df['valid_vernacular_source_name'] == valid_source_name).any())
-        # Assert all fr vernacular names are 'Pic chevelu'
-        self.assertTrue((df[df['language'] == 'fr']['valid_vernacular_name'] == valid_vernacular_name).all())
+        self.assertIn(valid_source_name, df['valid_vernacular_source_name'].unique())
+        # Assert all entries for species level is from CDPNQ
+        self.assertTrue(set(df.loc[df['valid_vernacular_rank'] == 'species', 'valid_vernacular_source_name'].dropna().unique()) <= {valid_source_name})
+        # Assert all french species vernacular names are 'Pic chevelu'
+        self.assertTrue(set(df.loc[(df['language'] == 'fra') & (df['valid_vernacular_rank'] == 'species'), 'valid_vernacular_name'].dropna().unique()) <= {valid_vernacular_name})
 
     QUERY_TAXA_REF_VERNACULAR_LOOKUP = f"""
         SELECT
-            obs_lu.id_taxa_obs as id_taxa_obs,
             taxa_ref.scientific_name observed_scientific_name,
             taxa_vernacular.id,
             taxa_vernacular.language,
@@ -406,11 +449,10 @@ UNION
             taxa_vernacular.source_name as valid_vernacular_source_name,
             lu.is_match
         FROM rubus.taxa_ref
-        LEFT JOIN rubus.taxa_obs_ref_lookup obs_lu ON taxa_ref.id = obs_lu.id_taxa_ref and obs_lu.is_parent IS FALSE
-        LEFT JOIN rubus.taxa_obs_vernacular_preferred lu ON obs_lu.id_taxa_obs = lu.id_taxa_obs
-        LEFT JOIN rubus.taxa_vernacular taxa_vernacular ON lu.id_taxa_vernacular = taxa_vernacular.id
-        WHERE lu.is_match IS TRUE
-        """    
+        LEFT JOIN rubus.taxa_ref_vernacular_preferred lu ON taxa_ref.id = lu.id_taxa_ref
+        LEFT JOIN rubus.taxa_vernacular taxa_vernacular ON lu.id_taxa_vernacular_en = taxa_vernacular.id OR lu.id_taxa_vernacular_fr = taxa_vernacular.id
+        WHERE lu.rank = 'species'
+        """
 
     def test_all_vascan(self, source_name_ref='VASCAN', source_name_vernacular='Database of Vascular Plants of Canada (VASCAN)'):
         query = self.QUERY_TAXA_REF_VERNACULAR_LOOKUP + f"AND taxa_ref.source_name = '{source_name_ref}'"

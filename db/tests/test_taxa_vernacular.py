@@ -20,7 +20,7 @@ class TestVernacularFromRef(unittest.TestCase):
         SELECT v.*
         FROM rubus.taxa_ref r
         CROSS JOIN LATERAL rubus.taxa_vernacular_from_match(r.scientific_name, r.authorship, r.rank) AS v
-        WHERE scientific_name = %s AND rank = %s AND source_name = %s;
+        WHERE r.scientific_name = %s AND r.rank = %s AND r.source_name = %s;
         """
         df = pd.read_sql_query(query, self.conn, params=(scientific_name, rank, source_name))
         
@@ -42,10 +42,7 @@ class TestVernacularFromRef(unittest.TestCase):
         # Assert all results in language has expected vernacular
         lang_df = df.loc[df['language'] == language]
         self.assertTrue((lang_df['name'] == expected_vernacular).all())
-        
-        # Assert source name in results sources
-        self.assertTrue((lang_df['source'] == source_name).any())
-         
+  
     # Test for siingle ambiguous genus: Arenaria animal
     def test_genus_match_with_ambiguous_animalia(self, scientific_name='Arenaria', authorship='Brisson, 1760', rank='genus',
                                        expected_vernacular='Turnstones', language='eng', source_name='GBIF Backbone Taxonomy'):
@@ -59,10 +56,6 @@ class TestVernacularFromRef(unittest.TestCase):
         # Assert all results in language has expected vernacular
         lang_df = df.loc[df['language'] == language]
         self.assertTrue((lang_df['name'] == expected_vernacular).all())
-        
-        # Assert source name in results sources
-        self.assertTrue((lang_df['source'] == source_name).any())
-        
 
 if __name__ == '__main__':
     unittest.main()

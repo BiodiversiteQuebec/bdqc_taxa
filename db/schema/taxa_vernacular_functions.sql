@@ -13,13 +13,14 @@ BEGIN
         SELECT
           array_agg(id)::integer[] AS id_taxa_ref,
           scientific_name,
+          authorship,
           rank
         FROM rubus.taxa_ref
-        GROUP BY scientific_name, rank
+        GROUP BY scientific_name, authorship, rank
         ORDER BY scientific_name
     LOOP
         BEGIN
-            PERFORM rubus.insert_taxa_vernacular_from_taxa_ref(taxa_ref_record.id_taxa_ref, taxa_ref_record.scientific_name, taxa_ref_record.rank);
+            PERFORM rubus.insert_taxa_vernacular_from_taxa_ref(taxa_ref_record.id_taxa_ref, taxa_ref_record.scientific_name, taxa_ref_record.authorship, taxa_ref_record.rank);
         EXCEPTION
             WHEN OTHERS THEN
             RAISE NOTICE 'Error inserting record with id % and scientific name %', taxa_ref_record.id_taxa_ref, taxa_ref_record.scientific_name;
@@ -36,10 +37,11 @@ ALTER FUNCTION rubus.refresh_taxa_vernacular()
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
---DROP FUNCTION IF EXISTS rubus.insert_taxa_vernacular_from_taxa_ref(integer, text, text);
+--DROP FUNCTION IF EXISTS rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text, text);
 CREATE OR REPLACE FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(
     id_taxa_ref integer[],
 	scientific_name text,
+    authorship text,
     rank text)
     RETURNS void
     LANGUAGE 'plpgsql'
@@ -48,9 +50,9 @@ BEGIN
     DROP TABLE IF EXISTS temp_src_vernacular;
     CREATE TEMPORARY TABLE temp_src_vernacular AS (
         SELECT *
-        FROM rubus.taxa_vernacular_from_match($2, $3)
+        FROM rubus.taxa_vernacular_from_match($2, $3, $4)
     );
-    RAISE NOTICE 'Inserting (%, %)', $2, $3;
+    RAISE NOTICE 'Inserting (%, %, %)', $2, $3, $4;
 
     INSERT INTO rubus.taxa_vernacular (
         source_name,
@@ -90,25 +92,26 @@ BEGIN
 END;
 $BODY$;
 
-ALTER FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text)
+ALTER FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text, text)
     OWNER TO coleo;
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
---DROP FUNCTION IF EXISTS rubus.taxa_vernacular_from_match(text, text);
+--DROP FUNCTION IF EXISTS rubus.taxa_vernacular_from_match(text, text, text);
 CREATE OR REPLACE FUNCTION rubus.taxa_vernacular_from_match(
 	scientific_name text,
+    authorship text DEFAULT NULL,
     rank text DEFAULT NULL)
     RETURNS TABLE(source text, source_taxon_key text, name text, language text, rank text, rank_order integer, preferred boolean)
     LANGUAGE 'plpython3u'
 AS $BODY$
 from bdqc_taxa.vernacular import Vernacular
-out = Vernacular.from_match(scientific_name, rank)
+out = Vernacular.from_match(scientific_name, authorship, rank)
 return out
 $BODY$;
 
-ALTER FUNCTION rubus.taxa_vernacular_from_match(text, text)
+ALTER FUNCTION rubus.taxa_vernacular_from_match(text, text, text)
     OWNER TO coleo;
 
 --------------------------------------------------------------------------

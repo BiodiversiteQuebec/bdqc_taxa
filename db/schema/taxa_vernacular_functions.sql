@@ -34,6 +34,10 @@ $BODY$;
 ALTER FUNCTION rubus.refresh_taxa_vernacular()
     OWNER TO coleo;
 
+GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_vernacular() TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_vernacular() TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.refresh_taxa_vernacular() FROM PUBLIC;
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -95,6 +99,10 @@ $BODY$;
 ALTER FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text, text)
     OWNER TO coleo;
 
+GRANT EXECUTE ON FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text, text) TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text, text) TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text, text) FROM PUBLIC;
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -113,6 +121,10 @@ $BODY$;
 
 ALTER FUNCTION rubus.taxa_vernacular_from_match(text, text, text)
     OWNER TO coleo;
+
+GRANT EXECUTE ON FUNCTION rubus.taxa_vernacular_from_match(text, text, text) TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.taxa_vernacular_from_match(text, text, text) TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.taxa_vernacular_from_match(text, text, text) FROM PUBLIC;
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -136,3 +148,10 @@ WHERE taxa_ref.scientific_name NOT ilike 'Rangifer%'
 	AND vlu.id_taxa_ref = taxa_obs_ref_lookup.id_taxa_ref
     AND taxa_obs_ref_lookup.id_taxa_obs = taxa_obs.id;
 $BODY$;
+
+ALTER FUNCTION rubus.taxa_vernacular_fix_caribou()
+    OWNER TO coleo;
+
+GRANT EXECUTE ON FUNCTION rubus.taxa_vernacular_fix_caribou() TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.taxa_vernacular_fix_caribou() TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.taxa_vernacular_fix_caribou() FROM PUBLIC;

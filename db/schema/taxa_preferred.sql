@@ -49,6 +49,10 @@ WITH DATA;
 ALTER TABLE IF EXISTS rubus.taxa_obs_ref_preferred
     OWNER TO coleo;
 
+GRANT ALL ON TABLE rubus.taxa_obs_ref_preferred TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_obs_ref_preferred TO read_only_all;
+GRANT SELECT ON TABLE rubus.taxa_obs_ref_preferred TO read_write_all;
+
 CREATE INDEX ON rubus.taxa_obs_ref_preferred (id_taxa_obs);
 CREATE INDEX ON rubus.taxa_obs_ref_preferred (id_taxa_ref);
 CREATE INDEX ON rubus.taxa_obs_ref_preferred (rank);
@@ -111,6 +115,10 @@ WITH DATA;
 
 ALTER TABLE IF EXISTS rubus.taxa_ref_vernacular_preferred
     OWNER TO coleo;
+
+GRANT ALL ON TABLE rubus.taxa_ref_vernacular_preferred TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_ref_vernacular_preferred TO read_only_all;
+GRANT SELECT ON TABLE rubus.taxa_ref_vernacular_preferred TO read_write_all;
 
 CREATE INDEX ON rubus.taxa_ref_vernacular_preferred (id_taxa_ref);
 CREATE INDEX ON rubus.taxa_ref_vernacular_preferred (id_taxa_vernacular_en);

@@ -8,6 +8,13 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_ref_sources (
 ALTER TABLE IF EXISTS rubus.taxa_ref_sources
     OWNER to coleo;
 
+REVOKE ALL ON TABLE rubus.taxa_ref_sources FROM read_only_all;
+REVOKE ALL ON TABLE rubus.taxa_ref_sources FROM read_write_all;
+
+GRANT ALL ON TABLE rubus.taxa_ref_sources TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_ref_sources TO read_only_all;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_ref_sources TO read_write_all;
+
 DELETE FROM rubus.taxa_ref_sources;
 
 INSERT INTO rubus.taxa_ref_sources
@@ -20,6 +27,7 @@ VALUES (1002, 'CDPNQ', 1),
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
+
 -- DROP TABLE IF EXISTS rubus.taxa_vernacular_sources;
 CREATE TABLE IF NOT EXISTS rubus.taxa_vernacular_sources(
 	source_name VARCHAR(255) PRIMARY KEY,
@@ -28,6 +36,13 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_vernacular_sources(
 
 ALTER TABLE IF EXISTS rubus.taxa_vernacular_sources
     OWNER to coleo;
+
+REVOKE ALL ON TABLE rubus.taxa_vernacular_sources FROM read_only_all;
+REVOKE ALL ON TABLE rubus.taxa_vernacular_sources FROM read_write_all;
+
+GRANT ALL ON TABLE rubus.taxa_vernacular_sources TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_vernacular_sources TO read_only_all;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_vernacular_sources TO read_write_all;
 
 DELETE FROM rubus.taxa_vernacular_sources;
 

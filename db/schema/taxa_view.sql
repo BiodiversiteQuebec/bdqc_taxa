@@ -41,6 +41,10 @@ LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND s
 ALTER TABLE rubus.taxa_view
     OWNER TO coleo;
 
+GRANT ALL ON TABLE rubus.taxa_view TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_view TO read_only_all;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_view TO read_write_all;
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -59,6 +63,10 @@ $BODY$;
 
 ALTER FUNCTION rubus.refresh_taxa()
     OWNER TO coleo;
+
+GRANT EXECUTE ON FUNCTION rubus.refresh_taxa() TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.refresh_taxa() TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.refresh_taxa() FROM PUBLIC;
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -84,7 +92,14 @@ CREATE TABLE IF NOT EXISTS api.taxa(
 )
 
 ALTER TABLE IF EXISTS api.taxa
-    OWNER TO coleo;
+    OWNER to coleo;
+
+REVOKE ALL ON TABLE api.taxa FROM read_only_all;
+REVOKE ALL ON TABLE api.taxa FROM read_write_all;
+
+GRANT ALL ON TABLE api.taxa TO coleo;
+GRANT SELECT ON TABLE api.taxa TO read_only_all;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE api.taxa TO read_write_all;
 
 CREATE INDEX taxa_class_idx ON api.taxa (class);
 CREATE INDEX taxa_family_idx ON api.taxa (family);

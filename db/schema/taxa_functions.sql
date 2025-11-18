@@ -46,6 +46,7 @@ ALTER FUNCTION api.match_taxa(text)
     OWNER TO read_only_all;
 
 GRANT EXECUTE ON FUNCTION api.match_taxa(text) TO coleo;
+GRANT EXECUTE ON FUNCTION api.match_taxa(text) TO read_only_public;
 GRANT EXECUTE ON FUNCTION api.match_taxa(text) TO read_only_all;
 GRANT EXECUTE ON FUNCTION api.match_taxa(text) TO read_write_all;
 REVOKE ALL ON FUNCTION api.match_taxa(text) FROM PUBLIC;

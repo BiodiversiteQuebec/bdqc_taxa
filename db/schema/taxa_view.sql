@@ -45,6 +45,8 @@ GRANT ALL ON TABLE rubus.taxa_view TO coleo;
 GRANT SELECT ON TABLE rubus.taxa_view TO read_only_all;
 GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_view TO read_write_all;
 
+COMMENT ON VIEW rubus.taxa_view IS 'A view of taxa observations with preferred scientific names, vernacular names, taxonomic hierarchy, and sensitivity information';
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -67,6 +69,8 @@ ALTER FUNCTION rubus.refresh_taxa()
 GRANT EXECUTE ON FUNCTION rubus.refresh_taxa() TO coleo;
 GRANT EXECUTE ON FUNCTION rubus.refresh_taxa() TO read_write_all;
 REVOKE ALL ON FUNCTION rubus.refresh_taxa() FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.refresh_taxa() IS 'Function to refresh the api.taxa table from the rubus.taxa_view view';
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -111,3 +115,5 @@ CREATE INDEX taxa_phylum_idx ON api.taxa (phylum);
 CREATE INDEX taxa_rank_idx ON api.taxa (rank);
 CREATE INDEX taxa_species_idx ON api.taxa (species);
 CREATE INDEX taxa_valid_scientific_name_idx ON api.taxa (valid_scientific_name);
+
+COMMENT ON TABLE api.taxa IS 'Table to store taxa information refreshed from rubus.taxa_view via rubus.refresh_taxa() function';

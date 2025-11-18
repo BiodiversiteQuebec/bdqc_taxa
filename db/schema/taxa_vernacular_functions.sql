@@ -38,6 +38,8 @@ GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_vernacular() TO coleo;
 GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_vernacular() TO read_write_all;
 REVOKE ALL ON FUNCTION rubus.refresh_taxa_vernacular() FROM PUBLIC;
 
+COMMENT ON FUNCTION rubus.refresh_taxa_vernacular() IS 'Refreshes the entire taxa_vernacular and taxa_ref_vernacular_lookup tables from scratch based on taxa_ref';
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -103,6 +105,8 @@ GRANT EXECUTE ON FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], 
 GRANT EXECUTE ON FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text, text) TO read_write_all;
 REVOKE ALL ON FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text, text) FROM PUBLIC;
 
+COMMENT ON FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text, text) IS 'Inserts taxa_vernacular and taxa_ref_vernacular_lookup records for a given taxa_ref record';
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -125,6 +129,8 @@ ALTER FUNCTION rubus.taxa_vernacular_from_match(text, text, text)
 GRANT EXECUTE ON FUNCTION rubus.taxa_vernacular_from_match(text, text, text) TO coleo;
 GRANT EXECUTE ON FUNCTION rubus.taxa_vernacular_from_match(text, text, text) TO read_write_all;
 REVOKE ALL ON FUNCTION rubus.taxa_vernacular_from_match(text, text, text) FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.taxa_vernacular_from_match(text, text, text) IS 'Uses python `bdqc_taxa` package to generate `taxa_vernacular` records from scientific names. INSTALL python PL EXTENSION TO SUPPORT API CALL';
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -155,3 +161,5 @@ ALTER FUNCTION rubus.taxa_vernacular_fix_caribou()
 GRANT EXECUTE ON FUNCTION rubus.taxa_vernacular_fix_caribou() TO coleo;
 GRANT EXECUTE ON FUNCTION rubus.taxa_vernacular_fix_caribou() TO read_write_all;
 REVOKE ALL ON FUNCTION rubus.taxa_vernacular_fix_caribou() FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.taxa_vernacular_fix_caribou() IS 'Removes vernacular "caribou" from taxa_ref_vernacular_lookup for taxa_ref and taxa_obs that are not Rangifer species';

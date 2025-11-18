@@ -50,6 +50,8 @@ GRANT EXECUTE ON FUNCTION api.match_taxa(text) TO read_only_all;
 GRANT EXECUTE ON FUNCTION api.match_taxa(text) TO read_write_all;
 REVOKE ALL ON FUNCTION api.match_taxa(text) FROM PUBLIC;
 
+COMMENT ON FUNCTION api.match_taxa(text) IS 'Returns taxa matching the given scientific name, including synonyms and child taxa, to feed functions for portal';
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -77,6 +79,8 @@ ALTER FUNCTION rubus.match_taxa_groups(integer[])
 GRANT EXECUTE ON FUNCTION rubus.match_taxa_groups(integer[]) TO coleo;
 GRANT EXECUTE ON FUNCTION rubus.match_taxa_groups(integer[]) TO read_write_all;
 REVOKE ALL ON FUNCTION rubus.match_taxa_groups(integer[]) FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.match_taxa_groups(integer[]) IS 'Returns taxa groups matching the given list of id_taxa_obs';
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -122,3 +126,5 @@ CREATE OR REPLACE AGGREGATE api.taxa_branch_tips (integer) (
 	FINALFUNC = api.taxa_branch_tips,
 	INITCOND = '{}'
 );
+
+COMMENT ON FUNCTION api.taxa_branch_tips(integer[]) IS 'Returns the list of id_taxa_obs corresponding to the tip-of-the-branch method for the given list of id_taxa_obs';

@@ -20,6 +20,9 @@ GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_
 CREATE INDEX IF NOT EXISTS taxa_rank_order_rank_name_idx
   ON rubus.taxa_rank_order (rank_name);
 
+COMMENT ON TABLE rubus.taxa_rank_order
+    IS 'Table defining the order of taxonomic ranks. Lower order value means higher rank.';
+
 -- Insert data
 insert into rubus.taxa_rank_order (rank_name, "order") values ('kingdom', 0);
 insert into rubus.taxa_rank_order (rank_name, "order") values ('phylum', 1);

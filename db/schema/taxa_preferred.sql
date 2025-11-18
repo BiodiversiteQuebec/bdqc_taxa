@@ -58,6 +58,8 @@ CREATE INDEX ON rubus.taxa_obs_ref_preferred (id_taxa_ref);
 CREATE INDEX ON rubus.taxa_obs_ref_preferred (rank);
 CREATE INDEX ON rubus.taxa_obs_ref_preferred (is_match);
 
+COMMENT ON MATERIALIZED VIEW rubus.taxa_obs_ref_preferred IS 'Materialized view of preferred taxonomic references for taxa_obs, selecting the best matching reference based on predefined criteria.';
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -124,3 +126,5 @@ CREATE INDEX ON rubus.taxa_ref_vernacular_preferred (id_taxa_ref);
 CREATE INDEX ON rubus.taxa_ref_vernacular_preferred (id_taxa_vernacular_en);
 CREATE INDEX ON rubus.taxa_ref_vernacular_preferred (id_taxa_vernacular_fr);
 CREATE INDEX ON rubus.taxa_ref_vernacular_preferred ("rank");
+
+COMMENT ON MATERIALIZED VIEW rubus.taxa_ref_vernacular_preferred IS 'Materialized view of preferred vernacular names for taxonomic references, selecting the best matching vernacular based on predefined criteria.';

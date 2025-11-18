@@ -38,6 +38,8 @@ CREATE INDEX IF NOT EXISTS taxa_ref_idx
 CREATE INDEX IF NOT EXISTS taxa_ref_rank_idx
   ON rubus.taxa_ref (rank);
 
+COMMENT ON TABLE rubus.taxa_ref IS 'Reference taxonomy table to store taxonomic names from various sources (e.g., ITIS, GBIF, etc.)';
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -84,3 +86,5 @@ CREATE INDEX IF NOT EXISTS ref_lu_match_type_idx
 
 CREATE INDEX IF NOT EXISTS ref_lu_is_parent_idx
   ON rubus.taxa_obs_ref_lookup (is_parent);
+
+COMMENT ON TABLE rubus.taxa_obs_ref_lookup IS 'Lookup table to link taxa_obs records to taxa_ref records';

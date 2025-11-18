@@ -33,6 +33,7 @@ GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_ref() TO coleo;
 GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_ref() TO read_write_all;
 REVOKE ALL ON FUNCTION rubus.refresh_taxa_ref() FROM PUBLIC;
 
+COMMENT ON FUNCTION rubus.refresh_taxa_ref() IS 'Refreshes the entire taxa_ref and taxa_obs_ref_lookup tables from scratch based on taxa_obs';
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -105,6 +106,9 @@ GRANT EXECUTE ON FUNCTION rubus.insert_taxa_ref_from_taxa_obs(integer, text, tex
 GRANT EXECUTE ON FUNCTION rubus.insert_taxa_ref_from_taxa_obs(integer, text, text, text) TO read_write_all;
 REVOKE ALL ON FUNCTION rubus.insert_taxa_ref_from_taxa_obs(integer, text, text, text) FROM PUBLIC;
 
+COMMENT ON FUNCTION rubus.insert_taxa_ref_from_taxa_obs(integer, text, text, text)
+IS 'Inserts taxa_ref and taxa_obs_ref_lookup records for a given taxa_obs record';
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -146,7 +150,8 @@ GRANT EXECUTE ON FUNCTION rubus.match_taxa_sources(text, text, text) TO read_wri
 REVOKE ALL ON FUNCTION rubus.match_taxa_sources(text, text, text) FROM PUBLIC;
 
 COMMENT ON FUNCTION rubus.match_taxa_sources(text, text, text)
-IS 'Uses python `bdqc_taxa` package to generate `taxa_ref` records from taxonomic sources (ITIS, COL, etc) matched to input taxa name INSTALL python PL EXTENSION TO SUPPORT API CALL';
+IS 'Uses python `bdqc_taxa` package to generate `taxa_ref` records from taxonomic sources (ITIS, COL, etc) matched to input taxa name. INSTALL python PL EXTENSION TO SUPPORT API CALL';
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -184,6 +189,9 @@ ALTER FUNCTION rubus.fix_missing_source_parent()
 GRANT EXECUTE ON FUNCTION rubus.fix_missing_source_parent() TO coleo;
 GRANT EXECUTE ON FUNCTION rubus.fix_missing_source_parent() TO read_write_all;
 REVOKE ALL ON FUNCTION rubus.fix_missing_source_parent() FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.fix_missing_source_parent()
+IS 'Fixes missing parent taxa_ref records in taxa_obs_ref_lookup based on existing child records';
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -263,3 +271,5 @@ ALTER FUNCTION rubus.refresh_taxa_partial()
 GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_partial() TO coleo;
 GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_partial() TO read_write_all;
 REVOKE ALL ON FUNCTION rubus.refresh_taxa_partial() FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.refresh_taxa_partial() IS 'Refreshes taxa_ref, taxa_obs_ref_lookup, taxa_vernacular and taxa_ref_varnacular_lookup tables based on new taxa_obs records only';

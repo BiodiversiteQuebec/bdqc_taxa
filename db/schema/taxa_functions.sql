@@ -3,10 +3,9 @@ CREATE OR REPLACE FUNCTION api.match_taxa(
 	taxa_name text)
     RETURNS SETOF api.taxa 
     LANGUAGE 'sql'
-    COST 100
     STABLE PARALLEL SAFE
-    ROWS 1000
-
+    SECURITY DEFINER
+    SET search_path = api, atlas_api
 AS $BODY$
   WITH matched_taxa_obs AS (
       SELECT DISTINCT id_taxa_obs
@@ -44,17 +43,25 @@ AS $BODY$
 $BODY$;
 
 ALTER FUNCTION api.match_taxa(text)
-    OWNER TO coleo;
+    OWNER TO read_only_all;
+
+GRANT EXECUTE ON FUNCTION api.match_taxa(text) TO coleo;
+GRANT EXECUTE ON FUNCTION api.match_taxa(text) TO read_only_public;
+GRANT EXECUTE ON FUNCTION api.match_taxa(text) TO read_only_all;
+GRANT EXECUTE ON FUNCTION api.match_taxa(text) TO read_write_all;
+REVOKE ALL ON FUNCTION api.match_taxa(text) FROM PUBLIC;
+
+COMMENT ON FUNCTION api.match_taxa(text) IS 'Returns taxa matching the given scientific name, including synonyms and child taxa, to feed functions for portal';
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
-
 
 -- DROP FUNCTION IF EXISTS rubus.match_taxa_groups(integer[]);
 CREATE OR REPLACE FUNCTION rubus.match_taxa_groups(
-	id_taxa_obs integer[]
-)
-RETURNS SETOF rubus.taxa_groups AS $$
+	id_taxa_obs integer[])
+    RETURNS SETOF rubus.taxa_groups 
+    LANGUAGE 'sql'
+AS $BODY$
 	with group_id_taxa_obs as (
 		select
 			id_group,
@@ -65,10 +72,16 @@ RETURNS SETOF rubus.taxa_groups AS $$
 	select rubus.taxa_groups.* from group_id_taxa_obs, rubus.taxa_groups
 	where $1 <@ id_taxa_obs
 		and id_group = taxa_groups.id
-$$ language sql;
+$BODY$;
 
 ALTER FUNCTION rubus.match_taxa_groups(integer[])
     OWNER TO coleo;
+
+GRANT EXECUTE ON FUNCTION rubus.match_taxa_groups(integer[]) TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.match_taxa_groups(integer[]) TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.match_taxa_groups(integer[]) FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.match_taxa_groups(integer[]) IS 'Returns taxa groups matching the given list of id_taxa_obs';
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -102,6 +115,11 @@ $$ LANGUAGE sql;
 ALTER FUNCTION api.taxa_branch_tips(integer[])
     OWNER TO coleo;
 
+GRANT EXECUTE ON FUNCTION api.taxa_branch_tips(integer[]) TO coleo;
+GRANT EXECUTE ON FUNCTION api.taxa_branch_tips(integer[]) TO read_only_all;
+GRANT EXECUTE ON FUNCTION api.taxa_branch_tips(integer[]) TO read_write_all;
+REVOKE ALL ON FUNCTION api.taxa_branch_tips(integer[]) FROM PUBLIC;
+
 -- DROP AGGREGATE IF EXISTS api.taxa_branch_tips(integer);
 CREATE OR REPLACE AGGREGATE api.taxa_branch_tips (integer) (
 	SFUNC = array_append,
@@ -109,3 +127,5 @@ CREATE OR REPLACE AGGREGATE api.taxa_branch_tips (integer) (
 	FINALFUNC = api.taxa_branch_tips,
 	INITCOND = '{}'
 );
+
+COMMENT ON FUNCTION api.taxa_branch_tips(integer[]) IS 'Returns the list of id_taxa_obs corresponding to the tip-of-the-branch method for the given list of id_taxa_obs';

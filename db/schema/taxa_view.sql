@@ -41,6 +41,12 @@ LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND s
 ALTER TABLE rubus.taxa_view
     OWNER TO coleo;
 
+GRANT ALL ON TABLE rubus.taxa_view TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_view TO read_only_all;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_view TO read_write_all;
+
+COMMENT ON VIEW rubus.taxa_view IS 'A view of taxa observations with preferred scientific names, vernacular names, taxonomic hierarchy, and sensitivity information';
+
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -59,6 +65,12 @@ $BODY$;
 
 ALTER FUNCTION rubus.refresh_taxa()
     OWNER TO coleo;
+
+GRANT EXECUTE ON FUNCTION rubus.refresh_taxa() TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.refresh_taxa() TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.refresh_taxa() FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.refresh_taxa() IS 'Function to refresh the api.taxa table from the rubus.taxa_view view';
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -84,7 +96,14 @@ CREATE TABLE IF NOT EXISTS api.taxa(
 )
 
 ALTER TABLE IF EXISTS api.taxa
-    OWNER TO coleo;
+    OWNER to coleo;
+
+REVOKE ALL ON TABLE api.taxa FROM read_only_all;
+REVOKE ALL ON TABLE api.taxa FROM read_write_all;
+
+GRANT ALL ON TABLE api.taxa TO coleo;
+GRANT SELECT ON TABLE api.taxa TO read_only_all;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE api.taxa TO read_write_all;
 
 CREATE INDEX taxa_class_idx ON api.taxa (class);
 CREATE INDEX taxa_family_idx ON api.taxa (family);
@@ -96,3 +115,5 @@ CREATE INDEX taxa_phylum_idx ON api.taxa (phylum);
 CREATE INDEX taxa_rank_idx ON api.taxa (rank);
 CREATE INDEX taxa_species_idx ON api.taxa (species);
 CREATE INDEX taxa_valid_scientific_name_idx ON api.taxa (valid_scientific_name);
+
+COMMENT ON TABLE api.taxa IS 'Table to store taxa information refreshed from rubus.taxa_view via rubus.refresh_taxa() function';

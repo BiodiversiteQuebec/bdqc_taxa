@@ -107,8 +107,8 @@ inject_data <- function(con, data) {
     dbExecute(con, query, params = list(
         x[["short"]],
         x[["scientific_name"]],
-        x[["rank"]],
-        x[["parent_scientific_name"]]
+        ifelse(is.na(x[["rank"]]), "", x[["rank"]]),
+        ifelse(is.na(x[["parent_scientific_name"]]), "", x[["parent_scientific_name"]])
     ))
   })
 }
@@ -124,14 +124,13 @@ flore_data <- extract_data(url_flore, div_flore_lists)
 cdpnq_emv <- rbind(faune_data, flore_data)
 
 # Connect to the database
-drv <- dbDriver("PostgreSQL")
 print("Connecting to Database…")
-con <- dbConnect(drv, dbname = Sys.getenv("POSTGRES_DB"),
+con <- dbConnect(Postgres(), dbname = Sys.getenv("POSTGRES_DB"),
                  host = Sys.getenv("POSTGRES_HOST"), port = Sys.getenv("POSTGRES_PORT"),
                  user = Sys.getenv("POSTGRES_USER"), password = Sys.getenv("POSTGRES_PASSWORD"))
 
 # Remove old data
-delete_old_emv_grp <- "DELETE FROM taxa_group_members WHERE short IN ('CDPNQ_ENDANGERED', 'CDPNQ_VUL', 'CDPNQ_SUSC', 'CDPNQ_EMV', 'CDPNQ_VUL_HARVEST');"
+delete_old_emv_grp <- "DELETE FROM rubus.taxa_group_members WHERE short IN ('CDPNQ_ENDANGERED', 'CDPNQ_VUL', 'CDPNQ_SUSC', 'CDPNQ_EMV', 'CDPNQ_VUL_HARVEST');"
 resp_delete_old_cdpnq <- dbExecute(con, delete_old_emv_grp)
 
 # Inject new data
@@ -160,7 +159,7 @@ library(rvest)
 library(RPostgres)
 
 # Load .env file
-readRenviron("~/.env")
+readRenviron(".env")
 
 # Constants
 url_liste_qc <- "https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques/gestion-especes-exotiques-envahissantes-animales/liste-especes"
@@ -183,7 +182,7 @@ extract_data_principal <- function(table, list_name) {
   scientific_name <- table |> html_nodes("tbody tr td:nth-child(2)") |> html_text(trim = TRUE)
   parent_scientific_name <- ifelse(list_name == "faune", "Animalia", ifelse(list_name == "flore", "Plantae", "Fungi"))
 
-  data.frame(scientific_name = scientific_name,
+  data.frame(scientific_name = stringr::str_trim(scientific_name),
              short = "PRINCIPAL_INVASIVE",
              parent_scientific_name = parent_scientific_name,
              stringsAsFactors = FALSE)
@@ -195,7 +194,8 @@ extract_data_sentinelle <- function(url) {
     dplyr::select(scientific_name = Nom_espece_latin) |>
     dplyr::distinct() |>
     dplyr::mutate(short = "SENTINELLE_INVASIVE",
-                  parent_scientific_name = NA)
+                  parent_scientific_name = NA,
+                  scientific_name = stringr::str_trim(scientific_name))
 }
 
 # Function to extract data from Aquatique envahissante
@@ -204,7 +204,8 @@ extract_data_aquatic <- function(url) {
     dplyr::select(scientific_name = especes) |>
     dplyr::distinct() |>
     dplyr::mutate(short = "AQUATIC_INVASIVE",
-                  parent_scientific_name = NA)
+                  parent_scientific_name = NA,
+                  scientific_name = stringr::str_trim(scientific_name))
 
 }
 
@@ -228,13 +229,16 @@ eee_principales_data <- lapply(names(div_tables), function(list_name) {
   lapply(tables, function(tbl) extract_data_principal(tbl, list_name = list_name))
 }) |>
   dplyr::bind_rows()
-eee_principales_data <- clean_scientific_names(eee_principales_data)
+eee_principales_data <- clean_scientific_names(eee_principales_data) |>
+  define_taxonomic_level()
 
 # Extract data from Sentinelle
-eee_sentinelle_data <- extract_data_sentinelle(url_sentinelle)
+eee_sentinelle_data <- extract_data_sentinelle(url_sentinelle) |>
+  define_taxonomic_level()
 
 # Extract data from Aquatique envahissante
-eee_aquatic_data <- extract_data_aquatic(url_aquatique)
+eee_aquatic_data <- extract_data_aquatic(url_aquatique) |>
+  define_taxonomic_level()
 
 # Combine the data and remove duplicates
 eee_all <- dplyr::bind_rows(eee_principales_data, eee_sentinelle_data, eee_aquatic_data) |>
@@ -242,17 +246,16 @@ eee_all <- dplyr::bind_rows(eee_principales_data, eee_sentinelle_data, eee_aquat
   dplyr::mutate(short = "INVASIVE_SPECIES")
 
 # Connect to the database
-drv <- dbDriver("PostgreSQL")
 print("Connecting to Database…")
-con <- dbConnect(drv, dbname = Sys.getenv("POSTGRES_DB"),
+con <- dbConnect(Postgres(), dbname = Sys.getenv("POSTGRES_DB"),
                  host = Sys.getenv("POSTGRES_HOST"), port = Sys.getenv("POSTGRES_PORT"),
                  user = Sys.getenv("POSTGRES_USER"), password = Sys.getenv("POSTGRES_PASSWORD"))
 
 # Delete old data
-delete_old_invasive_grp <- "DELETE FROM taxa_group_members WHERE short IN ('PRINCIPAL_INVASIVE', 'SENTINELLE_INVASIVE', 'INVASIVE_SPECIES', 'AQUATIC_INVASIVE');"
+delete_old_invasive_grp <- "DELETE FROM rubus.taxa_group_members WHERE short IN ('PRINCIPAL_INVASIVE', 'SENTINELLE_INVASIVE', 'INVASIVE_SPECIES', 'AQUATIC_INVASIVE');"
 
 # Inject new data
-inject_data(con, eee_principales_data, "PRINCIPAL_INVASIVE")
-inject_data(con, eee_sentinelle_data, "SENTINELLE_INVASIVE")
-inject_data(con, eee_aquatic_data, "AQUATIC_INVASIVE")
-inject_data(con, eee_ALL, "INVASIVE_SPECIES")
+inject_data(con, eee_principales_data)
+inject_data(con, eee_sentinelle_data)
+inject_data(con, eee_aquatic_data)
+inject_data(con, eee_ALL)

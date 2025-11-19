@@ -33,26 +33,26 @@ ALTER INDEX rubus.taxa_groups_short_unique_idx OWNER TO coleo;
 -- 2: Application level groups defined by scientific_name, From specific list for specific analysis, may overlaps with other groups
 -- 3: Application level groups defined by other groups instead of scientific_name
 
+-- Tout prendre éponges, tuniciers, oursins, echinodermes,(AUTRES ESPÈCES AQUATIQUES)
 INSERT INTO rubus.taxa_groups (short, id, vernacular_fr, vernacular_en, level, source_desc) VALUES
 ('AMPHIBIANS', 1, 'Amphibiens', 'Amphibians', 1, NULL),
 ('BIRDS', 2, 'Oiseaux', 'Birds', 1, NULL),
 ('MAMMALS', 3, 'Mammifères', 'Mammals', 1, NULL),
 ('REPTILES', 4, 'Reptiles', 'Reptiles', 1, NULL),
 ('FISH', 5, 'Poissons', 'Fish', 1, NULL),
+('PLANTS', 6, 'Plantes', 'Plants', 1, NULL),
+('FUNGI', 7, 'Mycètes et lichen', 'Fungi and lichens', 1, NULL),
+('ARTHROPODS', 8, 'Insectes et autres arthropodes', 'Insects and other arthropods', 1, NULL),
+('')
+
 ('TUNICATES', 6, 'Tuniciers', 'Tunicates', 1, NULL),
 ('LANCELETS', 7, 'Céphalocordés', 'Lancelets', 1, NULL),
-('ARTHROPODS', 8, 'Arthropodes', 'Arthropods', 1, NULL),
 ('OTHER_INVERTEBRATES', 9, 'Autres invertébrés', 'Other invertebrates', 1, NULL),
 ('OTHER_TAXONS', 10, 'Autres taxons', 'Other taxons', 1, NULL),
-('FUNGI', 11, 'Mycètes', 'Fungi', 1, NULL),
-('ANGIOSPERMS', 12, 'Angiospermes', 'Angiosperms', 1, NULL),
-('CONIFERS', 13, 'Conifères', 'Conifers', 1, NULL),
-('VASCULAR_CRYPTOGAM', 14, 'Cryptogames vasculaires', 'Vascular cryptogam', 1, NULL),
-('OTHER_GYMNOSPERMS', 15, 'Autres gymnospermes', 'Other gymnosperms', 1, NULL),
 ('ALGAE', 16, 'Algues', 'Algae', 1, NULL),
-('BRYOPHYTES', 17, 'Bryophytes', 'Bryophytes', 1, NULL),
-('OTHER_PLANTS', 18, 'Autres plantes', 'Other plants', 1, NULL),
 ('ALL_SPECIES', 19, 'Toutes les espèces', 'All species', 0, NULL),
+
+
 ('INVASIVE_SPECIES', 25, 'Espèce envahissante', 'Invasive species', 2, 'Sentinelle, Agriculture, environnement et ressources naturelles Québec'),
 ('SENTINELLE_INVASIVE', 33, 'Espèce exotique envahissante', 'Exotic invasive species', 2, 'SENTINELLE'),
 ('PRINCIPAL_INVASIVE', 34, 'Principales espèces exotiques envahissantes', NULL, 2, 'Agriculture, environnement et ressources naturelles Québec'),

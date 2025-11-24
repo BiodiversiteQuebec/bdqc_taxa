@@ -260,3 +260,53 @@ inject_data(con, eee_principales_data)
 inject_data(con, eee_sentinelle_data)
 inject_data(con, eee_aquatic_data)
 inject_data(con, eee_all)
+
+
+################################################################################
+# 3. Liste des espèces en péril - COSEWIC & SARA
+# Data is currently downloaded manually from https://explorer.natureserve.org/Search
+# with filter Location = Quebec and status COSEWIC in `Endangered`, `Threatened`, `Special Concern`
+# and SARA in `Special Concern/Préoccupante`, `Threatened/Menacée`, `Endangered/En voie de disparition`
+################################################################################
+ns_data <- readxl::read_excel("scratch/nsExplorer-Export-2025-11-24-11-29.xlsx", col_names = TRUE, skip = 1) |>
+  dplyr::select(scientific_name = `Scientific Name`,
+                species_group = `Species Group (Broad)`,
+                cosewic_status = `COSEWIC Status`,
+                sara_status = `SARA Status`) |>
+  dplyr::filter(!is.na(scientific_name) & !(scientific_name %in% c("https://explorer.natureserve.org/AboutTheData", "COSEWIC Status", "SARA Status", "Canada"))) |>
+  dplyr::mutate(rank = "species",
+    cosewic_status = dplyr::case_when(
+      cosewic_status == "En voie de disparition" ~ "COSEWIC_ENDANGERED",
+      cosewic_status == "Menacée" ~ "COSEWIC_THREATENED",
+      cosewic_status == "Espèce préoccupante" ~ "COSEWIC_SPECIAL_CONCERN",
+      TRUE ~ NA_character_
+    ),
+    sara_status = dplyr::case_when(
+      sara_status == "Endangered/En voie de disparition" ~ "SARA_ENDANGERED",
+      sara_status == "Threatened/Menacée" ~ "SARA_THREATENED",
+      sara_status == "Special Concern/Préoccupante" ~ "SARA_SPECIAL_CONCERN",
+      TRUE ~ NA_character_
+    ),
+    parent_scientific_name = dplyr::case_when(
+      species_group %in% c("Vertebrates", "Mussels, Snails, & Other Molluscs", "Insects - Bees", "Insects - Beetles",
+                           "Insects - Butterflies and Moths", "Insects - Damselflies and Dragonflies",
+                           "Insects - Other") ~ "Animalia",
+      species_group %in% c("Vascular Plants - Ferns and relatives", "Vascular Plants - Flowering Plants",
+                           "Lichens") ~ "Plantae",
+      TRUE ~ NA_character_
+    )
+  ) |>
+  dplyr::select(scientific_name, rank, cosewic_status, sara_status, parent_scientific_name) |>
+  tidyr::pivot_longer(cols = c("cosewic_status", "sara_status"),
+                      names_to = "status_type",
+                      values_to = "short") |>
+  dplyr::filter(!is.na(short)) |>
+  dplyr::select(short, scientific_name, rank, parent_scientific_name)
+
+# Connect to the database
+print("Connecting to Database…")
+con <- dbConnect(Postgres(), dbname = Sys.getenv("POSTGRES_DB"),
+                 host = Sys.getenv("POSTGRES_HOST"), port = Sys.getenv("POSTGRES_PORT"),
+                 user = Sys.getenv("POSTGRES_USER"), password = Sys.getenv("POSTGRES_PASSWORD"))
+
+inject_data(con, ns_data)

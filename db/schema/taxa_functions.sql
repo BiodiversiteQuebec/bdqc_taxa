@@ -116,7 +116,6 @@ ALTER FUNCTION api.taxa_branch_tips(integer[])
     OWNER TO coleo;
 
 GRANT EXECUTE ON FUNCTION api.taxa_branch_tips(integer[]) TO coleo;
-GRANT EXECUTE ON FUNCTION api.taxa_branch_tips(integer[]) TO read_only_all;
 GRANT EXECUTE ON FUNCTION api.taxa_branch_tips(integer[]) TO read_write_all;
 REVOKE ALL ON FUNCTION api.taxa_branch_tips(integer[]) FROM PUBLIC;
 

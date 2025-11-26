@@ -53,10 +53,8 @@ GRANT ALL ON TABLE rubus.taxa_obs_ref_preferred TO coleo;
 GRANT SELECT ON TABLE rubus.taxa_obs_ref_preferred TO read_only_all;
 GRANT SELECT ON TABLE rubus.taxa_obs_ref_preferred TO read_write_all;
 
-CREATE INDEX ON rubus.taxa_obs_ref_preferred (id_taxa_obs);
-CREATE INDEX ON rubus.taxa_obs_ref_preferred (id_taxa_ref);
-CREATE INDEX ON rubus.taxa_obs_ref_preferred (rank);
-CREATE INDEX ON rubus.taxa_obs_ref_preferred (is_match);
+CREATE INDEX id_taxa_obs_rank_match_idx ON rubus.taxa_obs_ref_preferred(id_taxa_obs, rank, is_match);
+CREATE INDEX id_taxa_ref_match_idx ON rubus.taxa_obs_ref_preferred(id_taxa_ref, is_match);
 
 COMMENT ON MATERIALIZED VIEW rubus.taxa_obs_ref_preferred IS 'Materialized view of preferred taxonomic references for taxa_obs, selecting the best matching reference based on predefined criteria.';
 

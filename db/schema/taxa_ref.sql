@@ -73,18 +73,21 @@ GRANT SELECT ON TABLE rubus.taxa_obs_ref_lookup TO read_only_all;
 GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_obs_ref_lookup TO read_write_all;
 
 CREATE INDEX IF NOT EXISTS id_taxa_obs_idx
-  ON rubus.taxa_obs_ref_lookup (id_taxa_obs);
+    ON rubus.taxa_obs_ref_lookup (id_taxa_obs);
 
 CREATE INDEX IF NOT EXISTS id_taxa_ref_idx
-  ON rubus.taxa_obs_ref_lookup (id_taxa_ref);
+    ON rubus.taxa_obs_ref_lookup (id_taxa_ref);
 
 CREATE INDEX IF NOT EXISTS id_taxa_ref_valid_idx
-  ON rubus.taxa_obs_ref_lookup (id_taxa_ref_valid);
+    ON rubus.taxa_obs_ref_lookup (id_taxa_ref_valid);
 
 CREATE INDEX IF NOT EXISTS ref_lu_match_type_idx
-  ON rubus.taxa_obs_ref_lookup (match_type);
+    ON rubus.taxa_obs_ref_lookup (match_type);
 
 CREATE INDEX IF NOT EXISTS ref_lu_is_parent_idx
-  ON rubus.taxa_obs_ref_lookup (is_parent);
+    ON rubus.taxa_obs_ref_lookup (is_parent);
+
+CREATE INDEX IF NOT EXISTS id_taxa_obs_id_taxa_ref_valid_composite_covering_idx 
+    ON rubus.taxa_obs_ref_lookup (id_taxa_obs, id_taxa_ref_valid) INCLUDE (id_taxa_ref, match_type, is_parent);
 
 COMMENT ON TABLE rubus.taxa_obs_ref_lookup IS 'Lookup table to link taxa_obs records to taxa_ref records';

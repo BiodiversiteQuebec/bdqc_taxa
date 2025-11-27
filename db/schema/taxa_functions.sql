@@ -1,3 +1,5 @@
+SET ROLE coleo;
+
 -- DROP FUNCTION IF EXISTS rubus.match_taxa(text);
 CREATE OR REPLACE FUNCTION rubus.match_taxa(
 	taxa_name text)
@@ -67,10 +69,6 @@ $BODY$;
 
 ALTER FUNCTION rubus.match_taxa_groups(integer[])
     OWNER TO coleo;
-
-GRANT EXECUTE ON FUNCTION rubus.match_taxa_groups(integer[]) TO coleo;
-GRANT EXECUTE ON FUNCTION rubus.match_taxa_groups(integer[]) TO read_write_all;
-REVOKE ALL ON FUNCTION rubus.match_taxa_groups(integer[]) FROM PUBLIC;
 
 COMMENT ON FUNCTION rubus.match_taxa_groups(integer[]) IS 'Returns taxa groups matching the given list of id_taxa_obs';
 

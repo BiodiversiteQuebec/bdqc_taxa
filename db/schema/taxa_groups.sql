@@ -1,3 +1,5 @@
+SET ROLE coleo;
+
 -- DROP TABLE IF EXISTS rubus.taxa_groups;
 CREATE TABLE IF NOT EXISTS rubus.taxa_groups (
     id serial primary key,
@@ -11,13 +13,6 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_groups (
 
 ALTER TABLE IF EXISTS rubus.taxa_groups
     OWNER to coleo;
-
-REVOKE ALL ON TABLE rubus.taxa_groups FROM read_only_all;
-REVOKE ALL ON TABLE rubus.taxa_groups FROM read_write_all;
-
-GRANT ALL ON TABLE rubus.taxa_groups TO coleo;
-GRANT SELECT ON TABLE rubus.taxa_groups TO read_only_all;
-GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_groups TO read_write_all;
 
 CREATE INDEX IF NOT EXISTS taxa_groups_short_idx ON rubus.taxa_groups (short);
 CREATE UNIQUE INDEX IF NOT EXISTS taxa_groups_short_unique_idx ON rubus.taxa_groups (short);
@@ -88,13 +83,6 @@ CREATE TABLE rubus.taxa_group_members (
 ALTER TABLE IF EXISTS rubus.taxa_group_members
     OWNER to coleo;
 
-REVOKE ALL ON TABLE rubus.taxa_group_members FROM read_only_all;
-REVOKE ALL ON TABLE rubus.taxa_group_members FROM read_write_all;
-
-GRANT ALL ON TABLE rubus.taxa_group_members TO coleo;
-GRANT SELECT ON TABLE rubus.taxa_group_members TO read_only_all;
-GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_group_members TO read_write_all;
-
 CREATE INDEX IF NOT EXISTS taxa_group_members_id_taxa_obs_idx
     ON rubus.taxa_group_members (id_taxa_obs);
 
@@ -150,10 +138,6 @@ $BODY$;
 
 ALTER FUNCTION rubus.insert_taxa_obs_group_member(character, text, text, text, text)
     OWNER TO coleo;
-
-GRANT EXECUTE ON FUNCTION rubus.insert_taxa_obs_group_member(character, text, text, text, text) TO coleo;
-GRANT EXECUTE ON FUNCTION rubus.insert_taxa_obs_group_member(character, text, text, text, text) TO read_write_all;
-REVOKE ALL ON FUNCTION rubus.insert_taxa_obs_group_member(character, text, text, text, text) FROM PUBLIC;
 
 COMMENT ON FUNCTION rubus.insert_taxa_obs_group_member(character, text, text, text, text) IS 'Function to insert a taxa_obs and link it to a taxa_group based on scientific name and group short name';
 
@@ -261,13 +245,6 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_obs_group_lookup
 ALTER TABLE IF EXISTS rubus.taxa_obs_group_lookup
     OWNER to coleo;
 
-REVOKE ALL ON TABLE rubus.taxa_obs_group_lookup FROM read_only_all;
-REVOKE ALL ON TABLE rubus.taxa_obs_group_lookup FROM read_write_all;
-
-GRANT ALL ON TABLE rubus.taxa_obs_group_lookup TO coleo;
-GRANT SELECT ON TABLE rubus.taxa_obs_group_lookup TO read_only_all;
-GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_obs_group_lookup TO read_write_all;
-
 CREATE UNIQUE INDEX idx_taxa_obs_group_lookup ON rubus.taxa_obs_group_lookup (id_taxa_obs, id_group, short_group);
 
 CREATE INDEX IF NOT EXISTS taxa_obs_group_lookup_id_taxa_obs_idx
@@ -302,10 +279,6 @@ WHERE taxa_groups.level = ANY(ARRAY[1, 2]);
 ALTER TABLE rubus.taxa_obs_group_lookup_level_1_2_view
     OWNER TO coleo;
 
-GRANT ALL ON TABLE rubus.taxa_obs_group_lookup_level_1_2_view TO coleo;
-GRANT SELECT ON TABLE rubus.taxa_obs_group_lookup_level_1_2_view TO read_only_all;
-GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_obs_group_lookup_level_1_2_view TO read_write_all;
-
 COMMENT ON VIEW rubus.taxa_obs_group_lookup_level_1_2_view IS 'View to link taxa_obs to taxa_groups of level 1 and 2';
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -321,10 +294,6 @@ WHERE level = 0;
 
 ALTER TABLE rubus.taxa_obs_group_lookup_quebec_view
     OWNER TO coleo;
-
-GRANT ALL ON TABLE rubus.taxa_obs_group_lookup_quebec_view TO coleo;
-GRANT SELECT ON TABLE rubus.taxa_obs_group_lookup_quebec_view TO read_only_all;
-GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_obs_group_lookup_quebec_view TO read_write_all;
 
 COMMENT ON VIEW rubus.taxa_obs_group_lookup_quebec_view IS 'View to link taxa_obs to taxa_groups of level 0 (within Quebec)';
 
@@ -344,10 +313,6 @@ WHERE level_3_groups.level = 3;
 
 ALTER TABLE rubus.taxa_obs_group_lookup_level_3_view
     OWNER TO coleo;
-
-GRANT ALL ON TABLE rubus.taxa_obs_group_lookup_level_3_view TO coleo;
-GRANT SELECT ON TABLE rubus.taxa_obs_group_lookup_level_3_view TO read_only_all;
-GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_obs_group_lookup_level_3_view TO read_write_all;
 
 COMMENT ON VIEW rubus.taxa_obs_group_lookup_level_3_view IS 'View to link taxa_obs to taxa_groups of level 3 based';
 
@@ -375,9 +340,5 @@ $BODY$;
 
 ALTER FUNCTION rubus.refresh_taxa_obs_group_lookup()
     OWNER TO coleo;
-
-GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_obs_group_lookup() TO coleo;
-GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_obs_group_lookup() TO read_write_all;
-REVOKE ALL ON FUNCTION rubus.refresh_taxa_obs_group_lookup() FROM PUBLIC;
 
 COMMENT ON FUNCTION rubus.refresh_taxa_obs_group_lookup() IS 'Function to refresh the taxa_obs_group_lookup table from the various views';

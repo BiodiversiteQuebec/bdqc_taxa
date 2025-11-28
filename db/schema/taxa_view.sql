@@ -1,3 +1,5 @@
+SET ROLE coleo;
+
 -- DROP VIEW rubus.taxa_view;
 CREATE OR REPLACE VIEW rubus.taxa_view
 AS
@@ -41,58 +43,4 @@ LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND s
 ALTER TABLE rubus.taxa_view
     OWNER TO coleo;
 
---------------------------------------------------------------------------
---------------------------------------------------------------------------
-
--- DROP FUNCTION IF EXISTS rubus.refresh_taxa();
-CREATE OR REPLACE FUNCTION rubus.refresh_taxa()
- RETURNS void
- LANGUAGE plpgsql
-AS $BODY$
-BEGIN
-    DELETE FROM api.taxa;
-
-	INSERT INTO api.taxa
-	SELECT * FROM rubus.taxa_view;
-END;
-$BODY$;
-
-ALTER FUNCTION rubus.refresh_taxa()
-    OWNER TO coleo;
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------
-
--- DROP TABLE IF EXISTS api.taxa_table
-CREATE TABLE IF NOT EXISTS api.taxa(
-	id_taxa_obs integer NOT NULL,
-	observed_scientific_name text NOT NULL,
-	valid_scientific_name text,
-	rank text,
-	sensitive boolean,
-	vernacular_en text,
-	vernacular_fr text,
-	group_en text,
-	group_fr text,
-	kingdom text,
-	phylum text,
-	class text,
-	"order" text,
-	family text,
-	genus text,
-	species text
-)
-
-ALTER TABLE IF EXISTS api.taxa
-    OWNER TO coleo;
-
-CREATE INDEX taxa_class_idx ON api.taxa (class);
-CREATE INDEX taxa_family_idx ON api.taxa (family);
-CREATE INDEX taxa_group_en_idx ON api.taxa (group_en);
-CREATE INDEX taxa_group_fr_idx ON api.taxa (group_fr);
-CREATE INDEX taxa_observed_scientific_name_idx ON api.taxa (observed_scientific_name);
-CREATE INDEX taxa_order_idx ON api.taxa ("order");
-CREATE INDEX taxa_phylum_idx ON api.taxa (phylum);
-CREATE INDEX taxa_rank_idx ON api.taxa (rank);
-CREATE INDEX taxa_species_idx ON api.taxa (species);
-CREATE INDEX taxa_valid_scientific_name_idx ON api.taxa (valid_scientific_name);
+COMMENT ON VIEW rubus.taxa_view IS 'A view of taxa observations with preferred scientific names, vernacular names, taxonomic hierarchy, and sensitivity information';

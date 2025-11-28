@@ -1,3 +1,5 @@
+SET ROLE coleo;
+
 -- Schema rubus --
 CREATE SCHEMA IF NOT exists rubus
     AUTHORIZATION coleo;

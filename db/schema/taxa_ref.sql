@@ -1,3 +1,5 @@
+SET ROLE coleo;
+
 -- DROP TABLE IF EXISTS rubus.taxa_ref;
 CREATE TABLE IF NOT EXISTS rubus.taxa_ref
 (
@@ -18,13 +20,6 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_ref
 
 ALTER TABLE IF EXISTS rubus.taxa_ref
     OWNER to coleo;
-
-REVOKE ALL ON TABLE rubus.taxa_ref FROM read_only_all;
-REVOKE ALL ON TABLE rubus.taxa_ref FROM read_write_all;
-
-GRANT ALL ON TABLE rubus.taxa_ref TO coleo;
-GRANT SELECT ON TABLE rubus.taxa_ref TO read_only_all;
-GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_ref TO read_write_all;
 
 CREATE INDEX IF NOT EXISTS source_id_srid_idx
   ON rubus.taxa_ref (source_id, valid_srid);
@@ -64,13 +59,6 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_obs_ref_lookup
 
 ALTER TABLE IF EXISTS rubus.taxa_obs_ref_lookup
     OWNER to coleo;
-
-REVOKE ALL ON TABLE rubus.taxa_obs_ref_lookup FROM read_only_all;
-REVOKE ALL ON TABLE rubus.taxa_obs_ref_lookup FROM read_write_all;
-
-GRANT ALL ON TABLE rubus.taxa_obs_ref_lookup TO coleo;
-GRANT SELECT ON TABLE rubus.taxa_obs_ref_lookup TO read_only_all;
-GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_obs_ref_lookup TO read_write_all;
 
 CREATE INDEX IF NOT EXISTS id_taxa_obs_idx
     ON rubus.taxa_obs_ref_lookup (id_taxa_obs);

@@ -265,15 +265,16 @@ inject_data(con, eee_all)
 ################################################################################
 # 3. Liste des espèces en péril - COSEWIC & SARA
 # Data is currently downloaded manually from https://explorer.natureserve.org/Search
-# with filter Location = Quebec and status COSEWIC in `Endangered`, `Threatened`, `Special Concern`
-# and SARA in `Special Concern/Préoccupante`, `Threatened/Menacée`, `Endangered/En voie de disparition`
+# with filter Location = Quebec and National status in 1, 2, 3, 4, 5, X and H
 ################################################################################
-ns_data <- readxl::read_excel("scratch/nsExplorer-Export-2025-11-24-11-29.xlsx", col_names = TRUE, skip = 1) |>
+ns_data <- readxl::read_excel("scratch/nsExplorer-Export-2025-11-26.xlsx", col_names = TRUE, skip = 1) |>
   dplyr::select(scientific_name = `Scientific Name`,
                 species_group = `Species Group (Broad)`,
+                g_rank = `NatureServe Global Rank`,
+                sn_rank = `Distribution`,
                 cosewic_status = `COSEWIC Status`,
                 sara_status = `SARA Status`) |>
-  dplyr::filter(!is.na(scientific_name) & !(scientific_name %in% c("https://explorer.natureserve.org/AboutTheData", "COSEWIC Status", "SARA Status", "Canada"))) |>
+  dplyr::filter(!is.na(scientific_name) & !(scientific_name %in% c("https://explorer.natureserve.org/AboutTheData", "Rounded State/Provincial Status", "Canada"))) #|>
   dplyr::mutate(rank = "species",
     cosewic_status = dplyr::case_when(
       cosewic_status == "En voie de disparition" ~ "COSEWIC_ENDANGERED",
@@ -294,15 +295,22 @@ ns_data <- readxl::read_excel("scratch/nsExplorer-Export-2025-11-24-11-29.xlsx",
       species_group %in% c("Vascular Plants - Ferns and relatives", "Vascular Plants - Flowering Plants",
                            "Lichens") ~ "Plantae",
       TRUE ~ NA_character_
-    )
+    ),
+    n_rank = stringr::str_extract(sn_rank, "(?<=Canada \\()[^)]+"),
+    s_rank = stringr::str_extract(sn_rank, "(?<=QC \\()[^)]+")
   ) |>
-  dplyr::select(scientific_name, rank, cosewic_status, sara_status, parent_scientific_name) |>
-  tidyr::pivot_longer(cols = c("cosewic_status", "sara_status"),
+  dplyr::select(scientific_name, rank, g_rank, n_rank, s_rank, cosewic_status, sara_status, parent_scientific_name)
+
+cosewic_data <- ns_data |> dplyr::select(scientific_name, rank, cosewic_status, parent_scientific_name) |>
+  dplyr::filter(!is.na(cosewic_status))
+
+  tidyr::pivot_longer(cols = c("g_rank", "n_rank", "s_rank", "cosewic_status", "sara_status"),
                       names_to = "status_type",
                       values_to = "short") |>
-  dplyr::filter(!is.na(short)) |>
-  dplyr::select(short, scientific_name, rank, parent_scientific_name)
+  dplyr::filter(!is.na(short))
 
+
+cosewic_data <- ns_data |> dplyr::filter(short == )
 # Connect to the database
 print("Connecting to Database…")
 con <- dbConnect(Postgres(), dbname = Sys.getenv("POSTGRES_DB"),
@@ -310,3 +318,4 @@ con <- dbConnect(Postgres(), dbname = Sys.getenv("POSTGRES_DB"),
                  user = Sys.getenv("POSTGRES_USER"), password = Sys.getenv("POSTGRES_PASSWORD"))
 
 inject_data(con, ns_data)
+

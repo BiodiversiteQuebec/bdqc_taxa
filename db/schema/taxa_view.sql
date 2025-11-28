@@ -24,7 +24,7 @@ FROM taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred ref_pref ON taxa_obs.id = ref_pref.id_taxa_obs AND ref_pref.is_match IS TRUE
 LEFT JOIN rubus.taxa_ref_vernacular_preferred vernacular_pref ON ref_pref.id_taxa_ref = vernacular_pref.id_taxa_ref
 LEFT JOIN 
-  (SELECT * FROM rubus.taxa_obs_group_lookup WHERE taxa_obs_group_lookup.short_group::text = 'SENSITIVE'::text)
+  (SELECT * FROM rubus.taxa_obs_group_lookup WHERE taxa_obs_group_lookup.short_group::text IN ('SENSITIVE', 'CDPNQ_ENDANGERED', 'CDPNQ_SUSC', 'CDPNQ_VUL', 'CDPNQ_VUL_HARVEST'))
     AS sensitive_group USING (id_taxa_obs)
 LEFT JOIN 
   (SELECT DISTINCT ON (group_lu.id_taxa_obs) group_lu.id_taxa_obs, taxa_groups.vernacular_fr AS group_fr FROM rubus.taxa_obs_group_lookup group_lu 

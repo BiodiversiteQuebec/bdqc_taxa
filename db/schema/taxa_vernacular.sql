@@ -1,3 +1,5 @@
+SET ROLE coleo;
+
 -- DROP TABLE IF EXISTS rubus.taxa_vernacular;
 CREATE TABLE IF NOT EXISTS rubus.taxa_vernacular
 (
@@ -34,6 +36,8 @@ CREATE INDEX IF NOT EXISTS taxa_vernacular_name_idx
 CREATE INDEX IF NOT EXISTS taxa_vernacular_rank_order_idx
     ON rubus.taxa_vernacular (rank_order);
 
+COMMENT ON TABLE rubus.taxa_vernacular IS 'Table to store vernacular (common) names for taxa';
+
 -- Trigger: update_modified_at
 -- DROP TRIGGER IF EXISTS update_modified_at ON rubus.taxa_vernacular;
 CREATE OR REPLACE TRIGGER update_modified_at
@@ -53,8 +57,10 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_ref_vernacular_lookup
     CONSTRAINT taxa_ref_vernacular_lookup_id_taxa_ref_id_taxa_vernacular_key UNIQUE (id_taxa_ref, id_taxa_vernacular)
 );
 
-ALTER TABLE IF EXISTS rubus.taxa_ref_vernacular_lookup 
+ALTER TABLE IF EXISTS rubus.taxa_ref_vernacular_lookup
     OWNER to coleo;
 
 CREATE INDEX taxa_ref_vernacular_lookup_id_taxa_ref_idx ON rubus.taxa_ref_vernacular_lookup (id_taxa_ref);
 CREATE INDEX taxa_ref_vernacular_lookup_id_taxa_vernacular_idx ON rubus.taxa_ref_vernacular_lookup (id_taxa_vernacular);
+
+COMMENT ON TABLE rubus.taxa_ref_vernacular_lookup IS 'Lookup table to link taxa_ref records to taxa_vernacular records';

@@ -12,6 +12,10 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_rank_order
 ALTER TABLE IF EXISTS rubus.taxa_rank_order
     OWNER to coleo;
 
+GRANT ALL ON TABLE rubus.taxa_rank_order TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_rank_order TO read_only_all;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_rank_order TO read_write_all;
+
 CREATE INDEX IF NOT EXISTS taxa_rank_order_rank_name_idx
   ON rubus.taxa_rank_order (rank_name);
 

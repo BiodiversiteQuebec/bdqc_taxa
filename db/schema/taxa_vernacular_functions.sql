@@ -48,6 +48,8 @@ BEGIN
 
     END LOOP;
     
+    PERFORM rubus.taxa_vernacular_fix_caribou();
+
     -- Final commit for any remaining records
     IF counter > 0 THEN
         COMMIT;
@@ -59,6 +61,10 @@ $BODY$;
 
 ALTER PROCEDURE rubus.refresh_taxa_vernacular_procedure(integer)
     OWNER TO coleo;
+
+GRANT EXECUTE ON PROCEDURE rubus.refresh_taxa_vernacular_procedure(integer) TO coleo;
+GRANT EXECUTE ON PROCEDURE rubus.refresh_taxa_vernacular_procedure(integer) TO read_write_all;
+REVOKE ALL ON PROCEDURE rubus.refresh_taxa_vernacular_procedure(integer) FROM PUBLIC;
 
 -- DROP FUNCTION IF EXISTS rubus.refresh_taxa_vernacular();
 CREATE OR REPLACE FUNCTION rubus.refresh_taxa_vernacular(

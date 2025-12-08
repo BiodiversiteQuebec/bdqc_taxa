@@ -16,7 +16,7 @@ __uri__ = "https://github.com/ReseauBiodiversiteQuebec/bdqc-taxa"
 _version = OrderedDict(
     major = 0,
     minor = 19,
-    patch = 2
+    patch = 4
 )
 __version__ = ".".join([str(v) for v in _version.values()])
 

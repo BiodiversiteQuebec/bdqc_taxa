@@ -1,11 +1,6 @@
--- -----------------------------------------------------
--- Table rubus.taxa_rank_order
--- DESCRIPTION: This table contains the ordered list of ranks for taxa data
--- -----------------------------------------------------
--- Table: rubus.taxa_rank_order
+SET ROLE coleo;
 
 -- DROP TABLE IF EXISTS rubus.taxa_rank_order;
-
 CREATE TABLE IF NOT EXISTS rubus.taxa_rank_order
 (
     rank_name text COLLATE pg_catalog."default" NOT NULL,
@@ -14,13 +9,18 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_rank_order
     CONSTRAINT taxa_rank_order_rank_name_order_key UNIQUE (rank_name, "order")
 )
 
-TABLESPACE pg_default;
-
 ALTER TABLE IF EXISTS rubus.taxa_rank_order
     OWNER to coleo;
 
+GRANT ALL ON TABLE rubus.taxa_rank_order TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_rank_order TO read_only_all;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_rank_order TO read_write_all;
+
 CREATE INDEX IF NOT EXISTS taxa_rank_order_rank_name_idx
   ON rubus.taxa_rank_order (rank_name);
+
+COMMENT ON TABLE rubus.taxa_rank_order
+    IS 'Table defining the order of taxonomic ranks. Lower order value means higher rank.';
 
 -- Insert data
 insert into rubus.taxa_rank_order (rank_name, "order") values ('kingdom', 0);

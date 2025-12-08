@@ -413,10 +413,22 @@ class TestTaxaRef(unittest.TestCase):
         cdpnq_results = [res for res in results if res.source_name == 'CDPNQ' and res.valid and res.rank == 'species']
         self.assertTrue(len(cdpnq_results) >= 1)
     
+    def test_dryobates_villosus_Aves(self, name='dryobates villosus', parent_taxa='Aves'):
+        results = taxa_ref.TaxaRef.from_all_sources(name, parent_taxa=parent_taxa)
+        cdpnq_results = [res for res in results if res.source_name == 'CDPNQ']
+        self.assertTrue(len(cdpnq_results) >= 1)
+    
     def test_canis_latrans_no_canis_lupus(self, name='canis latrans'):
         results = taxa_ref.TaxaRef.from_all_sources(name)
         canis_lupus_results = [res for res in results if res.scientific_name == 'Canis lupus']
         self.assertTrue(len(canis_lupus_results) == 0)
+
+    def test_catharus_swainsoni_cdpnq_subsp_processing(self, name='Catharus swainsoni', authorship='(Tschudi, 1845)', parent_taxa='Chordata'):
+        results = taxa_ref.TaxaRef.from_all_sources(name, authorship)
+        cdpnq_results = [res for res in results if res.source_name == 'CDPNQ']
+        self.assertTrue(len(cdpnq_results) > 1)
+        self.assertTrue(any([res for res in cdpnq_results if res.rank == 'genus' and res.is_parent and res.scientific_name == 'Catharus']))
+        self.assertTrue(any([res for res in cdpnq_results if res.rank == 'species' and not res.is_parent and res.scientific_name == 'Catharus ustulatus']))
 
 class TestComplex(unittest.TestCase):
     # Test for Myotis complex entries from CDPNQ

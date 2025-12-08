@@ -1,6 +1,4 @@
---------------------------------------------------------------------------
--- Completly delete and refresh all of taxa_ref and taxa_obs_ref_lookup --
---------------------------------------------------------------------------
+SET ROLE coleo;
 
 -- DROP FUNCTION IF EXISTS rubus.refresh_taxa_ref();
 CREATE OR REPLACE FUNCTION rubus.refresh_taxa_ref(
@@ -26,7 +24,6 @@ BEGIN
             CONTINUE;
         END;
     END LOOP;
-    PERFORM rubus.taxa_ref_fix_synonyms();
     PERFORM rubus.fix_missing_source_parent();
 END;
 $BODY$;
@@ -34,6 +31,12 @@ $BODY$;
 ALTER FUNCTION rubus.refresh_taxa_ref()
     OWNER TO coleo;
 
+GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_ref() TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_ref() TO read_only_all;
+GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_ref() TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.refresh_taxa_ref() FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.refresh_taxa_ref() IS 'Refreshes the entire taxa_ref and taxa_obs_ref_lookup tables from scratch based on taxa_obs';
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 
@@ -102,12 +105,16 @@ $BODY$;
 ALTER FUNCTION rubus.insert_taxa_ref_from_taxa_obs(integer, text, text, text)
     OWNER TO coleo;
 
---------------------------------------------------------------------------
---------------------------------------------------------------------------
+GRANT EXECUTE ON FUNCTION rubus.insert_taxa_ref_from_taxa_obs(integer, text, text, text) TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.insert_taxa_ref_from_taxa_obs(integer, text, text, text) TO read_only_all;
+GRANT EXECUTE ON FUNCTION rubus.insert_taxa_ref_from_taxa_obs(integer, text, text, text) TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.insert_taxa_ref_from_taxa_obs(integer, text, text, text) FROM PUBLIC;
 
--- DESCRIPTION Uses python `bdqc_taxa` package to generate `taxa_ref` records
---  from taxonomic sources (ITIS, COL, etc) matched to input taxa name
--- INSTALL python PL EXTENSION TO SUPPORT API CALL
+COMMENT ON FUNCTION rubus.insert_taxa_ref_from_taxa_obs(integer, text, text, text)
+IS 'Inserts taxa_ref and taxa_obs_ref_lookup records for a given taxa_obs record';
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
 
 -- DROP FUNCTION IF EXISTS rubus.match_taxa_sources(text, text, text);
 CREATE OR REPLACE FUNCTION rubus.match_taxa_sources(
@@ -142,72 +149,13 @@ $BODY$;
 ALTER FUNCTION rubus.match_taxa_sources(text, text, text)
     OWNER TO coleo;
 
---------------------------------------------------------------------------
---------------------------------------------------------------------------
+GRANT EXECUTE ON FUNCTION rubus.match_taxa_sources(text, text, text) TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.match_taxa_sources(text, text, text) TO read_only_all;
+GRANT EXECUTE ON FUNCTION rubus.match_taxa_sources(text, text, text) TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.match_taxa_sources(text, text, text) FROM PUBLIC;
 
--- DROP FUNCTION IF EXISTS rubus.taxa_ref_fix_synonyms();
-CREATE OR REPLACE FUNCTION rubus.taxa_ref_fix_synonyms(
-	)
-    RETURNS void
-    LANGUAGE 'plpgsql'
-AS
-$BODY$
-BEGIN
-
-    DROP TABLE IF EXISTS taxa_obs_ref_cdpnq_synonym_fix_lookup;
-    CREATE TEMPORARY TABLE taxa_obs_ref_cdpnq_synonym_fix_lookup AS (
-    SELECT
-    distinct on (cdpnq_lu.id_taxa_ref, synonym_obs_lu.id_taxa_obs)
-    cdpnq_lu.id_taxa_ref,
-    cdpnq_lu.id_taxa_ref AS id_taxa_ref_valid,
-    synonym_obs_lu.id_taxa_obs,
-    synonym_obs_lu.match_type,
-    synonym_obs_lu.is_parent
-    FROM rubus.taxa_ref cdpnq_ref
-    JOIN rubus.taxa_obs_ref_lookup cdpnq_lu ON cdpnq_ref.id = cdpnq_lu.id_taxa_ref
-    JOIN rubus.taxa_obs_ref_lookup gbif_lu ON cdpnq_lu.id_taxa_obs = gbif_lu.id_taxa_obs
-    -- taxa_ref join to filter only GBIF Backbone Taxonomy sources
-    JOIN rubus.taxa_ref gbif_ref ON gbif_lu.id_taxa_ref = gbif_ref.id
-        AND gbif_ref.source_name = 'GBIF Backbone Taxonomy'
-        AND cdpnq_ref.rank = gbif_ref.rank
-    JOIN rubus.taxa_obs_ref_lookup synonym_obs_lu ON gbif_ref.id = synonym_obs_lu.id_taxa_ref
-    WHERE cdpnq_ref.source_name = 'CDPNQ'
-        AND cdpnq_ref.valid IS TRUE
-        -- filter out records already in taxa_obs_ref_lookup
-        AND (synonym_obs_lu.id_taxa_obs, cdpnq_lu.id_taxa_ref) NOT IN (
-            SELECT id_taxa_obs, id_taxa_ref
-            FROM rubus.taxa_obs_ref_lookup
-        )
-      AND NOT EXISTS (
-            SELECT 1
-            FROM rubus.taxa_obs_ref_lookup lu
-            JOIN rubus.taxa_ref ref ON ref.id = lu.id_taxa_ref
-            WHERE lu.id_taxa_obs = synonym_obs_lu.id_taxa_obs
-              AND ref.source_name = 'CDPNQ'
-      )
-    );
-
-    DELETE FROM rubus.taxa_obs_ref_lookup
-    WHERE (id_taxa_obs, id_taxa_ref) IN (
-        SELECT id_taxa_obs, id_taxa_ref
-        FROM taxa_obs_ref_cdpnq_synonym_fix_lookup
-    );
-
-    INSERT INTO rubus.taxa_obs_ref_lookup (id_taxa_obs, id_taxa_ref, id_taxa_ref_valid, match_type, is_parent)
-    SELECT
-        id_taxa_obs,
-        id_taxa_ref,
-        id_taxa_ref_valid,
-        match_type,
-        is_parent
-    FROM taxa_obs_ref_cdpnq_synonym_fix_lookup
-    ON CONFLICT DO NOTHING;
-
-END;
-$BODY$;
-
-ALTER FUNCTION rubus.taxa_ref_fix_synonyms()
-    OWNER TO coleo;
+COMMENT ON FUNCTION rubus.match_taxa_sources(text, text, text)
+IS 'Uses python `bdqc_taxa` package to generate `taxa_ref` records from taxonomic sources (ITIS, COL, etc) matched to input taxa name. INSTALL python PL EXTENSION TO SUPPORT API CALL';
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -242,6 +190,14 @@ $BODY$;
 
 ALTER FUNCTION rubus.fix_missing_source_parent()
     OWNER TO coleo;
+
+GRANT EXECUTE ON FUNCTION rubus.fix_missing_source_parent() TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.fix_missing_source_parent() TO read_only_all;
+GRANT EXECUTE ON FUNCTION rubus.fix_missing_source_parent() TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.fix_missing_source_parent() FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.fix_missing_source_parent()
+IS 'Fixes missing parent taxa_ref records in taxa_obs_ref_lookup based on existing child records';
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -283,7 +239,6 @@ BEGIN
     END LOOP;
     
     -- Perform function fix_synonyms
-    PERFORM rubus.taxa_ref_fix_synonyms();
     PERFORM rubus.fix_missing_source_parent();
 
     RAISE NOTICE 'Start processing taxa_vernacular';
@@ -318,3 +273,10 @@ $BODY$;
 
 ALTER FUNCTION rubus.refresh_taxa_partial()
     OWNER TO coleo;
+
+GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_partial() TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_partial() TO read_only_all;
+GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_partial() TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.refresh_taxa_partial() FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.refresh_taxa_partial() IS 'Refreshes taxa_ref, taxa_obs_ref_lookup, taxa_vernacular and taxa_ref_varnacular_lookup tables based on new taxa_obs records only';

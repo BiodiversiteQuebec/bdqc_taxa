@@ -1,78 +1,65 @@
--- DROP FUNCTION IF EXISTS api.__taxa_join_attributes(integer[]);
-CREATE OR REPLACE FUNCTION rubus.__taxa_join_attributes(
-	taxa_obs_id integer[])
-    RETURNS TABLE(id_taxa_obs integer, observed_scientific_name text, valid_scientific_name text, rank text, sensitive boolean, vernacular_en text, vernacular_fr text, group_en text, group_fr text) 
-    LANGUAGE 'sql'
-    COST 100
-    STABLE PARALLEL UNSAFE
-    ROWS 1000
+SET ROLE coleo;
 
-AS $BODY$
-SELECT
-  id_taxa_obs,
-  observed_scientific_name,
-  valid_scientific_name,
-  rank,
-  sensitive,
-  vernacular_en,
-  vernacular_fr,
-  group_en,
-  group_fr
-FROM api.taxa
-WHERE id_taxa_obs = ANY($1)
-$BODY$;
-
-ALTER FUNCTION rubus.__taxa_join_attributes(integer[])
-    OWNER TO coleo;
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------
-
--- DROP FUNCTION IF EXISTS api.match_taxa(text);
-CREATE OR REPLACE FUNCTION api.match_taxa(
+-- DROP FUNCTION IF EXISTS rubus.match_taxa(text);
+CREATE OR REPLACE FUNCTION rubus.match_taxa(
 	taxa_name text)
-    RETURNS SETOF api.taxa 
+    RETURNS TABLE (id_taxa_obs integer) 
     LANGUAGE 'sql'
-    COST 100
     STABLE PARALLEL SAFE
-    ROWS 1000
-
 AS $BODY$
-WITH match_taxa_obs_id AS (
-    SELECT DISTINCT ref_lookup.id_taxa_obs
-    FROM rubus.taxa_ref AS matched_ref
-    JOIN rubus.taxa_obs_ref_lookup AS ref_lookup
-      ON matched_ref.id = ref_lookup.id_taxa_ref
-    WHERE matched_ref.scientific_name ILIKE $1
-
-    UNION
-
-    SELECT DISTINCT ref_lookup.id_taxa_obs
-    FROM rubus.taxa_vernacular AS matched_vernacular
-    JOIN rubus.taxa_ref_vernacular_lookup AS vernacular_lookup
-      ON matched_vernacular.id = vernacular_lookup.id_taxa_vernacular
-    JOIN rubus.taxa_obs_ref_lookup ref_lookup
-      ON vernacular_lookup.id_taxa_ref = ref_lookup.id_taxa_ref
-    WHERE matched_vernacular.name ILIKE $1
-)
-SELECT taxa.*
-FROM api.taxa
-JOIN match_taxa_obs_id
-  ON taxa.id_taxa_obs = match_taxa_obs_id.id_taxa_obs;
+  WITH matched_taxa_obs AS (
+      SELECT DISTINCT id_taxa_obs
+      FROM rubus.taxa_ref mref
+      JOIN rubus.taxa_obs_ref_lookup mlu
+          ON mref.id = mlu.id_taxa_ref
+          AND is_parent IS false
+          AND match_type IS NOT NULL
+          AND match_type <> 'complex'
+      WHERE mref.scientific_name ILIKE $1
+  ), children_taxa_obs AS (
+      SELECT DISTINCT id_taxa_obs
+      FROM rubus.taxa_ref mref
+      JOIN rubus.taxa_obs_ref_lookup mlu
+          ON mref.id = mlu.id_taxa_ref
+          AND is_parent IS true
+      WHERE mref.scientific_name ILIKE $1
+  ), pref_synonyms AS (
+      SELECT DISTINCT syn_pref.id_taxa_obs
+      FROM (
+           SELECT id_taxa_obs FROM matched_taxa_obs
+             UNION
+            SELECT id_taxa_obs FROM children_taxa_obs
+            ) AS all_obs
+      JOIN rubus.taxa_obs_ref_preferred mpref
+          ON all_obs.id_taxa_obs = mpref.id_taxa_obs
+          AND mpref.is_match
+      JOIN rubus.taxa_obs_ref_preferred syn_pref
+          ON mpref.id_taxa_ref = syn_pref.id_taxa_ref
+          AND syn_pref.is_match IS true
+  )
+  SELECT id_taxa_obs
+  FROM pref_synonyms
 $BODY$;
 
-ALTER FUNCTION api.match_taxa(text)
+ALTER FUNCTION rubus.match_taxa(text)
     OWNER TO coleo;
 
---------------------------------------------------------------------------
---------------------------------------------------------------------------
+GRANT EXECUTE ON FUNCTION rubus.match_taxa(text) TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.match_taxa(text) TO read_only_all;
+GRANT EXECUTE ON FUNCTION rubus.match_taxa(text) TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.match_taxa(text) FROM PUBLIC;
 
+COMMENT ON FUNCTION rubus.match_taxa(text) IS 'Returns taxa matching the given scientific name, including synonyms and child taxa, to feed functions for portal';
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
 
 -- DROP FUNCTION IF EXISTS rubus.match_taxa_groups(integer[]);
 CREATE OR REPLACE FUNCTION rubus.match_taxa_groups(
-	id_taxa_obs integer[]
-)
-RETURNS SETOF rubus.taxa_groups AS $$
+	id_taxa_obs integer[])
+    RETURNS SETOF rubus.taxa_groups 
+    LANGUAGE 'sql'
+AS $BODY$
 	with group_id_taxa_obs as (
 		select
 			id_group,
@@ -83,10 +70,17 @@ RETURNS SETOF rubus.taxa_groups AS $$
 	select rubus.taxa_groups.* from group_id_taxa_obs, rubus.taxa_groups
 	where $1 <@ id_taxa_obs
 		and id_group = taxa_groups.id
-$$ language sql;
+$BODY$;
 
 ALTER FUNCTION rubus.match_taxa_groups(integer[])
     OWNER TO coleo;
+
+GRANT EXECUTE ON FUNCTION rubus.match_taxa_groups(integer[]) TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.match_taxa_groups(integer[]) TO read_only_all;
+GRANT EXECUTE ON FUNCTION rubus.match_taxa_groups(integer[]) TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.match_taxa_groups(integer[]) FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.match_taxa_groups(integer[]) IS 'Returns taxa groups matching the given list of id_taxa_obs';
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -97,8 +91,8 @@ ALTER FUNCTION rubus.match_taxa_groups(integer[])
 -- This function is used by the api.taxa_richness function to compute the number of
 -- unique taxa observed based on the tip-of-the-branch method
 
--- DROP FUNCTION IF EXISTS api.taxa_branch_tips(integer[]);
-CREATE OR REPLACE FUNCTION api.taxa_branch_tips (
+-- DROP FUNCTION IF EXISTS rubus.taxa_branch_tips(integer[]);
+CREATE OR REPLACE FUNCTION rubus.taxa_branch_tips (
     taxa_obs_ids integer[]
 ) RETURNS integer[] AS $$
 	with nodes AS (
@@ -117,13 +111,23 @@ CREATE OR REPLACE FUNCTION api.taxa_branch_tips (
 	where is_tip is true
 $$ LANGUAGE sql;
 
-ALTER FUNCTION api.taxa_branch_tips(integer[])
+ALTER FUNCTION rubus.taxa_branch_tips(integer[])
     OWNER TO coleo;
 
--- DROP AGGREGATE IF EXISTS api.taxa_branch_tips(integer);
-CREATE OR REPLACE AGGREGATE api.taxa_branch_tips (integer) (
+-- DROP AGGREGATE IF EXISTS rubus.taxa_branch_tips(integer);
+CREATE OR REPLACE AGGREGATE rubus.taxa_branch_tips (integer) (
 	SFUNC = array_append,
 	STYPE = integer[],
-	FINALFUNC = api.taxa_branch_tips,
+	FINALFUNC = rubus.taxa_branch_tips,
 	INITCOND = '{}'
 );
+
+ALTER AGGREGATE rubus.taxa_branch_tips(integer)
+    OWNER TO coleo;
+
+GRANT EXECUTE ON FUNCTION rubus.taxa_branch_tips(integer[]) TO PUBLIC;
+GRANT EXECUTE ON FUNCTION rubus.taxa_branch_tips(integer[]) TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.taxa_branch_tips(integer[]) TO read_only_all;
+GRANT EXECUTE ON FUNCTION rubus.taxa_branch_tips(integer[]) TO read_write_all;
+
+COMMENT ON FUNCTION rubus.taxa_branch_tips(integer[]) IS 'Returns the list of id_taxa_obs corresponding to the tip-of-the-branch method for the given list of id_taxa_obs';

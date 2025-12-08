@@ -1,3 +1,5 @@
+SET ROLE coleo;
+
 -- DROP TABLE IF EXISTS rubus.taxa_ref_sources;
 CREATE TABLE IF NOT EXISTS rubus.taxa_ref_sources (
   source_id INTEGER PRIMARY KEY,
@@ -7,6 +9,12 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_ref_sources (
 
 ALTER TABLE IF EXISTS rubus.taxa_ref_sources
     OWNER to coleo;
+
+GRANT ALL ON TABLE rubus.taxa_ref_sources TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_ref_sources TO read_only_all;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_ref_sources TO read_write_all;
+
+COMMENT ON TABLE rubus.taxa_ref_sources IS 'Rank priority of reference sources for taxonomic data. Lower number indicates higher priority.';
 
 DELETE FROM rubus.taxa_ref_sources;
 
@@ -20,6 +28,7 @@ VALUES (1002, 'CDPNQ', 1),
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
+
 -- DROP TABLE IF EXISTS rubus.taxa_vernacular_sources;
 CREATE TABLE IF NOT EXISTS rubus.taxa_vernacular_sources(
 	source_name VARCHAR(255) PRIMARY KEY,
@@ -28,6 +37,12 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_vernacular_sources(
 
 ALTER TABLE IF EXISTS rubus.taxa_vernacular_sources
     OWNER to coleo;
+
+GRANT ALL ON TABLE rubus.taxa_vernacular_sources TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_vernacular_sources TO read_only_all;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_vernacular_sources TO read_write_all;
+
+COMMENT ON TABLE rubus.taxa_vernacular_sources IS 'Rank priority of vernacular name sources for taxonomic data. Lower number indicates higher priority.';
 
 DELETE FROM rubus.taxa_vernacular_sources;
 

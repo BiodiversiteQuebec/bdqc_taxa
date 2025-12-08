@@ -1,3 +1,5 @@
+SET ROLE coleo;
+
 -- DROP MATERIALIZED VIEW IF EXISTS rubus.taxa_obs_ref_preferred;
 CREATE MATERIALIZED VIEW IF NOT EXISTS rubus.taxa_obs_ref_preferred AS
 WITH all_ref AS (
@@ -49,10 +51,14 @@ WITH DATA;
 ALTER TABLE IF EXISTS rubus.taxa_obs_ref_preferred
     OWNER TO coleo;
 
-CREATE INDEX ON rubus.taxa_obs_ref_preferred (id_taxa_obs);
-CREATE INDEX ON rubus.taxa_obs_ref_preferred (id_taxa_ref);
-CREATE INDEX ON rubus.taxa_obs_ref_preferred (rank);
-CREATE INDEX ON rubus.taxa_obs_ref_preferred (is_match);
+GRANT ALL ON TABLE rubus.taxa_obs_ref_preferred TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_obs_ref_preferred TO read_only_all;
+GRANT SELECT ON TABLE rubus.taxa_obs_ref_preferred TO read_write_all;
+
+CREATE INDEX id_taxa_obs_rank_match_idx ON rubus.taxa_obs_ref_preferred(id_taxa_obs, rank, is_match);
+CREATE INDEX id_taxa_ref_match_idx ON rubus.taxa_obs_ref_preferred(id_taxa_ref, is_match);
+
+COMMENT ON MATERIALIZED VIEW rubus.taxa_obs_ref_preferred IS 'Materialized view of preferred taxonomic references for taxa_obs, selecting the best matching reference based on predefined criteria.';
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -112,7 +118,13 @@ WITH DATA;
 ALTER TABLE IF EXISTS rubus.taxa_ref_vernacular_preferred
     OWNER TO coleo;
 
+GRANT ALL ON TABLE rubus.taxa_ref_vernacular_preferred TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_ref_vernacular_preferred TO read_only_all;
+GRANT SELECT ON TABLE rubus.taxa_ref_vernacular_preferred TO read_write_all;
+
 CREATE INDEX ON rubus.taxa_ref_vernacular_preferred (id_taxa_ref);
 CREATE INDEX ON rubus.taxa_ref_vernacular_preferred (id_taxa_vernacular_en);
 CREATE INDEX ON rubus.taxa_ref_vernacular_preferred (id_taxa_vernacular_fr);
 CREATE INDEX ON rubus.taxa_ref_vernacular_preferred ("rank");
+
+COMMENT ON MATERIALIZED VIEW rubus.taxa_ref_vernacular_preferred IS 'Materialized view of preferred vernacular names for taxonomic references, selecting the best matching vernacular based on predefined criteria.';

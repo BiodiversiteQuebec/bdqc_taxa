@@ -170,6 +170,17 @@ class TestTaxaRef(unittest.TestCase):
         ]
         self.assertGreater(len(cdpnq_refs), 0)
 
+    def test_from_all_sources_cdpnq_invalid_synonym(self, name = 'Dendrocopos villosus',
+                                                    valid_name = 'Dryobates villosus',
+                                                    source_name = 'CDPNQ'):
+        refs = taxa_ref.TaxaRef.from_all_sources(name)
+        cdpnq_refs = [
+            ref for ref in refs
+            if ref.source_name == source_name and ref.valid and ref.scientific_name == valid_name
+        ]
+        print(cdpnq_refs)
+        self.assertGreater(len(cdpnq_refs), 0)
+
     # Non-regression test for bug for 'Clupea harengus harengus'
     def test_from_all_sources_bug(self, name = 'Clupea harengus harengus'):
         refs = taxa_ref.TaxaRef.from_all_sources(name)

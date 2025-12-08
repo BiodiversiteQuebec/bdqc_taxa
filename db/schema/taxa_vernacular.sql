@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_vernacular
 ALTER TABLE IF EXISTS rubus.taxa_vernacular
     OWNER to coleo;
 
+GRANT ALL ON TABLE rubus.taxa_vernacular TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_vernacular TO read_only_all;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_vernacular TO read_write_all;
+
 CREATE INDEX IF NOT EXISTS taxa_vernacular_source_name_idx
   ON rubus.taxa_vernacular (source_name);
 
@@ -59,6 +63,10 @@ CREATE TABLE IF NOT EXISTS rubus.taxa_ref_vernacular_lookup
 
 ALTER TABLE IF EXISTS rubus.taxa_ref_vernacular_lookup
     OWNER to coleo;
+
+GRANT ALL ON TABLE rubus.taxa_ref_vernacular_lookup TO coleo;
+GRANT SELECT ON TABLE rubus.taxa_ref_vernacular_lookup TO read_only_all;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_ref_vernacular_lookup TO read_write_all;
 
 CREATE INDEX taxa_ref_vernacular_lookup_id_taxa_ref_idx ON rubus.taxa_ref_vernacular_lookup (id_taxa_ref);
 CREATE INDEX taxa_ref_vernacular_lookup_id_taxa_vernacular_idx ON rubus.taxa_ref_vernacular_lookup (id_taxa_vernacular);

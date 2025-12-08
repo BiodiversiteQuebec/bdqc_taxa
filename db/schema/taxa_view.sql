@@ -43,4 +43,7 @@ LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND s
 ALTER TABLE rubus.taxa_view
     OWNER TO coleo;
 
+GRANT ALL ON TABLE rubus.taxa_view TO coleo;
+GRANT TRUNCATE, INSERT, SELECT, TRIGGER, UPDATE, REFERENCES ON TABLE rubus.taxa_view TO read_write_all;
+
 COMMENT ON VIEW rubus.taxa_view IS 'A view of taxa observations with preferred scientific names, vernacular names, taxonomic hierarchy, and sensitivity information';

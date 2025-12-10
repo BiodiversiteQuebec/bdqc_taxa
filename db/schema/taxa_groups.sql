@@ -31,38 +31,37 @@ COMMENT ON TABLE rubus.taxa_groups IS 'Table of taxa groups definitions';
 -- 3: Application level groups defined by other groups instead of scientific_name
 
 -- Tout prendre éponges, tuniciers, oursins, echinodermes,(AUTRES ESPÈCES AQUATIQUES)
-('AMPHIBIANS', 1, 'Amphibiens', 'Amphibians', 1, NULL),
-('BIRDS', 2, 'Oiseaux', 'Birds', 1, NULL),
-('MAMMALS', 3, 'Mammifères', 'Mammals', 1, NULL),
-('REPTILES', 4, 'Reptiles', 'Reptiles', 1, NULL),
-('FISH', 5, 'Poissons', 'Fish', 1, NULL),
-('ARTHROPODS', 8, 'Insectes et autres arthropodes', 'Insects and other arthropods', 1, NULL),
-('OTHER_INVERTEBRATES', 9, 'Autres invertébrés', 'Other invertebrates', 1, NULL),
-('OTHER_TAXONS', 10, 'Autres taxons', 'Other taxons', 1, NULL),
-('FUNGI', 11, 'Mycètes et lichen', 'Fungi and lichens', 1, NULL),
-('ALGAE', 16, 'Algues', 'Algae', 1, NULL),
-('ALL_SPECIES', 19, 'Toutes les espèces', 'All species', 0, NULL),
-('CDPNQ_SUSC', 21, 'Espèce susceptible', NULL, 2, 'CDPNQ'),
-('CDPNQ_VUL', 22, 'Espèce vulnérable', NULL, 2, 'CDPNQ'),
-('CDPNQ_VUL_HARVEST', 23, 'Espèce vulnérable à la récolte', NULL, 2, 'CDPNQ'),
-('CDPNQ_ENDANGERED', 24, 'Espèce menacée', NULL, 2, 'CDPNQ'),
-('CDPNQ_S1', 27, 'Rang S1', 'S1 Rank', 2, 'CDPNQ'),
-('CDPNQ_S2', 28, 'Rang S2', 'S2 Rank', 2, 'CDPNQ'),
-('CDPNQ_S3', 29, 'Rang S3', 'S3 Rank', 2, 'CDPNQ'),
-('SENSITIVE', 31, 'Espèce sensibles', 'Sensitive species', 2, 'CDPNQ'),
-('SENTINELLE_INVASIVE', 33, 'Espèce exotique envahissante', 'Exotic invasive species', 2, 'SENTINELLE'),
-('PRINCIPAL_INVASIVE', 34, 'Principales espèces exotiques envahissantes', NULL, 2, 'Agriculture, environnement et ressources naturelles Québec'),
-('INVASIVE_SPECIES', 25, 'Espèce envahissante', 'Invasive species', 2, 'Sentinelle, Agriculture, environnement et ressources naturelles Québec'),
+(1, 'AMPHIBIANS', 'Amphibiens', 'Amphibians', 1, NULL),
+(2, 'BIRDS', 'Oiseaux', 'Birds', 1, NULL),
+(3, 'MAMMALS', 'Mammifères', 'Mammals', 1, NULL),
+(4, 'REPTILES', 'Reptiles', 'Reptiles', 1, NULL),
+(5, 'FISH', 'Poissons', 'Fish', 1, NULL),
+(8, 'ARTHROPODS', 'Insectes et autres arthropodes', 'Insects and other arthropods', 1, NULL),
+(9, 'OTHER_INVERTEBRATES', 'Autres invertébrés', 'Other invertebrates', 1, NULL),
+(10, 'OTHER_TAXONS', 'Autres taxons', 'Other taxons', 1, NULL),
+(11, 'FUNGI', 'Mycètes et lichen', 'Fungi and lichens', 1, NULL),
+(16, 'ALGAE', 'Algues', 'Algae', 1, NULL),
+(19, 'ALL_SPECIES', 'Toutes les espèces', 'All species', 0, NULL),
+(21, 'CDPNQ_SUSC', 'Espèce susceptible', NULL, 2, 'CDPNQ'),
+(22, 'CDPNQ_VUL', 'Espèce vulnérable', NULL, 2, 'CDPNQ'),
+(23, 'CDPNQ_VUL_HARVEST', 'Espèce vulnérable à la récolte', NULL, 2, 'CDPNQ'),
+(24, 'CDPNQ_ENDANGERED', 'Espèce menacée', NULL, 2, 'CDPNQ'),
+(27, 'CDPNQ_S1', 'Rang S1', 'S1 Rank', 2, 'CDPNQ'),
+(28, 'CDPNQ_S2', 'Rang S2', 'S2 Rank', 2, 'CDPNQ'),
+(29, 'CDPNQ_S3', 'Rang S3', 'S3 Rank', 2, 'CDPNQ'),
+(31, 'SENSITIVE', 'Espèce sensibles', 'Sensitive species', 2, 'CDPNQ'),
+(33, 'SENTINELLE_INVASIVE', 'Espèce exotique envahissante', 'Exotic invasive species', 2, 'SENTINELLE'),
+(34, 'PRINCIPAL_INVASIVE', 'Principales espèces exotiques envahissantes', NULL, 2, 'Agriculture, environnement et ressources naturelles Québec'),
+(25, 'INVASIVE_SPECIES', 'Espèce envahissante', 'Invasive species', 2, 'Sentinelle, Agriculture, environnement et ressources naturelles Québec'),
+(35,'VASCULAR_PLANTS', 'Plantes vasculaires', 'Vascular plants', 1),
+(36, 'NON_VASCULAR_PLANTS', 'Plantes non vasculaires', 'Non-vascular plants', 1),
+(37, 'MOLLUSKS', 'Mollusques', 'Mollusks', 1),
+(38, 'MICROORGANISMS', 'Microorganismes', 'Microorganisms', 1),
 
-INSERT INTO rubus.taxa_groups (short, vernacular_fr, vernacular_en, level, source_desc) VALUES
-('VASCULAR_PLANTS', 'Plantes vasculaires', 'Vascular plants', 1, NULL),
-('NON_VASCULAR_PLANTS', 'Plantes non vasculaires', 'Non-vascular plants', 1, NULL),
+(3, 'SARA_ENDANGERED', 'En voie de disparition', 'Endangered', 2),
+(3, 'SARA_THREATENED', 'Menacée', 'Threatened', 2),
+(3, 'SARA_SPECIAL_CONCERN', 'Préoccupante', 'Special Concern', 2)
 
-
-BEGIN;
-DELETE FROM rubus.taxa_groups WHERE short IN ('ANGIOSPERMS', 'CONIFERS', 'VASCULAR_CRYPTOGAM',
-'OTHER_GYMNOSPERMS', 'BRYOPHYTES', 'OTHER_PLANTS', 'CDPNQ_EMV');
-ROLLBACK;
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -165,13 +164,13 @@ WITH taxa_inserts(short, scientific_name) AS (
         ('FISH', 'Elasmobranchii'),
         ('FISH', 'Coelacanthiformes'),
         ('ARTHROPODS', 'Arthropoda'),
+        ('MOLLUSKS', 'Mollusca'),
         ('OTHER_INVERTEBRATES', 'Ascidiacea'),
         ('OTHER_INVERTEBRATES', 'Thaliacea'),
         ('OTHER_INVERTEBRATES', 'Appendicularia'),
         ('OTHER_INVERTEBRATES', 'Leptocardii'),
         ('OTHER_INVERTEBRATES', 'Hemichordata'),
         ('OTHER_INVERTEBRATES', 'Micrognathozoa'),
-        ('OTHER_INVERTEBRATES', 'Mollusca'),
         ('OTHER_INVERTEBRATES', 'Myxozoa'),
         ('OTHER_INVERTEBRATES', 'Nematoda'),
         ('OTHER_INVERTEBRATES', 'Nematomorpha'),
@@ -200,11 +199,15 @@ WITH taxa_inserts(short, scientific_name) AS (
         ('OTHER_INVERTEBRATES', 'Entoprocta'),
         ('OTHER_INVERTEBRATES', 'Gastrotricha'),
         ('OTHER_INVERTEBRATES', 'Gnathostomulida'),
-        ('OTHER_TAXONS', 'Protozoa'),
-        ('OTHER_TAXONS', 'Viruses'),
-        ('OTHER_TAXONS', 'Chromista'),
-        ('OTHER_TAXONS', 'Bacteria'),
-        ('OTHER_TAXONS', 'Archaea'),
+        ('OTHER_INVERTEBRATES', 'Ascidiacea'), -- Tunicates
+        ('OTHER_INVERTEBRATES', 'Thaliacea'), -- Tunicates
+        ('OTHER_INVERTEBRATES', 'Appendicularia'),  -- Tunicates
+        ('OTHER_INVERTEBRATES', 'Leptocardii'), -- Lancelets
+        ('MICROORGANISMS', 'Protozoa'),
+        ('MICROORGANISMS', 'Viruses'),
+        ('MICROORGANISMS', 'Chromista'),
+        ('MICROORGANISMS', 'Bacteria'),
+        ('MICROORGANISMS', 'Archaea'),
         ('FUNGI', 'Fungi'),
         ('VASCULAR_PLANTS', 'Magnoliopsida'),
         ('VASCULAR_PLANTS', 'Liliopsida'),

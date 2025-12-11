@@ -262,30 +262,28 @@ inject_data(con, eee_aquatic_data)
 inject_data(con, eee_all)
 
 
-################################################################################
-# 3. Liste des espèces en péril - COSEWIC & SARA
+####################################################################################
+# 3. Liste des espèces en péril fédéral - SARA
 # Data is currently downloaded manually from https://explorer.natureserve.org/Search
-# with filter Location = Quebec and National status in 1, 2, 3, 4, 5, X and H
-################################################################################
-ns_data <- readxl::read_excel("scratch/nsExplorer-Export-2025-11-26.xlsx", col_names = TRUE, skip = 1) |>
-  dplyr::select(scientific_name = `Scientific Name`,
-                species_group = `Species Group (Broad)`,
-                g_rank = `NatureServe Global Rank`,
-                sn_rank = `Distribution`,
-                cosewic_status = `COSEWIC Status`,
-                sara_status = `SARA Status`) |>
-  dplyr::filter(!is.na(scientific_name) & !(scientific_name %in% c("https://explorer.natureserve.org/AboutTheData", "Rounded State/Provincial Status", "Canada"))) #|>
-  dplyr::mutate(rank = "species",
-    cosewic_status = dplyr::case_when(
-      cosewic_status == "En voie de disparition" ~ "COSEWIC_ENDANGERED",
-      cosewic_status == "Menacée" ~ "COSEWIC_THREATENED",
-      cosewic_status == "Espèce préoccupante" ~ "COSEWIC_SPECIAL_CONCERN",
-      TRUE ~ NA_character_
+# with filter Location = Quebec and SARA status in `Special Concern`, `Threatened`,
+# and `Endangered`, also including subspecies, varieties and populations
+####################################################################################
+sara_status <- readxl::read_excel("scratch/natureserve_sara_2025-12-09-02-37.xlsx", col_names = TRUE, skip = 1) |>
+  dplyr::select(short_group = `SARA Status`,
+                scientific_name = `Scientific Name`,
+                species_group = `Species Group (Broad)`) |>
+  dplyr::filter(!is.na(scientific_name) & !(scientific_name %in% c("https://explorer.natureserve.org/AboutTheData", "SARA Status", "Canada"))) |>
+  dplyr::mutate(rank = dplyr::case_when(
+      grepl("pop\\.", scientific_name, ignore.case = TRUE) ~ "population",
+      grepl("var\\.", scientific_name, ignore.case = TRUE) ~ "variety",
+      grepl("ssp\\.", scientific_name, ignore.case = TRUE) ~ "subspecies",
+      nchar(gsub("[^ ]", "", scientific_name, ignore.case = TRUE)) == 2 ~ "subspecies",
+      TRUE ~ "species"
     ),
-    sara_status = dplyr::case_when(
-      sara_status == "Endangered/En voie de disparition" ~ "SARA_ENDANGERED",
-      sara_status == "Threatened/Menacée" ~ "SARA_THREATENED",
-      sara_status == "Special Concern/Préoccupante" ~ "SARA_SPECIAL_CONCERN",
+    short_group = dplyr::case_when(
+      short_group == "Endangered/En voie de disparition" ~ "SARA_ENDANGERED",
+      short_group == "Threatened/Menacée" ~ "SARA_THREATENED",
+      short_group == "Special Concern/Préoccupante" ~ "SARA_SPECIAL_CONCERN",
       TRUE ~ NA_character_
     ),
     parent_scientific_name = dplyr::case_when(
@@ -295,27 +293,49 @@ ns_data <- readxl::read_excel("scratch/nsExplorer-Export-2025-11-26.xlsx", col_n
       species_group %in% c("Vascular Plants - Ferns and relatives", "Vascular Plants - Flowering Plants",
                            "Lichens") ~ "Plantae",
       TRUE ~ NA_character_
-    ),
-    n_rank = stringr::str_extract(sn_rank, "(?<=Canada \\()[^)]+"),
-    s_rank = stringr::str_extract(sn_rank, "(?<=QC \\()[^)]+")
+    )
   ) |>
-  dplyr::select(scientific_name, rank, g_rank, n_rank, s_rank, cosewic_status, sara_status, parent_scientific_name)
+  dplyr::select(short_group, scientific_name, rank, parent_scientific_name)
 
-cosewic_data <- ns_data |> dplyr::select(scientific_name, rank, cosewic_status, parent_scientific_name) |>
-  dplyr::filter(!is.na(cosewic_status))
-
-  tidyr::pivot_longer(cols = c("g_rank", "n_rank", "s_rank", "cosewic_status", "sara_status"),
-                      names_to = "status_type",
-                      values_to = "short") |>
-  dplyr::filter(!is.na(short))
-
-
-cosewic_data <- ns_data |> dplyr::filter(short == )
 # Connect to the database
 print("Connecting to Database…")
 con <- dbConnect(Postgres(), dbname = Sys.getenv("POSTGRES_DB"),
                  host = Sys.getenv("POSTGRES_HOST"), port = Sys.getenv("POSTGRES_PORT"),
                  user = Sys.getenv("POSTGRES_USER"), password = Sys.getenv("POSTGRES_PASSWORD"))
 
-inject_data(con, ns_data)
+inject_data(con, sara_status)
 
+
+################################################################################
+# 4. Liste des rang S - NatureServe
+# Data is currently downloaded manually from https://explorer.natureserve.org/Search
+# with filter Location = Quebec and National status in 1, 2, 3 and
+# also including subspecies, varieties and populations
+################################################################################
+
+srank_status <- readxl::read_excel("scratch/natureserve_srank_2025-12-09-03-04.xlsx", col_names = TRUE, skip = 1) |>
+  dplyr::select(short_group = `Distribution`,
+                scientific_name = `Scientific Name`,
+                species_group = `Species Group (Broad)`) |>
+  dplyr::filter(!is.na(scientific_name) & !(scientific_name %in% c("https://explorer.natureserve.org/AboutTheData", "Rounded State/Provincial Status", "Canada"))) |>
+  dplyr::mutate(rank = dplyr::case_when(
+    grepl("pop\\.", scientific_name, ignore.case = TRUE) ~ "population",
+    grepl("var\\.", scientific_name, ignore.case = TRUE) ~ "variety",
+    grepl("ssp\\.", scientific_name, ignore.case = TRUE) ~ "subspecies",
+    nchar(gsub("[^ ]", "", scientific_name, ignore.case = TRUE)) == 2 ~ "subspecies",
+    TRUE ~ "species"
+  ),
+  parent_scientific_name = dplyr::case_when(
+    species_group %in% c("Vertebrates", "Mussels, Snails, & Other Molluscs", "Insects - Beetles",
+                         "Insects - Butterflies and Moths", "Insects - Damselflies and Dragonflies",
+                         "Other Invertebrates - Terrestrial/Freshwater") ~ "Animalia",
+    species_group %in% c("Vascular Plants - Ferns and relatives", "Vascular Plants - Conifers and relatives",
+                         "Vascular Plants - Flowering Plants", "Nonvascular Plants", "Fungi (non-lichenized)",
+                         "Lichens") ~ "Plantae",
+    TRUE ~ NA_character_
+  ),
+  short_group = paste0("CDPNQ_", stringr::str_sub(stringr::str_extract(short_group, "(?<=QC \\()[^)]+"), 1, 2))
+  ) |>
+  dplyr::select(short_group, scientific_name, rank, parent_scientific_name)
+
+inject_data(con, srank_status)

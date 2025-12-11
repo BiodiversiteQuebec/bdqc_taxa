@@ -1,4 +1,5 @@
-BEGIN;
+-- Update level 1 groups
+EGIN;
 
 ALTER TABLE rubus.taxa_groups DROP COLUMN source_desc; -- Not used. This info can be provided in the dataset
 
@@ -7,10 +8,8 @@ INSERT INTO rubus.taxa_groups (short, vernacular_fr, vernacular_en, level) VALUE
 ('VASCULAR_PLANTS', 'Plantes vasculaires', 'Vascular plants', 1),
 ('NON_VASCULAR_PLANTS', 'Plantes non vasculaires', 'Non-vascular plants', 1),
 ('MOLLUSKS', 'Mollusques', 'Mollusks', 1)
-('MICROORGANISMS', 'Microorganismes', 'Microorganisms', 1),
-('SARA_ENDANGERED', 'En voie de disparition', 'Endangered', 2),
-('SARA_THREATENED', 'Menacée', 'Threatened', 2),
-('SARA_SPECIAL_CONCERN', 'Préoccupante', 'Special Concern', 2);
+('MICROORGANISMS', 'Microorganismes', 'Microorganisms', 1);
+
 
 -- Reassign old groups to new groups
 ALTER TABLE rubus.taxa_group_members
@@ -58,6 +57,19 @@ WHERE short IN ('TUNICATES', 'LANCELETS');
 DELETE FROM rubus.taxa_groups WHERE short IN ('TUNICATES', 'LANCELETS', 'ANGIOSPERMS', 'CONIFERS', 'VASCULAR_CRYPTOGAM',
 'OTHER_GYMNOSPERMS', 'BRYOPHYTES', 'OTHER_PLANTS', 'OTHER_TAXONS', 'CDPNQ_EMV');
 
-ROLLBACK;
+COMMIT;
 
 
+-- Update rubus.taxa_view and api.taxa
+-- to include new level 2 group status
+BEGIN;
+
+INSERT INTO rubus.taxa_groups (short, vernacular_fr, vernacular_en, level) VALUES
+('SARA_ENDANGERED', 'En voie de disparition', 'Endangered', 2),
+('SARA_THREATENED', 'Menacée', 'Threatened', 2),
+('SARA_SPECIAL_CONCERN', 'Préoccupante', 'Special Concern', 2);
+
+-- Run group_members_update.R script to insert/update
+-- SARA status and NatureServe S ranks
+
+COMMIT;

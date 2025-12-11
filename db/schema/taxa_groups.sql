@@ -57,10 +57,9 @@ COMMENT ON TABLE rubus.taxa_groups IS 'Table of taxa groups definitions';
 (36, 'NON_VASCULAR_PLANTS', 'Plantes non vasculaires', 'Non-vascular plants', 1),
 (37, 'MOLLUSKS', 'Mollusques', 'Mollusks', 1),
 (38, 'MICROORGANISMS', 'Microorganismes', 'Microorganisms', 1),
-
-(3, 'SARA_ENDANGERED', 'En voie de disparition', 'Endangered', 2),
-(3, 'SARA_THREATENED', 'Menacée', 'Threatened', 2),
-(3, 'SARA_SPECIAL_CONCERN', 'Préoccupante', 'Special Concern', 2)
+(39, 'SARA_ENDANGERED', 'En voie de disparition', 'Endangered', 2),
+(40, 'SARA_THREATENED', 'Menacée', 'Threatened', 2),
+(41, 'SARA_SPECIAL_CONCERN', 'Préoccupante', 'Special Concern', 2)
 
 
 --------------------------------------------------------------------------

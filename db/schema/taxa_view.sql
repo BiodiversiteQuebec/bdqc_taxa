@@ -19,7 +19,9 @@ SELECT DISTINCT ON (taxa_obs.id)
     "order".scientific_name as "order",
     family.scientific_name as family,
     genus.scientific_name as genus,
-    species.scientific_name as species
+    species.scientific_name as species,
+    lemv_ranks.vernacular_fr AS lemv_status,
+    sara_ranks.vernacular_fr AS sara_status
 FROM taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred ref_pref ON taxa_obs.id = ref_pref.id_taxa_obs AND ref_pref.is_match IS TRUE
 LEFT JOIN rubus.taxa_ref_vernacular_preferred vernacular_pref ON ref_pref.id_taxa_ref = vernacular_pref.id_taxa_ref
@@ -38,7 +40,13 @@ LEFT JOIN rubus.taxa_obs_ref_preferred class ON class.rank = 'class' AND class.i
 LEFT JOIN rubus.taxa_obs_ref_preferred "order" ON "order".rank = 'order' AND "order".id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred family ON family.rank = 'family' AND family.id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred genus ON genus.rank = 'genus' AND genus.id_taxa_obs = ref_pref.id_taxa_obs
-LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND species.id_taxa_obs = ref_pref.id_taxa_obs;
+LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND species.id_taxa_obs = ref_pref.id_taxa_obs
+LEFT JOIN 
+  (SELECT * FROM rubus.taxa_groups WHERE taxa_groups.short::text IN ('CDPNQ_ENDANGERED', 'CDPNQ_SUSC', 'CDPNQ_VUL', 'CDPNQ_VUL_HARVEST'))
+    AS lemv_ranks ON sensitive_group.id_group = lemv_ranks.id
+LEFT JOIN 
+  (SELECT * FROM rubus.taxa_groups WHERE taxa_groups.short::text IN ('SARA_ENDANGERED', 'SARA_THREATENED', 'SARA_SPECIAL_CONCERN'))
+    AS sara_ranks ON sensitive_group.id_group = sara_ranks.id;
 
 ALTER TABLE rubus.taxa_view
     OWNER TO coleo;

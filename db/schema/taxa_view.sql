@@ -20,8 +20,8 @@ SELECT DISTINCT ON (taxa_obs.id)
     family.scientific_name as family,
     genus.scientific_name as genus,
     species.scientific_name as species,
-    lemv_ranks.vernacular_fr AS lemv_status,
-    sara_ranks.vernacular_fr AS sara_status
+    COALESCE(lemv_ranks.vernacular_fr, 'Non suivie') AS lemv_status,
+    COALESCE(sara_ranks.vernacular_fr, 'Non suivie') AS sara_status
 FROM taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred ref_pref ON taxa_obs.id = ref_pref.id_taxa_obs AND ref_pref.is_match IS TRUE
 LEFT JOIN rubus.taxa_ref_vernacular_preferred vernacular_pref ON ref_pref.id_taxa_ref = vernacular_pref.id_taxa_ref

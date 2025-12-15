@@ -1,8 +1,6 @@
 -- Update level 1 groups
 BEGIN;
 
-ALTER TABLE rubus.taxa_groups DROP COLUMN source_desc; -- Not used. This info can be provided in the dataset
-
 -- Create new groups
 INSERT INTO rubus.taxa_groups (short, vernacular_fr, vernacular_en, level) VALUES
 ('VASCULAR_PLANTS', 'Plantes vasculaires', 'Vascular plants', 1),

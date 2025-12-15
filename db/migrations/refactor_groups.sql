@@ -1,5 +1,5 @@
 -- Update level 1 groups
-EGIN;
+BEGIN;
 
 ALTER TABLE rubus.taxa_groups DROP COLUMN source_desc; -- Not used. This info can be provided in the dataset
 

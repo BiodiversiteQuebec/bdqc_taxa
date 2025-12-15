@@ -1,5 +1,71 @@
 SET ROLE coleo;
 
+-- DROP PROCEDURE IF EXISTS rubus.refresh_taxa_vernacular_procedure(integer);
+CREATE OR REPLACE PROCEDURE rubus.refresh_taxa_vernacular_procedure(
+    batch_size int DEFAULT 100
+)
+LANGUAGE 'plpgsql'
+AS $BODY$
+DECLARE
+    taxa_ref_record RECORD;
+    counter INTEGER := 0;
+BEGIN
+
+    FOR taxa_ref_record IN
+        SELECT
+          array_agg(id)::integer[] AS id_taxa_ref,
+          scientific_name,
+          authorship,
+          rank
+        FROM rubus.taxa_ref
+        GROUP BY scientific_name, authorship, rank
+        ORDER BY scientific_name
+
+    LOOP
+        BEGIN
+        RAISE NOTICE 'Processing % (%)', taxa_ref_record.scientific_name, taxa_ref_record.id_taxa_ref;
+
+        PERFORM rubus.insert_taxa_vernacular_from_taxa_ref(
+            taxa_ref_record.id_taxa_ref,
+            taxa_ref_record.scientific_name,
+            taxa_ref_record.authorship,
+            taxa_ref_record.rank
+        );
+
+        EXCEPTION
+            WHEN OTHERS THEN
+            RAISE NOTICE 'ERROR on %: % (%): %', taxa_ref_record.id_taxa_ref, taxa_ref_record.scientific_name, SQLSTATE, SQLERRM;
+            CONTINUE;
+        END;
+        
+        counter := counter + 1;
+
+        IF counter >= batch_size THEN
+            COMMIT;
+            counter := 0;
+            RAISE NOTICE 'Committed batch at %', taxa_ref_record.scientific_name;
+        END IF;
+
+    END LOOP;
+    
+    PERFORM rubus.taxa_vernacular_fix_caribou();
+
+    -- Final commit for any remaining records
+    IF counter > 0 THEN
+        COMMIT;
+        RAISE NOTICE 'Final commit completed';
+    END IF;
+
+END;
+$BODY$;
+
+ALTER PROCEDURE rubus.refresh_taxa_vernacular_procedure(integer)
+    OWNER TO coleo;
+
+GRANT EXECUTE ON PROCEDURE rubus.refresh_taxa_vernacular_procedure(integer) TO coleo;
+GRANT EXECUTE ON PROCEDURE rubus.refresh_taxa_vernacular_procedure(integer) TO read_write_all;
+REVOKE ALL ON PROCEDURE rubus.refresh_taxa_vernacular_procedure(integer) FROM PUBLIC;
+
 -- DROP FUNCTION IF EXISTS rubus.refresh_taxa_vernacular();
 CREATE OR REPLACE FUNCTION rubus.refresh_taxa_vernacular(
 	)

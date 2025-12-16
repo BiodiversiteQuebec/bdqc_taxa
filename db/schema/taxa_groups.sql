@@ -125,13 +125,6 @@ BEGIN
     VALUES ($1, taxa_obs_id)
     ON CONFLICT DO NOTHING;
 
-    -- 3.4. Rafraîchir taxa_ref pour ce taxa_obs
-    BEGIN
-        PERFORM rubus.insert_taxa_ref_from_taxa_obs(taxa_obs_id, $2, $3, $5);
-    EXCEPTION
-        WHEN OTHERS THEN
-        RAISE NOTICE 'Error inserting record with id % and scientific name %', taxa_obs_id, $2;
-    END;
 END;
 $BODY$;
 

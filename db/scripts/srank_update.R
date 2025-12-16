@@ -24,8 +24,8 @@ srank_status <- readxl::read_excel("scratch/natureserve_srank_2025-12-09-03-04.x
                          "Insects - Butterflies and Moths", "Insects - Damselflies and Dragonflies",
                          "Other Invertebrates - Terrestrial/Freshwater") ~ "Animalia",
     species_group %in% c("Vascular Plants - Ferns and relatives", "Vascular Plants - Conifers and relatives",
-                         "Vascular Plants - Flowering Plants", "Nonvascular Plants", "Fungi (non-lichenized)",
-                         "Lichens") ~ "Plantae",
+                         "Vascular Plants - Flowering Plants", "Nonvascular Plants") ~ "Plantae",
+    species_group %in% c("Lichens", "Fungi (non-lichenized)") ~ "Fungi",
     TRUE ~ NA_character_
   ),
   short_group = paste0("CDPNQ_", stringr::str_sub(stringr::str_extract(short_group, "(?<=QC \\()[^)]+"), 1, 2))

@@ -430,6 +430,12 @@ class TestTaxaRef(unittest.TestCase):
         self.assertTrue(any([res for res in cdpnq_results if res.rank == 'genus' and res.is_parent and res.scientific_name == 'Catharus']))
         self.assertTrue(any([res for res in cdpnq_results if res.rank == 'species' and not res.is_parent and res.scientific_name == 'Catharus ustulatus']))
 
+    def test_cdpnq_match_pop_and_higher_ranks(self, name='Desmognathus ochrophaeus pop. 2'):
+        results = taxa_ref.TaxaRef.from_cdpnq(name)
+        self.assertTrue(any([res for res in results if res.rank == 'genus']))
+        self.assertTrue(any([res for res in results if res.rank == 'species']))
+        self.assertTrue(any([res for res in results if res.rank == 'population']))
+        
 class TestComplex(unittest.TestCase):
     # Test for Myotis complex entries from CDPNQ
     def test_cdpnq_complex_myotis(self, name='Myotis lucifugus|Myotis septentrionalis|Myotis leibii'):

@@ -430,6 +430,48 @@ class TestTaxaRef(unittest.TestCase):
         self.assertTrue(any([res for res in cdpnq_results if res.rank == 'genus' and res.is_parent and res.scientific_name == 'Catharus']))
         self.assertTrue(any([res for res in cdpnq_results if res.rank == 'species' and not res.is_parent and res.scientific_name == 'Catharus ustulatus']))
 
+    # Comment: Behaviour needs to be clarified for gbif
+    def test_population_name_valid_parent(self, name='Rangifer tarandus caribou pop. 2',
+                             valid_species='Rangifer tarandus',
+                             valid_subspecies='Rangifer tarandus caribou',
+                             valid_population='Rangifer tarandus caribou pop. 2',
+                             expected_source_names = ['CDPNQ']):
+        results = taxa_ref.TaxaRef.from_all_sources(name)
+
+        # Valid subspecies in results for all expected sources
+        for source in expected_source_names:
+            self.assertTrue(
+                any(
+                    res.scientific_name == valid_species and
+                    res.valid and
+                    res.source_name == source
+                    for res in results
+                ), f"Valid species {valid_species} not found for source {source}"
+            )
+            self.assertTrue(
+                any(
+                    res.scientific_name == valid_subspecies and
+                    res.valid and
+                    res.source_name == source
+                    for res in results
+                ), f"Valid subspecies {valid_subspecies} not found for source {source}"
+            )
+            self.assertTrue(
+                any(
+                    res.scientific_name == valid_population and
+                    res.valid and
+                    res.source_name == source
+                    for res in results
+                ), f"Valid population {valid_population} not found for source {source}"
+            )
+
+    def test_cdpnq_match_pop_and_higher_ranks(self, name='Rangifer tarandus caribou pop. 2'):
+        results = taxa_ref.TaxaRef.from_cdpnq(name)
+        self.assertTrue(any([res for res in results if res.rank == 'genus']))
+        self.assertTrue(any([res for res in results if res.rank == 'species']))
+        self.assertTrue(any([res for res in results if res.rank == 'subspecies']))
+        self.assertTrue(any([res for res in results if res.rank == 'population']))
+        
 class TestComplex(unittest.TestCase):
     # Test for Myotis complex entries from CDPNQ
     def test_cdpnq_complex_myotis(self, name='Myotis lucifugus|Myotis septentrionalis|Myotis leibii'):

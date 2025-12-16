@@ -253,9 +253,10 @@ con <- dbConnect(Postgres(), dbname = Sys.getenv("POSTGRES_DB"),
 
 # Delete old data
 delete_old_invasive_grp <- "DELETE FROM rubus.taxa_group_members WHERE short IN ('PRINCIPAL_INVASIVE', 'SENTINELLE_INVASIVE', 'INVASIVE_SPECIES', 'AQUATIC_INVASIVE');"
+resp_delete_old_invasive <- dbExecute(con, delete_old_invasive_grp)
 
 # Inject new data
 inject_data(con, eee_principales_data)
 inject_data(con, eee_sentinelle_data)
 inject_data(con, eee_aquatic_data)
-inject_data(con, eee_ALL)
+inject_data(con, eee_all)

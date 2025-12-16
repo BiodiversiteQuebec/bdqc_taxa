@@ -24,52 +24,43 @@ CREATE UNIQUE INDEX IF NOT EXISTS taxa_groups_short_unique_idx ON rubus.taxa_gro
 COMMENT ON TABLE rubus.taxa_groups IS 'Table of taxa groups definitions';
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
-
 -- DESCRIPTION OF LEVELS
 -- 0: All quebec taxa, members are gathered from the observations within_quebec
 -- 1: High level groups, Contains exclusive taxas to other level 1 groups
 -- 2: Application level groups defined by scientific_name, From specific list for specific analysis, may overlaps with other groups
 -- 3: Application level groups defined by other groups instead of scientific_name
 
-INSERT INTO rubus.taxa_groups (short, id, vernacular_fr, vernacular_en, level, source_desc) VALUES
-('AMPHIBIANS', 1, 'Amphibiens', 'Amphibians', 1, NULL),
-('BIRDS', 2, 'Oiseaux', 'Birds', 1, NULL),
-('MAMMALS', 3, 'Mammifères', 'Mammals', 1, NULL),
-('REPTILES', 4, 'Reptiles', 'Reptiles', 1, NULL),
-('FISH', 5, 'Poissons', 'Fish', 1, NULL),
-('TUNICATES', 6, 'Tuniciers', 'Tunicates', 1, NULL),
-('LANCELETS', 7, 'Céphalocordés', 'Lancelets', 1, NULL),
-('ARTHROPODS', 8, 'Arthropodes', 'Arthropods', 1, NULL),
-('OTHER_INVERTEBRATES', 9, 'Autres invertébrés', 'Other invertebrates', 1, NULL),
-('OTHER_TAXONS', 10, 'Autres taxons', 'Other taxons', 1, NULL),
-('FUNGI', 11, 'Mycètes', 'Fungi', 1, NULL),
-('ANGIOSPERMS', 12, 'Angiospermes', 'Angiosperms', 1, NULL),
-('CONIFERS', 13, 'Conifères', 'Conifers', 1, NULL),
-('VASCULAR_CRYPTOGAM', 14, 'Cryptogames vasculaires', 'Vascular cryptogam', 1, NULL),
-('OTHER_GYMNOSPERMS', 15, 'Autres gymnospermes', 'Other gymnosperms', 1, NULL),
-('ALGAE', 16, 'Algues', 'Algae', 1, NULL),
-('BRYOPHYTES', 17, 'Bryophytes', 'Bryophytes', 1, NULL),
-('OTHER_PLANTS', 18, 'Autres plantes', 'Other plants', 1, NULL),
-('ALL_SPECIES', 19, 'Toutes les espèces', 'All species', 0, NULL),
-('INVASIVE_SPECIES', 25, 'Espèce envahissante', 'Invasive species', 2, 'Sentinelle, Agriculture, environnement et ressources naturelles Québec'),
-('SENTINELLE_INVASIVE', 33, 'Espèce exotique envahissante', 'Exotic invasive species', 2, 'SENTINELLE'),
-('PRINCIPAL_INVASIVE', 34, 'Principales espèces exotiques envahissantes', NULL, 2, 'Agriculture, environnement et ressources naturelles Québec'),
-('CDPNQ_SUSC', 21, 'Espèce susceptible', NULL, 2, 'CDPNQ'),
-('CDPNQ_VUL', 22, 'Espèce vulnérable', NULL, 2, 'CDPNQ'),
-('CDPNQ_VUL_HARVEST', 23, 'Espèce vulnérable à la récolte', NULL, 2, 'CDPNQ'),
-('CDPNQ_ENDANGERED', 24, 'Espèce menacée', NULL, 2, 'CDPNQ'),
-('CDPNQ_S1', 27, 'Rang S1', 'S1 Rank', 2, 'CDPNQ'),
-('CDPNQ_S2', 28, 'Rang S2', 'S2 Rank', 2, 'CDPNQ'),
-('CDPNQ_S3', 29, 'Rang S3', 'S3 Rank', 2, 'CDPNQ'),
-('SENSITIVE', 31, 'Espèce sensibles', 'Sensitive species', 2, 'CDPNQ'),
-('CDPNQ_EMV', 32, 'Espèces menacées, vulnérables ou susceptibles', 'At-risk species', 2, 'CDPNQ');
+-- Tout prendre éponges, tuniciers, oursins, echinodermes,(AUTRES ESPÈCES AQUATIQUES)
+(1, 'AMPHIBIANS', 'Amphibiens', 'Amphibians', 1, NULL),
+(2, 'BIRDS', 'Oiseaux', 'Birds', 1, NULL),
+(3, 'MAMMALS', 'Mammifères', 'Mammals', 1, NULL),
+(4, 'REPTILES', 'Reptiles', 'Reptiles', 1, NULL),
+(5, 'FISH', 'Poissons', 'Fish', 1, NULL),
+(8, 'ARTHROPODS', 'Insectes et autres arthropodes', 'Insects and other arthropods', 1, NULL),
+(9, 'OTHER_INVERTEBRATES', 'Autres invertébrés', 'Other invertebrates', 1, NULL),
+(10, 'OTHER_TAXONS', 'Autres taxons', 'Other taxons', 1, NULL),
+(11, 'FUNGI', 'Mycètes et lichen', 'Fungi and lichens', 1, NULL),
+(16, 'ALGAE', 'Algues', 'Algae', 1, NULL),
+(19, 'ALL_SPECIES', 'Toutes les espèces', 'All species', 0, NULL),
+(21, 'CDPNQ_SUSC', 'Espèce susceptible', NULL, 2, 'CDPNQ'),
+(22, 'CDPNQ_VUL', 'Espèce vulnérable', NULL, 2, 'CDPNQ'),
+(23, 'CDPNQ_VUL_HARVEST', 'Espèce vulnérable à la récolte', NULL, 2, 'CDPNQ'),
+(24, 'CDPNQ_ENDANGERED', 'Espèce menacée', NULL, 2, 'CDPNQ'),
+(27, 'CDPNQ_S1', 'Rang S1', 'S1 Rank', 2, 'CDPNQ'),
+(28, 'CDPNQ_S2', 'Rang S2', 'S2 Rank', 2, 'CDPNQ'),
+(29, 'CDPNQ_S3', 'Rang S3', 'S3 Rank', 2, 'CDPNQ'),
+(31, 'SENSITIVE', 'Espèce sensibles', 'Sensitive species', 2, 'CDPNQ'),
+(33, 'SENTINELLE_INVASIVE', 'Espèce exotique envahissante', 'Exotic invasive species', 2, 'SENTINELLE'),
+(34, 'PRINCIPAL_INVASIVE', 'Principales espèces exotiques envahissantes', NULL, 2, 'Agriculture, environnement et ressources naturelles Québec'),
+(25, 'INVASIVE_SPECIES', 'Espèce envahissante', 'Invasive species', 2, 'Sentinelle, Agriculture, environnement et ressources naturelles Québec'),
+(35,'VASCULAR_PLANTS', 'Plantes vasculaires', 'Vascular plants', 1),
+(36, 'NON_VASCULAR_PLANTS', 'Plantes non vasculaires', 'Non-vascular plants', 1),
+(37, 'MOLLUSKS', 'Mollusques', 'Mollusks', 1),
+(38, 'MICROORGANISMS', 'Microorganismes', 'Microorganisms', 1),
+(39, 'SARA_ENDANGERED', 'En voie de disparition', 'Endangered', 2),
+(40, 'SARA_THREATENED', 'Menacée', 'Threatened', 2),
+(41, 'SARA_SPECIAL_CONCERN', 'Préoccupante', 'Special Concern', 2)
 
-INSERT INTO rubus.taxa_groups (short, id, vernacular_fr, vernacular_en, level, groups_within)
-VALUES
-    -- ('CDPNQ_RISK', ARRAY['CDPNQ_S1', 'CDPNQ_S2', 'CDPNQ_S3']),
-    -- ('CDPNQ_STATUS', ARRAY['CDPNQ_SUSC', 'CDPNQ_VUL', 'CDPNQ_VUL_HARVEST', 'CDPNQ_ENDANGERED']);
-    ('CDPNQ_RISK', 30, 'En situation précaire', 'At risk', 3, ARRAY['CDPNQ_S1', 'CDPNQ_S2', 'CDPNQ_S3']),
-    ('CDPNQ_STATUS', 26, 'Espèces à statut CDPNQ', 'Species at risk ', 3, ARRAY['CDPNQ_SUSC', 'CDPNQ_VUL', 'CDPNQ_VUL_HARVEST', 'CDPNQ_ENDANGERED']);
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
@@ -134,13 +125,6 @@ BEGIN
     VALUES ($1, taxa_obs_id)
     ON CONFLICT DO NOTHING;
 
-    -- 3.4. Rafraîchir taxa_ref pour ce taxa_obs
-    BEGIN
-        PERFORM rubus.insert_taxa_ref_from_taxa_obs(taxa_obs_id, $2, $3, $5);
-    EXCEPTION
-        WHEN OTHERS THEN
-        RAISE NOTICE 'Error inserting record with id % and scientific name %', taxa_obs_id, $2;
-    END;
 END;
 $BODY$;
 
@@ -171,14 +155,10 @@ WITH taxa_inserts(short, scientific_name) AS (
         ('FISH', 'Cephalaspidomorphi'),
         ('FISH', 'Elasmobranchii'),
         ('FISH', 'Coelacanthiformes'),
-        ('TUNICATES', 'Ascidiacea'),
-        ('TUNICATES', 'Thaliacea'),
-        ('TUNICATES', 'Appendicularia'),
-        ('LANCELETS', 'Leptocardii'),
         ('ARTHROPODS', 'Arthropoda'),
+        ('MOLLUSKS', 'Mollusca'),
         ('OTHER_INVERTEBRATES', 'Hemichordata'),
         ('OTHER_INVERTEBRATES', 'Micrognathozoa'),
-        ('OTHER_INVERTEBRATES', 'Mollusca'),
         ('OTHER_INVERTEBRATES', 'Myxozoa'),
         ('OTHER_INVERTEBRATES', 'Nematoda'),
         ('OTHER_INVERTEBRATES', 'Nematomorpha'),
@@ -207,27 +187,31 @@ WITH taxa_inserts(short, scientific_name) AS (
         ('OTHER_INVERTEBRATES', 'Entoprocta'),
         ('OTHER_INVERTEBRATES', 'Gastrotricha'),
         ('OTHER_INVERTEBRATES', 'Gnathostomulida'),
-        ('OTHER_TAXONS', 'Protozoa'),
-        ('OTHER_TAXONS', 'Viruses'),
-        ('OTHER_TAXONS', 'Chromista'),
-        ('OTHER_TAXONS', 'Bacteria'),
-        ('OTHER_TAXONS', 'Archaea'),
+        ('OTHER_INVERTEBRATES', 'Ascidiacea'), -- Tunicates
+        ('OTHER_INVERTEBRATES', 'Thaliacea'), -- Tunicates
+        ('OTHER_INVERTEBRATES', 'Appendicularia'),  -- Tunicates
+        ('OTHER_INVERTEBRATES', 'Leptocardii'), -- Lancelets
+        ('MICROORGANISMS', 'Protozoa'),
+        ('MICROORGANISMS', 'Viruses'),
+        ('MICROORGANISMS', 'Chromista'),
+        ('MICROORGANISMS', 'Bacteria'),
+        ('MICROORGANISMS', 'Archaea'),
         ('FUNGI', 'Fungi'),
-        ('ANGIOSPERMS', 'Magnoliopsida'),
-        ('ANGIOSPERMS', 'Liliopsida'),
-        ('CONIFERS', 'Pinopsida'),
-        ('VASCULAR_CRYPTOGAM', 'Lycopodiopsida'),
-        ('VASCULAR_CRYPTOGAM', 'Polypodiopsida'),
-        ('OTHER_GYMNOSPERMS', 'Gnetopsida'),
-        ('OTHER_GYMNOSPERMS', 'Cycadopsida'),
-        ('OTHER_GYMNOSPERMS', 'Ginkgoopsida'),
+        ('VASCULAR_PLANTS', 'Magnoliopsida'),
+        ('VASCULAR_PLANTS', 'Liliopsida'),
+        ('VASCULAR_PLANTS', 'Pinopsida'),
+        ('VASCULAR_PLANTS', 'Lycopodiopsida'),
+        ('VASCULAR_PLANTS', 'Polypodiopsida'),
+        ('VASCULAR_PLANTS', 'Gnetopsida'),
+        ('VASCULAR_PLANTS', 'Cycadopsida'),
+        ('VASCULAR_PLANTS', 'Ginkgoopsida'),
         ('ALGAE', 'Chlorophyta'),
         ('ALGAE', 'Charophyta'),
         ('ALGAE', 'Rhodophyta'),
-        ('BRYOPHYTES', 'Bryophyta'),
-        ('OTHER_PLANTS', 'Glaucophyta'),
-        ('OTHER_PLANTS', 'Anthocerotophyta'),
-        ('OTHER_PLANTS', 'Marchantiophyta')
+        ('ALGAE', 'Glaucophyta'),
+        ('NON_VASCULAR_PLANTS', 'Bryophyta'),
+        ('NON_VASCULAR_PLANTS', 'Anthocerotophyta'),
+        ('NON_VASCULAR_PLANTS', 'Marchantiophyta')
 )
 SELECT rubus.insert_taxa_obs_group_member(short, scientific_name)
 FROM taxa_inserts;

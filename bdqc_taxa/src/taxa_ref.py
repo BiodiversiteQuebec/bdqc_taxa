@@ -15,7 +15,7 @@ CDPNQ_SOURCE_KEY = 1002 # Not in global names so start at 1000
 
 GBIF_SOURCE_NAME = 'GBIF Backbone Taxonomy'
 GBIF_RANKS = ['kingdom', 'phylum', 'class', 'order', 'family',
-                'genus', 'species', 'subspecies', 'variety', 'form']
+                'genus', 'species', 'subspecies', 'variety', 'form', 'population']
 
 DATA_SOURCES = [1, 3, 147] # COL, ITIS, VASCAN
 
@@ -559,7 +559,7 @@ class TaxaRef:
             )
 
             # Create rows for valid parent genus
-            if valid_match and valid_match['rank'].lower() in ['subspecies', 'species']:
+            if valid_match and valid_match['rank'].lower() in ['population', 'subspecies', 'species']:
                 genus = valid_match['genus'] if 'genus' in valid_match else valid_match['name'].split(' ')[0] # Fallback when genus is not provided (current case for odonates)
                 out.append(cls(
                     source_id=CDPNQ_SOURCE_KEY,
@@ -576,7 +576,7 @@ class TaxaRef:
                 ))
 
             # Create rows for valid parent species
-            if valid_match and valid_match['rank'].lower() in ['subspecies']:
+            if valid_match and valid_match['rank'].lower() in ['population', 'subspecies']:
                 species = valid_match['species'] if 'species' in valid_match else ' '.join(valid_match['name'].split(' ')[:2]) # Fallback when species is not provided (current case for odonates)
                 out.append(cls(
                     source_id=CDPNQ_SOURCE_KEY,
@@ -588,6 +588,23 @@ class TaxaRef:
                     rank_order=GBIF_RANKS.index('species'),
                     valid=True,
                     valid_srid=species.lower(),
+                    match_type=None,
+                    is_parent=True
+                ))
+
+            # Create rows for valid parent species
+            if valid_match and valid_match['rank'].lower() in ['population']:
+                subspecies = valid_match['subspecies'] if 'subspecies' in valid_match else ' '.join(valid_match['name'].split(' ')[:3]) # Fallback when species is not provided (current case for odonates)
+                out.append(cls(
+                    source_id=CDPNQ_SOURCE_KEY,
+                    source_name=CDPNQ_SOURCE_NAME,
+                    source_record_id=subspecies.lower(),
+                    scientific_name=subspecies,
+                    authorship=None,
+                    rank='subspecies',
+                    rank_order=GBIF_RANKS.index('subspecies'),
+                    valid=True,
+                    valid_srid=subspecies.lower(),
                     match_type=None,
                     is_parent=True
                 ))

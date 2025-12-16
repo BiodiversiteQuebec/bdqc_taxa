@@ -592,6 +592,23 @@ class TaxaRef:
                     is_parent=True
                 ))
 
+            # Create rows for valid parent species
+            if valid_match and valid_match['rank'].lower() in ['population']:
+                subspecies = valid_match['subspecies'] if 'subspecies' in valid_match else ' '.join(valid_match['name'].split(' ')[:3]) # Fallback when species is not provided (current case for odonates)
+                out.append(cls(
+                    source_id=CDPNQ_SOURCE_KEY,
+                    source_name=CDPNQ_SOURCE_NAME,
+                    source_record_id=subspecies.lower(),
+                    scientific_name=subspecies,
+                    authorship=None,
+                    rank='subspecies',
+                    rank_order=GBIF_RANKS.index('subspecies'),
+                    valid=True,
+                    valid_srid=subspecies.lower(),
+                    match_type=None,
+                    is_parent=True
+                ))
+
         # Remove duplicates
         out = {ref.source_record_id: ref for ref in out}.values()
         out = list(out)

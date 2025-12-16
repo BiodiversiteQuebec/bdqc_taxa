@@ -1,0 +1,81 @@
+####################################################################################
+# Liste des espèces en péril fédéral - SARA
+# Data is currently downloaded manually from https://explorer.natureserve.org/Search
+# with filter Location = Quebec and SARA status in `Special Concern`, `Threatened`,
+# and `Endangered`, also including subspecies, varieties and populations
+####################################################################################
+library(RPostgres)
+readRenviron(".env")
+
+# Format data
+sara_status <- readxl::read_excel("scratch/natureserve_sara_2025-12-09-02-37.xlsx", col_names = TRUE, skip = 1) |>
+  dplyr::select(short_group = `SARA Status`,
+                scientific_name = `Scientific Name`,
+                species_group = `Species Group (Broad)`) |>
+  dplyr::filter(!is.na(scientific_name) & !(scientific_name %in% c("https://explorer.natureserve.org/AboutTheData", "SARA Status", "Canada"))) |>
+  dplyr::mutate(rank = dplyr::case_when(
+    grepl("pop\\.", scientific_name, ignore.case = TRUE) ~ "population",
+    grepl("var\\.", scientific_name, ignore.case = TRUE) ~ "variety",
+    grepl("ssp\\.", scientific_name, ignore.case = TRUE) ~ "subspecies",
+    nchar(gsub("[^ ]", "", scientific_name, ignore.case = TRUE)) == 2 ~ "subspecies",
+    TRUE ~ "species"
+  ),
+  short_group = dplyr::case_when(
+    short_group == "Endangered/En voie de disparition" ~ "SARA_ENDANGERED",
+    short_group == "Threatened/Menacée" ~ "SARA_THREATENED",
+    short_group == "Special Concern/Préoccupante" ~ "SARA_SPECIAL_CONCERN",
+    TRUE ~ NA_character_
+  ),
+  parent_scientific_name = dplyr::case_when(
+    species_group %in% c("Vertebrates", "Mussels, Snails, & Other Molluscs", "Insects - Bees", "Insects - Beetles",
+                         "Insects - Butterflies and Moths", "Insects - Damselflies and Dragonflies",
+                         "Insects - Other") ~ "Animalia",
+    species_group %in% c("Vascular Plants - Ferns and relatives", "Vascular Plants - Flowering Plants",
+                         "Lichens") ~ "Plantae",
+    TRUE ~ NA_character_
+  )
+  ) |>
+  dplyr::select(short_group, scientific_name, rank, parent_scientific_name)
+
+# Connect to the database
+con <- dbConnect(Postgres(), dbname = Sys.getenv("POSTGRES_DB"),
+                 host = Sys.getenv("POSTGRES_HOST"), port = Sys.getenv("POSTGRES_PORT"),
+                 user = Sys.getenv("POSTGRES_USER"), password = Sys.getenv("POSTGRES_PASSWORD"))
+
+# Delete old data
+dbWithTransaction(con, {
+  dbExecute(con, "SET ROLE coleo;")
+
+  delete_resp <- dbExecute(
+    con,
+    "DELETE FROM rubus.taxa_group_members
+     WHERE short IN ('SARA_ENDANGERED','SARA_THREATENED','SARA_SPECIAL_CONCERN');"
+  )
+
+  dbExecute(con, "RESET ROLE;")
+})
+
+# Inject the data
+inject_query <- "
+  SELECT rubus.insert_taxa_obs_group_member(
+    short_group:= $1,
+    scientific_name := $2,
+    rank := $3,
+    parent_scientific_name := $4);
+  "
+
+dbWithTransaction(con, {
+  sara_status |>
+    purrr::pwalk(function(short_group, scientific_name, rank, parent_scientific_name) {
+      dbExecute(
+        con,
+        inject_query,
+        params = list(
+          short_group,
+          scientific_name,
+          rank,
+          parent_scientific_name
+        )
+      )
+    })
+})

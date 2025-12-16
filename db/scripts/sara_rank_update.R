@@ -30,8 +30,8 @@ sara_status <- readxl::read_excel("scratch/natureserve_sara_2025-12-09-02-37.xls
     species_group %in% c("Vertebrates", "Mussels, Snails, & Other Molluscs", "Insects - Bees", "Insects - Beetles",
                          "Insects - Butterflies and Moths", "Insects - Damselflies and Dragonflies",
                          "Insects - Other") ~ "Animalia",
-    species_group %in% c("Vascular Plants - Ferns and relatives", "Vascular Plants - Flowering Plants",
-                         "Lichens") ~ "Plantae",
+    species_group %in% c("Vascular Plants - Ferns and relatives", "Vascular Plants - Flowering Plants",) ~ "Plantae",
+    species_group %in% c("Lichens") ~ "Fungi",
     TRUE ~ NA_character_
   )
   ) |>

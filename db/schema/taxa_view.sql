@@ -41,16 +41,10 @@ LEFT JOIN rubus.taxa_obs_ref_preferred "order" ON "order".rank = 'order' AND "or
 LEFT JOIN rubus.taxa_obs_ref_preferred family ON family.rank = 'family' AND family.id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred genus ON genus.rank = 'genus' AND genus.id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND species.id_taxa_obs = ref_pref.id_taxa_obs
-LEFT JOIN
-  (SELECT * FROM rubus.taxa_obs_group_lookup 
-   LEFT JOIN rubus.taxa_groups ON taxa_obs_group_lookup.short_group = taxa_groups.short
-   WHERE taxa_obs_group_lookup.short_group::text IN ('CDPNQ_ENDANGERED', 'CDPNQ_SUSC', 'CDPNQ_VUL', 'CDPNQ_VUL_HARVEST'))
-    AS lemv_ranks ON ref_pref.id_taxa_obs = lemv_ranks.id_taxa_obs
-LEFT JOIN
-  (SELECT * FROM rubus.taxa_obs_group_lookup
-   LEFT JOIN rubus.taxa_groups ON taxa_obs_group_lookup.short_group = taxa_groups.short
-   WHERE taxa_obs_group_lookup.short_group::text IN ('SARA_ENDANGERED', 'SARA_THREATENED', 'SARA_SPECIAL_CONCERN'))
-    AS sara_ranks ON ref_pref.id_taxa_obs = sara_ranks.id_taxa_obs;
+LEFT JOIN rubus.taxa_obs_group_lookup AS lemv_lu ON ref_pref.id_taxa_obs = lemv_lu.id_taxa_obs AND lemv_lu.short_group::text IN ('CDPNQ_ENDANGERED', 'CDPNQ_SUSC', 'CDPNQ_VUL', 'CDPNQ_VUL_HARVEST')
+LEFT JOIN rubus.taxa_groups AS lemv_ranks ON lemv_lu.short_group = lemv_ranks.short
+LEFT JOIN rubus.taxa_obs_group_lookup AS sara_lu ON ref_pref.id_taxa_obs = sara_lu.id_taxa_obs AND sara_lu.short_group::text IN ('SARA_ENDANGERED', 'SARA_THREATENED', 'SARA_SPECIAL_CONCERN')
+LEFT JOIN rubus.taxa_groups AS sara_ranks ON sara_lu.short_group = sara_ranks.short;
 
 ALTER TABLE rubus.taxa_view
     OWNER TO coleo;

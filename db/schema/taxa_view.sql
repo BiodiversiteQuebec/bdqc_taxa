@@ -27,13 +27,13 @@ LEFT JOIN rubus.taxa_obs_ref_preferred ref_pref ON taxa_obs.id = ref_pref.id_tax
 LEFT JOIN rubus.taxa_ref_vernacular_preferred vernacular_pref ON ref_pref.id_taxa_ref = vernacular_pref.id_taxa_ref
 LEFT JOIN 
   (SELECT * FROM rubus.taxa_obs_group_lookup WHERE taxa_obs_group_lookup.short_group::text IN ('SENSITIVE', 'CDPNQ_ENDANGERED', 'CDPNQ_SUSC', 'CDPNQ_VUL', 'CDPNQ_VUL_HARVEST'))
-    AS sensitive_group USING (id_taxa_obs)
+    AS sensitive_group ON ref_pref.id_taxa_obs = sensitive_group.id_taxa_obs
 LEFT JOIN 
   (SELECT DISTINCT ON (group_lu.id_taxa_obs) group_lu.id_taxa_obs, taxa_groups.vernacular_fr AS group_fr FROM rubus.taxa_obs_group_lookup group_lu 
-    LEFT JOIN rubus.taxa_groups ON group_lu.id_group = taxa_groups.id WHERE taxa_groups.level = 1) AS group_fr USING (id_taxa_obs)
+    LEFT JOIN rubus.taxa_groups ON group_lu.id_group = taxa_groups.id WHERE taxa_groups.level = 1) AS group_fr ON ref_pref.id_taxa_obs = group_fr.id_taxa_obs
 LEFT JOIN
   (SELECT DISTINCT ON (group_lu.id_taxa_obs) group_lu.id_taxa_obs, taxa_groups.vernacular_en AS group_en FROM rubus.taxa_obs_group_lookup group_lu
-    LEFT JOIN rubus.taxa_groups ON group_lu.id_group = taxa_groups.id WHERE taxa_groups.level = 1) AS group_en USING (id_taxa_obs)
+    LEFT JOIN rubus.taxa_groups ON group_lu.id_group = taxa_groups.id WHERE taxa_groups.level = 1) AS group_en ON ref_pref.id_taxa_obs = group_en.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred kingdom ON kingdom.rank = 'kingdom' AND kingdom.id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred phylum ON phylum.rank = 'phylum' AND phylum.id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred class ON class.rank = 'class' AND class.id_taxa_obs = ref_pref.id_taxa_obs
@@ -41,12 +41,10 @@ LEFT JOIN rubus.taxa_obs_ref_preferred "order" ON "order".rank = 'order' AND "or
 LEFT JOIN rubus.taxa_obs_ref_preferred family ON family.rank = 'family' AND family.id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred genus ON genus.rank = 'genus' AND genus.id_taxa_obs = ref_pref.id_taxa_obs
 LEFT JOIN rubus.taxa_obs_ref_preferred species ON species.rank = 'species' AND species.id_taxa_obs = ref_pref.id_taxa_obs
-LEFT JOIN 
-  (SELECT * FROM rubus.taxa_groups WHERE taxa_groups.short::text IN ('CDPNQ_ENDANGERED', 'CDPNQ_SUSC', 'CDPNQ_VUL', 'CDPNQ_VUL_HARVEST'))
-    AS lemv_ranks ON sensitive_group.id_group = lemv_ranks.id
-LEFT JOIN 
-  (SELECT * FROM rubus.taxa_groups WHERE taxa_groups.short::text IN ('SARA_ENDANGERED', 'SARA_THREATENED', 'SARA_SPECIAL_CONCERN'))
-    AS sara_ranks ON sensitive_group.id_group = sara_ranks.id;
+LEFT JOIN rubus.taxa_obs_group_lookup AS lemv_lu ON ref_pref.id_taxa_obs = lemv_lu.id_taxa_obs AND lemv_lu.short_group::text IN ('CDPNQ_ENDANGERED', 'CDPNQ_SUSC', 'CDPNQ_VUL', 'CDPNQ_VUL_HARVEST')
+LEFT JOIN rubus.taxa_groups AS lemv_ranks ON lemv_lu.short_group = lemv_ranks.short
+LEFT JOIN rubus.taxa_obs_group_lookup AS sara_lu ON ref_pref.id_taxa_obs = sara_lu.id_taxa_obs AND sara_lu.short_group::text IN ('SARA_ENDANGERED', 'SARA_THREATENED', 'SARA_SPECIAL_CONCERN')
+LEFT JOIN rubus.taxa_groups AS sara_ranks ON sara_lu.short_group = sara_ranks.short;
 
 ALTER TABLE rubus.taxa_view
     OWNER TO coleo;

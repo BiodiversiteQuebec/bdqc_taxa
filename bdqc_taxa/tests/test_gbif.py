@@ -61,18 +61,19 @@ class TestSpecies(TestCase):
         self.assertFalse(result['usage']['rank'] == 'SUBSPECIES')
     
     def test_species_match_rank(self, name='Epilobium ciliatum ciliatum', rank='SUBSPECIES'):
-        result = Species.match(scientific_name=name, rank=rank)
+        result = Species.match(scientific_name=name, taxon_rank=rank)
         self.assertTrue(result['usage']['rank'] == 'SUBSPECIES')
+
     # Edge case with no rank returns most precise possible answer
     def test_species_match_bad_rank(self, name='Epilobium ciliatum ciliatum', rank='KINGDOM'):
-        result = Species.match(scientific_name=name, rank=rank)
+        result = Species.match(scientific_name=name, taxon_rank=rank)
         self.assertTrue(result['usage']['rank'] == 'SPECIES')
 
     def test_species_match_bug_limax(self, name='Limax'):
-        results = Species.match(scientific_name=name)
-        self.assertIsInstance(results, List)
-        self.assertTrue(len(results) > 0)
-        self.assertTrue(all(k in results[0]['usage'].keys() for k in [
-            'key', 'name', 'rank'
+        result= Species.match(scientific_name=name)
+        self.assertIsInstance(result, dict)
+        self.assertIn('usage', result)
+        self.assertTrue(all(k in result['usage'].keys() for k in [
+            'key', 'name'
         ]))
-        self.assertTrue(results[0]['usage']['rank'] == 'GENUS')
+        self.assertTrue(result['usage']['rank'] == 'GENUS')

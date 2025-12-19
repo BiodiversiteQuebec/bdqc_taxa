@@ -90,7 +90,7 @@ class Vernacular:
         taxa = gbif.Species.match(scientific_name = name, taxon_rank = rank, **match_kwargs)
 
         try:
-            return cls.from_gbif(taxa['usageKey'], rank=taxa['rank'])
+            return cls.from_gbif(taxa['usage']['key'], rank=taxa['usage']['rank'])
         except KeyError:
             return []
 

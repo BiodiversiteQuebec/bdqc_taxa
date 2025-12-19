@@ -116,7 +116,20 @@ class Species:
         if not scientific_name:
             raise ValueError("scientific_name must be provided")
         
-        return cls.match_v1(name=scientific_name, rank=taxon_rank, **kwargs)
+        
+        # Workaround when returned record is `HIGHERRANK` of rank = `kingdom`
+        # example {"usage":{"key":"1","name":"Animalia","canonicalName":"Animalia","rank":"KINGDOM","status":"ACCEPTED","type":"SCIENTIFIC","formattedName":"<i>Animalia</i>"},"classification":[{"key":"1","name":"Animalia","rank":"KINGDOM"}],"diagnostics":{"matchType":"HIGHERRANK","confidence":95,"timeTaken":38,"timings":{"nameNRank":0,"sciNameMatch":39,"nameParse":0,"luceneMatch":39}},"synonym":false,"left":597323,"right":891973}
+
+        out = cls.match_v2(scientific_name=scientific_name, taxon_rank=taxon_rank, **kwargs)
+        rank = out.get('usage', {}).get('rank', '').upper()
+        match_type = out.get('diagnostics', {}).get('matchType', '')
+        if rank == 'KINGDOM' and match_type == 'HIGHERRANK':
+            # re-attempt with verbose='true' to get [diagnostic][alternatives][0]
+            out_2 = cls.match_v2(scientific_name=scientific_name, taxon_rank=taxon_rank, verbose='true', **kwargs)
+            alternatives = out_2.get('diagnostics', {}).get('alternatives', [])
+            out = alternatives[0] if alternatives else out
+
+        return out
     
     @classmethod
     def search(cls, query: str = "", dataset_key: str = GBIF_TAXONOMIC_BACKBONE_DATASET_KEY,

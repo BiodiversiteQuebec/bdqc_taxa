@@ -281,7 +281,8 @@ class TestTaxaRef(unittest.TestCase):
         self.assertTrue(any([ref.rank == 'subspecies' for ref in refs]))
 
     # Case where GBIF returns a higherrank match that should be classified as a parent
-    def test_from_gbif_bug_higher_rank(self, name='Nereis'):
+    # Test modified. Previous test case with name = 'Nereis' no longer returns a higherrank match with /v2/species/match
+    def test_from_gbif_bug_higher_rank(self, name='Acer bidon'):
         refs = taxa_ref.TaxaRef.from_gbif(name)
         higherrank_refs = [
             ref for ref in refs

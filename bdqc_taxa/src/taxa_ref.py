@@ -184,10 +184,14 @@ class TaxaRef:
     @classmethod
     def _from_gbif_singleton(cls, name: str, authorship: str = None):
         if isinstance(authorship, str) and authorship.strip():
-            name =" ".join([name, authorship])
+            name = " ".join([name, authorship])
         match_species = gbif.Species.match(name)
+        # New structure: match_species['usage'] contains main info
+        usage = match_species.get('usage', {})
+        if not usage:
+            return []
         try:
-            result: dict = gbif.Species.get(match_species['usageKey'])
+            result: dict = gbif.Species.get(usage['key'])
         except KeyError:
             return []
         is_valid = "acceptedKey" not in result.keys()
@@ -200,11 +204,12 @@ class TaxaRef:
         except ValueError:
             result['rank_order'] = None
 
-        if match_species["matchType"].lower() == "higherrank":
+        match_type = match_species.get("diagnostics", {}).get("matchType", "")
+        if match_type.lower() == "higherrank":
             is_parent = True
         else:
             is_parent = False
-        
+
         # Create row for invalid requested taxon
         if not is_valid:
             out_kwargs = {
@@ -221,7 +226,7 @@ class TaxaRef:
                     ],
                 "valid": is_valid,
                 "valid_srid": result["acceptedKey"],
-                "match_type": match_species["matchType"].lower(),
+                "match_type": match_type.lower(),
                 "is_parent": is_parent
             }
             out.append(cls(**out_kwargs))
@@ -251,7 +256,7 @@ class TaxaRef:
             "classification_srids": classification_srids,
             "valid": True,
             "valid_srid": result["key"],
-            "match_type": match_species["matchType"].lower() if is_valid else None,
+            "match_type": match_type.lower() if is_valid else None,
             "is_parent": is_parent
         }
         out.append(cls(**out_kwargs))
@@ -265,12 +270,12 @@ class TaxaRef:
                 continue
             taxa = result[rank]
             srid = result[rank + 'Key']
-            match_type = None
+            parent_match_type = None
             if rank == result["rank"].lower():
                 valid_authorship = strip_authorship(result['authorship'])
                 is_parent = False
                 if is_valid:
-                    match_type = match_species["matchType"].lower()
+                    parent_match_type = match_type.lower()
             else:
                 valid_authorship = None
                 is_parent = True
@@ -282,10 +287,10 @@ class TaxaRef:
                     "authorship": valid_authorship,
                     "rank": rank,
                     "rank_order": rank_order,
-                    "classification_srids":classification_srids[:rank_order + 1],
+                    "classification_srids": classification_srids[:rank_order + 1],
                     "valid": True,
                     "valid_srid": srid,
-                    "match_type": match_type,
+                    "match_type": parent_match_type,
                     "is_parent": is_parent
                 }
             out.append(cls(**out_kwargs))                

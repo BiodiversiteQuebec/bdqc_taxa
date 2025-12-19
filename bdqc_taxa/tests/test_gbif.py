@@ -16,22 +16,24 @@ class TestSpecies(TestCase):
                                  'numDescendants', 'issues']]))
 
     def test_match_from_name(self, name='Antigone canadensis'):
-        result = Species.match(name=name)
+        result = Species.match(scientific_name=name)
         self.assertIsInstance(result, dict)
-        self.assertTrue(all(k in result.keys() for k in [
-            'usageKey', 'scientificName'
+        self.assertIn('usage', result)
+        self.assertTrue(all(k in result['usage'].keys() for k in [
+            'key', 'name'
         ]))
-        self.assertTrue(all([v for k, v in result.items()
+        self.assertTrue(all([v for k, v in result['usage'].items()
                              if k not in ['synonym']]))
 
     def test_match_from_name_kingdom(self,
                                      name='Coleoptera', kingdom='Plantae'):
-        result = Species.match(name=name, kingdom = kingdom)
+        result = Species.match(scientific_name=name, kingdom = kingdom)
         self.assertIsInstance(result, dict)
-        self.assertTrue(all(k in result.keys() for k in [
-            'usageKey', 'scientificName'
+        self.assertIn('usage', result)
+        self.assertTrue(all(k in result['usage'].keys() for k in [
+            'key', 'name'
         ]))
-        self.assertTrue(all([v for k, v in result.items()
+        self.assertTrue(all([v for k, v in result['usage'].items()
                              if k not in ['synonym']]))
 
     def test_get_vernacular_name(self, species_id=2474953):
@@ -55,13 +57,23 @@ class TestSpecies(TestCase):
     
     # Regression test : Should return subsp. record
     def test_species_match_no_rank(self, name='Epilobium ciliatum ciliatum'):
-        result = Species.match(name=name)
-        self.assertFalse(result['rank'] == 'SUBSPECIES')
+        result = Species.match(scientific_name=name)
+        self.assertFalse(result['usage']['rank'] == 'SUBSPECIES')
     
     def test_species_match_rank(self, name='Epilobium ciliatum ciliatum', rank='SUBSPECIES'):
-        result = Species.match(name=name, rank=rank)
-        self.assertTrue(result['rank'] == 'SUBSPECIES')
+        result = Species.match(scientific_name=name, taxon_rank=rank)
+        self.assertTrue(result['usage']['rank'] == 'SUBSPECIES')
+
     # Edge case with no rank returns most precise possible answer
     def test_species_match_bad_rank(self, name='Epilobium ciliatum ciliatum', rank='KINGDOM'):
-        result = Species.match(name=name, rank=rank)
-        self.assertTrue(result['rank'] == 'SPECIES')
+        result = Species.match(scientific_name=name, taxon_rank=rank)
+        self.assertTrue(result['usage']['rank'] == 'SPECIES')
+
+    def test_species_match_bug_limax(self, name='Limax'):
+        result= Species.match(scientific_name=name)
+        self.assertIsInstance(result, dict)
+        self.assertIn('usage', result)
+        self.assertTrue(all(k in result['usage'].keys() for k in [
+            'key', 'name'
+        ]))
+        self.assertTrue(result['usage']['rank'] == 'GENUS')

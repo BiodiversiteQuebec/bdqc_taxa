@@ -77,6 +77,7 @@ class TestNatureServe(TestCase):
 
     def test_search_match_synonym(self, name='Picoides villosus', accepted_name='Dryobates villosus'):
         # Notes on behaviour on synonym search: Returns only the accepted name records and infra-specific names
+        # Le test fail présentement; à investiguer
 
         # Test a synonym species name returns at least one match
         search_result = search_species(species_search_token = name, text_search_operator='similarTo', text_match_against='allScientificNames')

@@ -32,7 +32,9 @@ setuptools.setup(
     },
     python_requires=">=3.6",
     install_requires=[
-        "psycopg2"
+        "psycopg2",
+        "joblib",
+        "platformdirs",
     ],
     extras_require={
         'dev': [

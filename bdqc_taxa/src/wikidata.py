@@ -1,13 +1,17 @@
 import urllib.request
+import urllib.parse
 import json
 from typing import Union, List, Optional
+from .cache import memory
 
 BASE_URL = "https://www.wikidata.org/w/api.php?"
 
 TAXA_RANKS_QID = {'domain': 'Q146481', 'kingdom':'Q36732', 'subkingdom': 'Q2752679', 'infrakingdom': 'Q3150876', 'phylum': 'Q38348', 'subphylum': 'Q1153785', 'infraphylum': 'Q2361851', 'superclass': 'Q3504061', 'class': 'Q37517', 'subclass': 'Q5867051', 'infraclass': 'Q2007442', 'superorder': 'Q5868144', 'order': 'Q36602', 'suborder': 'Q5867959', 'infraorder': 'Q2889003', 'superfamily': 'Q2136103', 'family': 'Q35409', 'subfamily': 'Q164280', 'tribe': 'Q227936', 'subtribe': 'Q3965313', 'genus': 'Q34740', 'subgenus': 'Q3238261', 'species': 'Q7432', 'subspecies': 'Q68947', 'variety': 'Q767728', 'subvariety': 'Q630771', 'form': 'Q279749', 'subform': 'Q12774043'}
 # TAXA_RANKS_QID obtained from _get_taxa_rank_entities()
 
-def search_entities(query, language="en", rank:Optional[str] = None) -> dict:
+
+@memory.cache
+def search_entities(query, language="en", rank:Optional[str] = None) -> list:
     """
     Search for entities on Wikidata based on a query.
 
@@ -16,9 +20,8 @@ def search_entities(query, language="en", rank:Optional[str] = None) -> dict:
     - language (str, optional): The language to search in. Default is English ('en').
 
     Returns:
-    - dict: Search results as a dictionary.
+    - list: Search results as a list.
     """
-    
     params = {
         "action": "wbsearchentities",
         "search": query,
@@ -34,20 +37,20 @@ def search_entities(query, language="en", rank:Optional[str] = None) -> dict:
 
     url = BASE_URL + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers=headers)
-    
+
     response = urllib.request.urlopen(req).read()
     data = json.loads(response)
 
     # Raise an exception if the request was not successful
     if "error" in data:
         raise Exception(data["error"]["info"])
-    
-    # Return search results
-    results = data["search"]
-    
-    return results
 
-def get_entities(id: Union[str, List[str]], languages=["en, fr"]):
+    # Return search results
+    return data["search"]
+
+
+@memory.cache
+def get_entities(id: Union[str, List[str]], languages=["en", "fr"]):
     """
     Get details of a specific entity from Wikidata based on its QID.
 
@@ -56,11 +59,11 @@ def get_entities(id: Union[str, List[str]], languages=["en, fr"]):
     - languages (list, optional): List of languages to fetch details in. Default is ['en', 'fr'].
 
     Returns:
-    - dict: Entity details as a dictionary.
+    - list: Entity details as a list.
     """
     if isinstance(id, list):
         id = "|".join(id)
-    
+
     params = {
         "action": "wbgetentities",
         "ids": id,
@@ -81,12 +84,9 @@ def get_entities(id: Union[str, List[str]], languages=["en, fr"]):
     # Raise an exception if the request was not successful
     if "error" in data:
         raise Exception(data["error"]["info"])
-    
+
     # Return entity details
-
-    entities = data["entities"].values()
-
-    return list(entities)
+    return list(data["entities"].values())
 
 
 def _get_taxa_rank_entities() -> dict:

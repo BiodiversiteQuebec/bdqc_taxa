@@ -77,3 +77,9 @@ class TestSpecies(TestCase):
             'key', 'name'
         ]))
         self.assertTrue(result['usage']['rank'] == 'GENUS')
+
+if __name__ == '__main__':
+    import unittest
+
+    # Run all tests
+    unittest.main()

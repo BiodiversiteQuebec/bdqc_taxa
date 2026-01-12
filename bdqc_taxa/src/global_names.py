@@ -2,7 +2,8 @@ from urllib.request import Request, urlopen, URLError, HTTPError
 from urllib.parse import urlencode, quote_plus
 from typing import List
 import json
-from .cache import memory
+from .cache import cache
+
 
 __all__ = ['verify']
 
@@ -14,7 +15,7 @@ DATA_SOURCES = [1, 3, 147]
 ALL_MATCHES = True
 
 
-@memory.cache
+@cache.memoize()
 def _verify(name: str, data_sources: list = DATA_SOURCES, all_matches: bool = ALL_MATCHES) -> dict:
     # Format python bool to json bool
     if all_matches:

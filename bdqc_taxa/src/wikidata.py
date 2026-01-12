@@ -2,7 +2,8 @@ import urllib.request
 import urllib.parse
 import json
 from typing import Union, List, Optional
-from .cache import memory
+from .cache import cache
+
 
 BASE_URL = "https://www.wikidata.org/w/api.php?"
 
@@ -10,7 +11,7 @@ TAXA_RANKS_QID = {'domain': 'Q146481', 'kingdom':'Q36732', 'subkingdom': 'Q27526
 # TAXA_RANKS_QID obtained from _get_taxa_rank_entities()
 
 
-@memory.cache
+@cache.memoize()
 def search_entities(query, language="en", rank:Optional[str] = None) -> list:
     """
     Search for entities on Wikidata based on a query.
@@ -49,7 +50,7 @@ def search_entities(query, language="en", rank:Optional[str] = None) -> list:
     return data["search"]
 
 
-@memory.cache
+@cache.memoize()
 def get_entities(id: Union[str, List[str]], languages=["en", "fr"]):
     """
     Get details of a specific entity from Wikidata based on its QID.

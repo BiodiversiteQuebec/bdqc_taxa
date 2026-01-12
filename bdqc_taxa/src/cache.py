@@ -5,10 +5,10 @@ Provides joblib-based caching for API calls with storage in the user's
 platform-appropriate cache directory (appdata).
 
 Usage:
-    from bdqc_taxa.cache import memory, clear_cache, get_cache_path
+    from bdqc_taxa.cache import cache, clear_cache, get_cache_path
 
-    # Use memory.cache decorator on functions
-    @memory.cache
+    # Use cache decorator on functions
+    @cache.memoize()  # Cache without expiration
     def my_cached_function(arg1: str, arg2: str) -> dict:
         ...
 
@@ -23,16 +23,16 @@ import os
 import shutil
 from pathlib import Path
 from typing import Optional
-from joblib import Memory
 import platformdirs
+from diskcache import Cache
+import functools
 
 # Cache directory in user's platform-appropriate cache location
 CACHE_DIR = Path(platformdirs.user_cache_dir("bdqc_taxa"))
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-# Joblib Memory instance for caching
-# verbose=0 suppresses output, set to 1 for debugging
-memory = Memory(CACHE_DIR, verbose=0)
+# Disk cache instance for persistent, durable caching
+cache = Cache(directory=str(CACHE_DIR))
 
 
 def get_cache_path() -> Path:
@@ -88,7 +88,7 @@ def clear_cache() -> None:
     This removes all cached API responses. Use this when you need to
     refresh data from external sources or free up disk space.
     """
-    memory.clear(warn=False)
+    cache.clear()
 
 
 def clear_cache_for_function(func) -> None:
@@ -97,32 +97,13 @@ def clear_cache_for_function(func) -> None:
 
     Args:
         func: The cached function whose cache should be cleared.
-              This should be the original function decorated with @memory.cache
+              This should be the original function decorated with @cache.memoize().
 
     Example:
         from bdqc_taxa.gbif import _get_cached
         clear_cache_for_function(_get_cached)
     """
-    if hasattr(func, 'clear'):
-        func.clear()
+    if hasattr(func, 'cache'):
+        func.cache.clear()
     else:
-        raise ValueError(f"Function {func.__name__} is not a cached function or has no clear method")
-
-
-def disable_cache() -> None:
-    """
-    Temporarily disable caching (calls will not be cached).
-
-    Note: This affects the global memory instance. Already cached
-    results will still be returned.
-    """
-    global memory
-    memory = Memory(None, verbose=0)
-
-
-def enable_cache() -> None:
-    """
-    Re-enable caching after it was disabled.
-    """
-    global memory
-    memory = Memory(CACHE_DIR, verbose=0)
+        raise ValueError("The provided function is not cached with @cache.memoize().")

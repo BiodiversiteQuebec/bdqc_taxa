@@ -1,7 +1,7 @@
 """
 Cache management module for bdqc_taxa.
 
-Provides joblib-based caching for API calls with storage in the user's
+Provides diskcache-based caching for API calls with storage in the user's
 platform-appropriate cache directory (appdata).
 
 Usage:

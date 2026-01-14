@@ -2,8 +2,7 @@ SET ROLE coleo;
 
 -- DROP PROCEDURE IF EXISTS rubus.refresh_taxa_ref_procedure(integer);
 CREATE OR REPLACE PROCEDURE rubus.refresh_taxa_ref_procedure(
-    batch_size int DEFAULT 100
-)
+	IN batch_size integer DEFAULT 100)
 LANGUAGE 'plpgsql'
 AS $BODY$
 DECLARE
@@ -11,10 +10,16 @@ DECLARE
     counter INTEGER := 0;
 BEGIN
 
-FOR taxa_obs_record IN SELECT * FROM public.taxa_obs LOOP
+    FOR taxa_obs_record IN
+        SELECT * FROM public.taxa_obs 
+    LOOP
+
         BEGIN
             PERFORM rubus.insert_taxa_ref_from_taxa_obs(
-            taxa_obs_record.id, taxa_obs_record.scientific_name, taxa_obs_record.authorship, taxa_obs_record.parent_scientific_name
+                taxa_obs_record.id,
+                taxa_obs_record.scientific_name,
+                taxa_obs_record.authorship,
+                taxa_obs_record.parent_scientific_name
             );
         EXCEPTION
             WHEN OTHERS THEN
@@ -27,17 +32,16 @@ FOR taxa_obs_record IN SELECT * FROM public.taxa_obs LOOP
         IF counter >= batch_size THEN
             COMMIT;
             counter := 0;
-            RAISE NOTICE 'Committed batch at %', taxa_obs_record.scientific_name;
         END IF;
     END LOOP;
     
-    PERFORM rubus.fix_missing_source_parent();
-
-    -- Final commit for any remaining records
+    -- Commit remaining of last loop
     IF counter > 0 THEN
         COMMIT;
-        RAISE NOTICE 'Final commit completed';
     END IF;
+
+    PERFORM rubus.fix_missing_source_parent();
+    COMMIT;
 
 END;
 $BODY$;

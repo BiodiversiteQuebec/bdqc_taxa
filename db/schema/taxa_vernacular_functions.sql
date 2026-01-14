@@ -114,9 +114,8 @@ CREATE OR REPLACE FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(
     authorship text,
     rank text)
 RETURNS void
-LANGUAGE 'plpgsql'
+LANGUAGE 'sql'
 AS $BODY$
-BEGIN
 
     WITH src AS (
         SELECT *
@@ -167,7 +166,6 @@ BEGIN
     FROM links
     ON CONFLICT DO NOTHING;
 
-END;
 $BODY$;
 
 ALTER FUNCTION rubus.insert_taxa_vernacular_from_taxa_ref(integer[], text, text, text)

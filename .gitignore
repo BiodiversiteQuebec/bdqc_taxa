@@ -7,3 +7,6 @@ dist*
 thunder-tests*
 scratch*
 .env*
+CLAUDE.md
+.claude/*
+tmpclaude-*

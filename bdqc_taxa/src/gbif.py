@@ -1,7 +1,9 @@
 from urllib.request import Request, urlopen, URLError, HTTPError
-from urllib.parse import urlencode, quote_plus 
+from urllib.parse import urlencode
 import json
 from inspect import signature
+from .cache import cache
+
 
 HOST = "https://api.gbif.org"
 LIMIT = 100
@@ -9,6 +11,7 @@ RESP_RESULT_KEY = 'results'
 GBIF_TAXONOMIC_BACKBONE_DATASET_KEY = 'd7dddbf4-2cf0-4f39-9b2a-bb099caae36c'
 
 
+@cache.memoize()
 def _get_url_data(url, params: dict = None, limit: int = None, offset: int = 0):
     if not params:
         params = {}

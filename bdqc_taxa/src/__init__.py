@@ -21,6 +21,7 @@ from . import eliso
 from . import cdpnq
 from . import natureserve
 from . import atlas_utils
+from . import cache
 
 __all__ = [
     "__title__",
@@ -38,5 +39,6 @@ __all__ = [
     "eliso",
     "cdpnq",
     "natureserve",
-    "atlas_utils"
+    "atlas_utils",
+    "cache"
 ]

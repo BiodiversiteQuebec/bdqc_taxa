@@ -2,6 +2,8 @@ from urllib.request import Request, urlopen, URLError, HTTPError
 from urllib.parse import urlencode, quote_plus
 from typing import List
 import json
+from .cache import cache
+
 
 __all__ = ['verify']
 
@@ -13,6 +15,7 @@ DATA_SOURCES = [1, 3, 147]
 ALL_MATCHES = True
 
 
+@cache.memoize()
 def _verify(name: str, data_sources: list = DATA_SOURCES, all_matches: bool = ALL_MATCHES) -> dict:
     # Format python bool to json bool
     if all_matches:
@@ -22,14 +25,12 @@ def _verify(name: str, data_sources: list = DATA_SOURCES, all_matches: bool = AL
 
     path_name = quote_plus(name)
 
-
     params = urlencode(
         {'capitalize': "true",
          'all_matches': all_matches,
          'data_sources': "|".join(['%.0f' % v for v in data_sources])
          }
     )
-
 
     req = Request(
         url="/".join([HOST, VERIFY_PREFIX, path_name]) + "?" + params,

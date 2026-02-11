@@ -17,12 +17,12 @@ AS $BODY$
           AND match_type <> 'complex'
       WHERE mref.scientific_name ILIKE $1
   ), children_taxa_obs AS (
-      SELECT DISTINCT id_taxa_obs
-      FROM rubus.taxa_ref mref
+      SELECT DISTINCT mlu.id_taxa_obs
+      FROM rubus.taxa_obs_ref_preferred mpref
       JOIN rubus.taxa_obs_ref_lookup mlu
-          ON mref.id = mlu.id_taxa_ref
+          ON mpref.id_taxa_ref = mlu.id_taxa_ref
           AND is_parent IS true
-      WHERE mref.scientific_name ILIKE $1
+      WHERE mpref.scientific_name ILIKE $1
   ), pref_synonyms AS (
       SELECT DISTINCT syn_pref.id_taxa_obs
       FROM (

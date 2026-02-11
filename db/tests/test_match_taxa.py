@@ -49,3 +49,8 @@ class TestMatchTaxa(unittest.TestCase):
         query = self.QUERY_MATCH_TAXA
         df_poa_nemoralis = pd.read_sql(query, self.conn, params = (taxa_name,))
         self.assertTrue((df_poa_nemoralis['valid_scientific_name'] == 'Poa nemoralis').all())
+        
+    def test_rhamnus_only(self, taxa_name='Rhamnus'):
+        query = self.QUERY_MATCH_TAXA
+        df_rhamnus = pd.read_sql(query, self.conn, params = (taxa_name,))
+        self.assertTrue(df_rhamnus['valid_scientific_name'].str.contains('Rhamnus').all())

@@ -57,6 +57,7 @@ GRANT SELECT ON TABLE rubus.taxa_obs_ref_preferred TO read_write_all;
 
 CREATE INDEX id_taxa_obs_rank_match_idx ON rubus.taxa_obs_ref_preferred(id_taxa_obs, rank, is_match);
 CREATE INDEX id_taxa_ref_match_idx ON rubus.taxa_obs_ref_preferred(id_taxa_ref, is_match);
+CREATE INDEX ref_pref_scientific_name_idx ON rubus.taxa_obs_ref_preferred(scientific_name);
 
 COMMENT ON MATERIALIZED VIEW rubus.taxa_obs_ref_preferred IS 'Materialized view of preferred taxonomic references for taxa_obs, selecting the best matching reference based on predefined criteria.';
 

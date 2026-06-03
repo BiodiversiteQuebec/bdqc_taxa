@@ -38,7 +38,7 @@ dataset_row = {
     "keyword_set": [o["name"] for o in metadata["tags"]],
     "url": ["https://www.donneesquebec.ca/recherche/dataset/liste-de-la-faune-vertebree-du-quebec"],
     "alternate_identifier": [metadata["license_id"], metadata["id"]],
-    "license_identifier": metadata["license_id"],
+    "license_identifier": metadata["license_id"].upper(),
     "license_url": metadata["license_url"],
     "contact": [{
         "organizationName": metadata["author"],

@@ -7,41 +7,9 @@ CREATE OR REPLACE FUNCTION rubus.match_taxa(
     LANGUAGE 'sql'
     STABLE PARALLEL SAFE
 AS $BODY$
-  WITH matched_taxa_obs AS (
-      SELECT DISTINCT id_taxa_obs
-      FROM rubus.taxa_ref mref
-      JOIN rubus.taxa_obs_ref_lookup mlu
-          ON mref.id = mlu.id_taxa_ref
-          AND is_parent IS false
-          AND match_type IS NOT NULL
-          AND match_type <> 'complex'
-      WHERE mref.scientific_name ILIKE $1
-  ), children_taxa_obs AS (
-      SELECT DISTINCT mpref.id_taxa_obs
-      FROM rubus.taxa_obs_ref_preferred mpref
-      WHERE mpref.scientific_name ILIKE $1
-      AND EXISTS (
-          SELECT 1
-          FROM rubus.taxa_obs_ref_lookup mlu
-          WHERE mlu.id_taxa_ref = mpref.id_taxa_ref
-            AND mlu.is_parent IS TRUE
-      )
-  ), pref_synonyms AS (
-      SELECT DISTINCT syn_pref.id_taxa_obs
-      FROM (
-           SELECT id_taxa_obs FROM matched_taxa_obs
-             UNION
-            SELECT id_taxa_obs FROM children_taxa_obs
-            ) AS all_obs
-      JOIN rubus.taxa_obs_ref_preferred mpref
-          ON all_obs.id_taxa_obs = mpref.id_taxa_obs
-          AND mpref.is_match
-      JOIN rubus.taxa_obs_ref_preferred syn_pref
-          ON mpref.id_taxa_ref = syn_pref.id_taxa_ref
-          AND syn_pref.is_match IS true
-  )
-  SELECT id_taxa_obs
-  FROM pref_synonyms
+  SELECT DISTINCT id_taxa_obs
+  FROM rubus.taxa_obs_ref_preferred
+  WHERE scientific_name ILIKE $1;
 $BODY$;
 
 ALTER FUNCTION rubus.match_taxa(text)

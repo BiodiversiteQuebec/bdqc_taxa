@@ -24,26 +24,18 @@ class TestMatchTaxa(unittest.TestCase):
     def test_match_taxa_all_canis(self, taxa_name='Canis'):
         query = self.QUERY_MATCH_TAXA
         df = pd.read_sql(query, self.conn, params = (taxa_name,))
-        allowed = {'Canis', 'Canis lupus', 'Canis latrans'}        
+        allowed = {'Canis', 'Canis lupus', 'Canis latrans', 'Canis lycaon'}        
         self.assertTrue(set(df['valid_scientific_name'].unique()).issubset(allowed))
         
-        
-    def test_match_taxa_Picoides_villosus_Dendrocopos_villosus(self):
-        query = self.QUERY_MATCH_TAXA
-        df_picoides = pd.read_sql(query, self.conn, params = ('Picoides villosus',))
-        self.assertTrue('Dryobates villosus' in df_picoides['observed_scientific_name'].values)
-        self.assertTrue('Leuconotopicus villosus' in df_picoides['observed_scientific_name'].values)
-        self.assertTrue(df_picoides['valid_scientific_name'].unique() == 'Dryobates villosus')
-        
-        df_dendrocopos = pd.read_sql(query, self.conn, params = ('Dendrocopos villosus',))
-        self.assertTrue('Dryobates villosus' in df_dendrocopos['observed_scientific_name'].values)
-        self.assertTrue('Leuconotopicus villosus' in df_dendrocopos['observed_scientific_name'].values)
-        self.assertTrue(df_dendrocopos['valid_scientific_name'].unique() == 'Dryobates villosus')
-
-    def test_match_taxa_Picoides_villosus_villosus_no_subsp(self, taxa_name='Picoides villosus villosus'):
+    def test_dryobates_villosus_all_synonyms(self, taxa_name='Dryobates villosus'):
         query = self.QUERY_MATCH_TAXA
         df = pd.read_sql(query, self.conn, params = (taxa_name,))
-        self.assertTrue('subspecies' not in df['rank'].values)
+        required = {'Dryobates villosus', 'Picoides villosus', 'Picoides villosus villosus',
+                   'Picoides villosus septentrionalis', 'Dendrocopos villosus',
+                   'Dendrocopos villosus villosus', 'Leuconotopicus villosus',
+                   'Leuconotopicus villosus septentrionalis', 'Leuconotopicus villosus villosus',
+                   'dryobates villosus'}
+        self.assertTrue(set(df['observed_scientific_name'].unique()).issubset(required))
 
     def test_poa_nemoralis_only(self, taxa_name='Poa nemoralis'):
         query = self.QUERY_MATCH_TAXA
@@ -54,3 +46,13 @@ class TestMatchTaxa(unittest.TestCase):
         query = self.QUERY_MATCH_TAXA
         df_rhamnus = pd.read_sql(query, self.conn, params = (taxa_name,))
         self.assertTrue(df_rhamnus['valid_scientific_name'].str.contains('Rhamnus').all())
+
+#    Deprecated test: We no longer match synonyms as only valid scientific names are thrown in match_taxa, 
+#    so this test is no longer relevant.
+#    def test_match_taxa_Picoides_villosus_Dendrocopos_villosus(self):
+#       pass
+
+#   Deprecated test: We no longer match synonyms as only valid scientific names are thrown in match_taxa, 
+#   so this test is no longer relevant.
+#    def test_match_taxa_Picoides_villosus_villosus_no_subsp(self, taxa_name='Picoides villosus villosus'):
+#        pass

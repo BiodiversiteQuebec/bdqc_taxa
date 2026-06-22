@@ -41,6 +41,7 @@ BEGIN
     END IF;
 
     PERFORM rubus.fix_missing_source_parent();
+    PERFORM rubus.taxa_ref_fix_matteuccia();
     COMMIT;
 
 END;
@@ -78,6 +79,7 @@ BEGIN
         END;
     END LOOP;
     PERFORM rubus.fix_missing_source_parent();
+    PERFORM rubus.taxa_ref_fix_matteuccia();
 END;
 $BODY$;
 
@@ -293,6 +295,7 @@ BEGIN
     
     -- Perform function fix_synonyms
     PERFORM rubus.fix_missing_source_parent();
+    PERFORM rubus.taxa_ref_fix_matteuccia();
 
     RAISE NOTICE 'Start processing taxa_vernacular';
 
@@ -333,3 +336,47 @@ GRANT EXECUTE ON FUNCTION rubus.refresh_taxa_partial() TO read_write_all;
 REVOKE ALL ON FUNCTION rubus.refresh_taxa_partial() FROM PUBLIC;
 
 COMMENT ON FUNCTION rubus.refresh_taxa_partial() IS 'Refreshes taxa_ref, taxa_obs_ref_lookup, taxa_vernacular and taxa_ref_varnacular_lookup tables based on new taxa_obs records only';
+
+-- DROP FUNCTION IF EXISTS rubus.taxa_ref_fix_matteuccia();
+CREATE OR REPLACE FUNCTION rubus.taxa_ref_fix_matteuccia()
+    RETURNS void
+    LANGUAGE 'sql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+    WITH matteuccia_to_fix AS (
+        SELECT id AS id_taxa_obs
+        FROM taxa_obs
+        WHERE scientific_name IN ('Matteuccia struthiopteris', 'Pteretis nodulosa', 'Matteuccia nodulosa')
+    ), ref_vascan AS (
+        SELECT id AS id_taxa_ref
+        FROM rubus.taxa_ref
+        WHERE scientific_name = 'Matteuccia pensylvanica' AND source_name = 'VASCAN'
+    )
+    INSERT INTO rubus.taxa_obs_ref_lookup (
+    id_taxa_obs,
+    id_taxa_ref,
+    id_taxa_ref_valid,
+    match_type,
+    is_parent
+    )
+    SELECT 
+        mtf.id_taxa_obs,
+        ref_v.id_taxa_ref,
+        ref_v.id_taxa_ref AS id_taxa_ref_valid,
+        NULL AS match_type,
+        FALSE AS is_parent
+    FROM matteuccia_to_fix mtf
+    CROSS JOIN ref_vascan ref_v
+    ON CONFLICT DO NOTHING;
+$BODY$;
+
+ALTER FUNCTION rubus.taxa_ref_fix_matteuccia()
+    OWNER TO coleo;
+
+GRANT EXECUTE ON FUNCTION rubus.taxa_ref_fix_matteuccia() TO coleo;
+GRANT EXECUTE ON FUNCTION rubus.taxa_ref_fix_matteuccia() TO read_only_all;
+GRANT EXECUTE ON FUNCTION rubus.taxa_ref_fix_matteuccia() TO read_write_all;
+REVOKE ALL ON FUNCTION rubus.taxa_ref_fix_matteuccia() FROM PUBLIC;
+
+COMMENT ON FUNCTION rubus.taxa_ref_fix_matteuccia() IS 'Manually create the link for Matteuccia pensylvanica for unreferenced synonyms on VASCAN';

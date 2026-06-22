@@ -1,115 +1,104 @@
 #====================================================================================================
 # Create a eliso_invertebrates table from the Eliso data file
 #
-# Victor Cameron
-# 2024-04-23
-#
 # NOTES
-# - The data is stored in an xlsx file with multiple sheets
+# - The original data is now stored in a GoogleSheets accessible through https://www.repertoirenature.org/documents
+# - Instead of tweaking around with authentication to access the GoogleSheets, I downloaded a local version directly
+#   from the GoogleSheets online.
 # - Only one vernacular name is kept for each taxon (when same taxa_name is multiplicated with different vernacular names)
-# - The taxa names with comments in parentheses are kept as is but may prevent matching. Waiting on an update from Eliso
+# - A clean up has been done on scientific names and vernacular names to remove parenthesis, square brackets
+#   sp suffix, whitespaces, etc.
 #====================================================================================================
-
-# %%
-import os
-import sys
+# 
 import pandas as pd
-import numpy as np
 import sqlite3
-import re
-import tempfile
-from urllib.request import urlretrieve
+pd.set_option('display.max_columns', None)
 
 DB_FILE = "./bdqc_taxa/custom_sources.sqlite"
-COLUMNS_TO_SELECT = ['Embranchement', 'Classe', 'Ordre', 'Famille', 'Genre', 'Espèce', 'Nom retenu']
+COLUMNS_TO_SELECT = ['Embranchement', 'Classe', 'Ordre', 'Famille', 'Genre', 'Espèce', 'Nom scientifique', 'Nom français']
 
-# %%
-# Download the xls file from the Eliso website and store in a temp folder
-"https://www.eliso.ca/s/Repertoire-des-noms-dInvertebres.xlsx"
-
-# Create temporary folder
-temp_dir = tempfile.TemporaryDirectory()
-
-# Download the file
-url = "https://www.eliso.ca/s/Repertoire-des-noms-dInvertebres.xlsx"
-file_path = temp_dir.name + '/Repertoire-des-noms-dInvertebres.xlsx'
-urlretrieve(url, file_path)
-
-# %%
 # Format the data
-
 # Read the file and store each sheet in a dictionary
-dataframes_dict = pd.read_excel(file_path, sheet_name=None)
+eliso = pd.read_excel("scratch/Répertoire des noms français des invertébrés du Québec.xlsx", sheet_name=None, na_values=["-"])
+eliso.pop('Accueil')
 
-# Remove 'Accueil' and 'sources' sheets from the dictionary
-dataframes_dict.pop('Accueil')
-dataframes_dict.pop('Sources')
-
+# Format
 # Concatenate dataframes row-wise on desired columns
-inverts = pd.concat([df.reindex(columns=COLUMNS_TO_SELECT) for df in dataframes_dict.values()], ignore_index=True)
+eliso = pd.concat([df.reindex(columns=COLUMNS_TO_SELECT) for df in eliso.values()], ignore_index=True)
 
-# %%
-# Clean the data
+# Rename necessary columns
+eliso = eliso.rename(columns={"Nom français": "vernacular_fr"})
 
-# Remove rows where 'Nom retenu' is empty
-inverts = inverts[inverts['Nom retenu'].notna()]
+# Set the rank based on the more precise value
+eliso['taxa_rank'] = eliso[['Espèce', 'Genre', 'Famille', 'Ordre', 'Classe', 'Embranchement']].apply(lambda x: x.first_valid_index(), axis=1)
 
-# Remove rows where 'Nom retenu' contains '['
-inverts = inverts[~inverts['Nom retenu'].str.contains('\[', na=False)]
+# Translate the rank to english
+eliso['taxa_rank'] = eliso['taxa_rank'].map({'Espèce': 'species', 'Genre': 'genus', 'Famille': 'family', 'Ordre': 'order', 'Classe': 'class', 'Embranchement': 'phylum'})
 
-# Drop synonyms: Keep only one vernacular name
-# In 'Nom retenu', remove the text including and following the first ','
-inverts['Nom retenu'] = inverts['Nom retenu'].str.replace(r',.*', '')
+# Set the taxa_name
+eliso['taxa_name'] = eliso[['Nom scientifique', 'Genre', 'Famille', 'Ordre', 'Classe', 'Embranchement']].apply(lambda x: x[x.first_valid_index()], axis=1)
 
-# Remove '-' characters that are not followed by other characters from all columns and replace them with NaN
-inverts = inverts.replace(r'^-$', np.nan, regex=True)
+# Remove parenthesis, sp. and whitespaces in taxa_name
+eliso["taxa_name"] = (
+    eliso["taxa_name"]
+    .str.replace(r"\s*\([^)]*\)", "", regex=True)
+    .str.replace(r"\s+sp\.$", "", regex=True)
+    .str.replace(r"\s+", " ", regex=True)
+    .str.strip()
+)
+
+# Remove duplicated juveniles stade entries (keep adult one)
+eliso = eliso[
+    ~(
+        eliso["taxa_name"].duplicated(keep=False)
+        & eliso["vernacular_fr"].str.contains(r"\bgalles?\b", case=False, na=False)
+    )
+]
+
+eliso = eliso[
+    ~(
+        eliso["taxa_name"].duplicated(keep=False)
+        & eliso["vernacular_fr"].str.contains(r"\blarve\b", na=False)
+    )
+]
+
+eliso = eliso[
+    ~(
+        eliso["taxa_name"].duplicated(keep=False)
+        & eliso["vernacular_fr"].str.contains(r"Arpenteuse", na=False)
+    )
+]
+
+# Remove [, parenthesis and whitespaces in vernacular_fr
+eliso["vernacular_fr"] = (
+    eliso["vernacular_fr"]
+    .str.replace(r"\s*\[[^\]]*\]", "", regex=True)   
+    .str.replace(r"\s*\([^)]*\)", "", regex=True)
+    .str.replace(r"\s+", " ", regex=True)
+    .str.strip()   
+)
+
+# Remove specific cases that are just wrong
+eliso = eliso[~(eliso["taxa_name"] == "A…")]
+
+# Remove the other duplicates just by keeping the first occurrence
+eliso = eliso.drop_duplicates(subset=["taxa_name", "taxa_rank"], keep="first")
 
 # Remove white spaces from the beginning and end of all columns
-inverts = inverts.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
-
-
-# %%
-# Format taxonomy : rank and taxa_name
-
-# Create a new column 'taxa_rank' with the rank of the taxon based on the first column that is not empty in the row starting with 'Espèce, then 'Genre', 'Famille', 'Ordre', 'Classe', and finally 'Embranchement'
-inverts['taxa_rank'] = inverts[['Espèce', 'Genre', 'Famille', 'Ordre', 'Classe', 'Embranchement']].apply(lambda x: x.first_valid_index(), axis=1)
-# Translate the rank values to English
-inverts['taxa_rank'] = inverts['taxa_rank'].map({'Espèce': 'species', 'Genre': 'genus', 'Famille': 'family', 'Ordre': 'order', 'Classe': 'class', 'Embranchement': 'phylum'})
-
-
-# Correst espèce column
-inverts['Espèce'] = inverts['Genre'] + ' ' + inverts['Espèce']
-
-# For all rows that 'taxa_rank' is not equal to 'species', assign the value of the first column that is not empty in the row starting with 'Genre', 'Famille', 'Ordre', 'Classe', and finally 'Embranchement' to the 'taxa_name' column
-inverts['taxa_name'] = inverts[['Espèce', 'Genre', 'Famille', 'Ordre', 'Classe', 'Embranchement']].apply(lambda x: x[x.first_valid_index()], axis=1)
-
-# Drop duplicated names
-inverts = inverts.drop_duplicates(subset=["taxa_name"])
-
-
-# %%
-# rename columns
-
-# Rename and add columns
-inverts = inverts.rename(columns={"Nom retenu": "vernacular_fr"})
+eliso = eliso.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
 
 # Reorder the columns
-inverts = inverts[['taxa_name', 'vernacular_fr', 'taxa_rank', 'Embranchement', 'Classe', 'Ordre', 'Famille', 'Genre', 'Espèce']]
+eliso = eliso[['taxa_name', 'vernacular_fr', 'taxa_rank', 'Embranchement', 'Classe', 'Ordre', 'Famille', 'Genre', 'Espèce']]
 
-# %%
 
-# Save the data to a csv file
-#inverts.to_csv('./data/eliso_invertebrates.csv', index=False)
-
-# %%
 # Write to sqlite database
-
 conn = sqlite3.connect(DB_FILE)
+
 # Drop the table if it exists
 conn.execute("DROP TABLE IF EXISTS eliso_invertebrates")
 
 # Write the table
-inverts.to_sql("eliso_invertebrates", conn, if_exists="replace", index=False)
+eliso.to_sql("eliso_invertebrates", conn, if_exists="replace", index=False)
 
 # Create fts5 virtual table for full text search
 conn.execute("DROP TABLE IF EXISTS eliso_invertebrates_fts")
@@ -119,35 +108,13 @@ conn.commit()
 conn.close()
 
 
-# %%
-# Test match the database
-
-conn = sqlite3.connect(DB_FILE)
-c = conn.cursor()
-
-matched_name = 'Gorgonocephalus'
-
-c.execute('''
-SELECT eliso_invertebrates.* FROM eliso_invertebrates
-JOIN eliso_invertebrates_fts ON eliso_invertebrates_fts.taxa_name = eliso_invertebrates.taxa_name
-WHERE eliso_invertebrates_fts MATCH ?
-ORDER BY taxa_rank
-LIMIT 1
-''', (f'"{matched_name}"',))
-
-results = c.fetchall()
-print(results)
-conn.close()
-
-
-# %%
 # Append to the sqlite README file
 readme = """
 \nTABLE eliso_invertebrates\n
 
 Description: 
-    This file was generated on 2024-04-23 from Eliso's Répertoire des noms d’invertébrés du Québec (2022) file.
-    The file was downloaded from https://www.eliso.ca/documents on 2024-04-23.
+    This file was generated on 2026-05-12 from Eliso's Répertoire des noms d'invertébrés du Québec (2025) file.
+    The file was downloaded from https://www.repertoirenature.org/documents on 2026-05-12.
     The file was parsed using the script `scripts/make_eliso.py`.\n
 
 Columns:

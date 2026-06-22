@@ -4,7 +4,12 @@ SET ROLE coleo;
 CREATE TABLE IF NOT EXISTS rubus.taxa_ref_sources (
   source_id INTEGER PRIMARY KEY,
   source_name VARCHAR(255) NOT NULL,
-  source_priority INTEGER NOT NULL
+  source_priority INTEGER NOT NULL,
+  id_datasets uuid NOT NULL
+  CONSTRAINT taxa_ref_source_id_datasets_fkey FOREIGN KEY (id_datasets)
+    REFERENCES public.datasets (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION,
 );
 
 ALTER TABLE IF EXISTS rubus.taxa_ref_sources
@@ -19,12 +24,12 @@ COMMENT ON TABLE rubus.taxa_ref_sources IS 'Rank priority of reference sources f
 DELETE FROM rubus.taxa_ref_sources;
 
 INSERT INTO rubus.taxa_ref_sources
-VALUES (1002, 'CDPNQ', 1),
-	(1001, 'Bryoquel', 2),
-	(147, 'VASCAN', 3),
-  	(11, 'GBIF Backbone Taxonomy', 4),
-	(3, 'ITIS', 5),
-	(1, 'Catalogue of Life', 6);
+VALUES (1002, 'CDPNQ', 1, '9b779078-1fd1-4492-8bbe-0892b0d13192'),
+	(1001, 'Bryoquel', 2, 'e2178209-373b-4370-9ef4-f0b4bc964b40'),
+	(147, 'VASCAN', 3, '3f8a1297-3259-4700-91fc-acc4170b27ce'),
+  	(11, 'GBIF Backbone Taxonomy', 4, 'd7dddbf4-2cf0-4f39-9b2a-bb099caae36c'),
+	(3, 'ITIS', 5, '9ca92552-f23a-41a8-a140-01abaa31c931'),
+	(1, 'Catalogue of Life', 6, '7ddf754f-d193-4cc9-b351-99906754a03b');
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------

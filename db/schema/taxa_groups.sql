@@ -149,6 +149,8 @@ WITH taxa_inserts(short, scientific_name) AS (
         ('BIRDS', 'Aves'),
         ('MAMMALS', 'Mammalia'),
         ('REPTILES', 'Reptilia'),
+        ('REPTILES', 'Testudines'),
+        ('REPTILES', 'Squamata'),
         ('FISH', 'Myxini'),
         ('FISH', 'Holocephali'),
         ('FISH', 'Actinopterygii'),

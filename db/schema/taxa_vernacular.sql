@@ -40,6 +40,13 @@ CREATE INDEX IF NOT EXISTS taxa_vernacular_name_idx
 CREATE INDEX IF NOT EXISTS taxa_vernacular_rank_order_idx
     ON rubus.taxa_vernacular (rank_order);
 
+CREATE INDEX IF NOT EXISTS taxa_vernacular_name_norm_trgm
+  ON rubus.taxa_vernacular
+  USING gin (public.normalize_search_text(name) gin_trgm_ops);
+-- Rebuild in case normalize_search_text changed: a functional index is NOT
+-- refreshed automatically when its (IMMUTABLE) function definition changes.
+REINDEX INDEX rubus.taxa_vernacular_name_norm_trgm;
+
 COMMENT ON TABLE rubus.taxa_vernacular IS 'Table to store vernacular (common) names for taxa';
 
 -- Trigger: update_modified_at

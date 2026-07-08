@@ -37,6 +37,13 @@ CREATE INDEX IF NOT EXISTS taxa_ref_idx
 CREATE INDEX IF NOT EXISTS taxa_ref_rank_idx
   ON rubus.taxa_ref (rank);
 
+CREATE INDEX IF NOT EXISTS taxa_ref_scientific_name_norm_trgm
+  ON rubus.taxa_ref
+  USING gin (public.normalize_search_text(scientific_name) gin_trgm_ops);
+-- Rebuild in case normalize_search_text changed: a functional index is NOT
+-- refreshed automatically when its (IMMUTABLE) function definition changes.
+REINDEX INDEX rubus.taxa_ref_scientific_name_norm_trgm;
+
 COMMENT ON TABLE rubus.taxa_ref IS 'Reference taxonomy table to store taxonomic names from various sources (e.g., ITIS, GBIF, etc.)';
 
 --------------------------------------------------------------------------

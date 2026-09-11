@@ -694,6 +694,27 @@ class TestComplex(unittest.TestCase):
     #     self.assertTrue(any([ref.authorship for ref in refs]))
     #     self.assertTrue(all([isinstance(ref.rank_order, int) for ref in refs]))
 
+    def test_species_and_order_parsing(self, name='Lasiurus borealis|Chiroptera'):
+        refs = taxa_ref.TaxaRef.from_all_sources(name)
+        self.assertTrue(len(refs) > 1)
+
+        is_match_complex = [ref.match_type == "complex" for ref in refs]
+        self.assertTrue(
+            any(is_match_complex) and not all(is_match_complex)
+        )
+        
+        is_common_parent = [ref.match_type ==
+                                    "complex_closest_parent" for ref in refs]
+        self.assertTrue(
+            any(is_common_parent) and not all(is_common_parent)
+        )
+
+        common_parent_names = {
+            ref.scientific_name for ref in refs
+            if ref.match_type == "complex_closest_parent"
+        }
+        self.assertEqual(common_parent_names, {'Chiroptera'})
+
     # Test bug case for name with hyphen
     def test_from_all_sources_hyphen(self, name='Ptilium crista-castrensis'):
         refs = taxa_ref.TaxaRef.from_all_sources(name)

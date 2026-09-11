@@ -416,46 +416,66 @@ class TaxaRef:
     @classmethod
     def set_complex_match_type(cls, taxa_ref_list: List[TaxaRef]):
         out = []
-        
+
         # Eliminate duplicates
         taxa_ref_list = {
             str(ref.__dict__): ref for ref in taxa_ref_list
             }.values()
 
-        source_names = {ref.source_name for ref in taxa_ref_list}
-        source_refs = {source_name: {} for source_name in source_names}
-        source_rank_count = {source_name: {} for source_name in source_names}
+        source_refs = {}
 
-        # Store unique refs in dict by source and count rank duplicates (complex)
+        # Store unique refs in dict by source, keeping the matched ref over the
+        # parent copy of the same name (a member of a complex can also be a
+        # parent of another member)
         for ref in taxa_ref_list:
-            try:
-                source_refs[ref.source_name][ref.scientific_name]= ref
-            except KeyError:
-                source_refs[ref.source_name] = {ref.scientific_name: ref}
-                source_rank_count[ref.source_name] = {}
-
-            try:
-                source_rank_count[ref.source_name][str(ref.rank_order)] += 1
-            except KeyError:
-                source_rank_count[ref.source_name][str(ref.rank_order)] = 1
+            by_name = source_refs.setdefault(ref.source_name, {})
+            kept = by_name.get(ref.scientific_name)
+            if kept is None or (kept.is_parent and not ref.is_parent):
+                by_name[ref.scientific_name] = ref
 
         for source in source_refs.keys():
             # order refs by rank order
             source_set = sorted(
                 source_refs[source].values(), key = lambda x: x.rank_order
                 )
-            # Set match_type by their position in rank_order
-            complex_switch = False
-            for i, ref in enumerate(source_set):
-                if not complex_switch:
-                    # Can enter here and switch only once
-                    complex_switch = ref.rank_order == source_set[i - 1].rank_order
-                    if complex_switch:
-                        source_set[i - 2].match_type = "complex_closest_parent"
-                        source_set[i - 1].match_type = "complex"
 
-                if complex_switch:
-                    ref.match_type = "complex"
+            # The closest shared parent is no deeper than either bound below
+            candidates = []
+
+            # Two refs sharing a rank_order means the member lineages split there
+            divergence = next(
+                (i for i in range(1, len(source_set))
+                 if source_set[i].rank_order == source_set[i - 1].rank_order),
+                None)
+            if divergence is not None:
+                candidates.append(divergence - 2)
+
+            # A member of the complex can be an ancestor of another member, in
+            # which case it is itself the closest shared parent
+            matched = [
+                i for i, ref in enumerate(source_set) if not ref.is_parent
+                ]
+            if len(matched) >= 2:
+                candidates.append(min(matched))
+
+            if not candidates:
+                # The source knows too few members to place a shared parent.
+                # Mark its matches complex so a partial lineage cannot outrank
+                # the closest shared parent found by a source that knows all
+                # the members.
+                for ref in source_set:
+                    if not ref.is_parent:
+                        ref.match_type = "complex"
+                out.extend(source_set)
+                continue
+
+            # Set match_type by their position in rank_order
+            pivot = min(candidates)
+            if pivot >= 0:
+                source_set[pivot].match_type = "complex_closest_parent"
+            for ref in source_set[pivot + 1:]:
+                ref.match_type = "complex"
+
             out.extend(source_set)
         return out
 

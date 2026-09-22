@@ -417,66 +417,75 @@ class TaxaRef:
     def set_complex_match_type(cls, taxa_ref_list: List[TaxaRef]):
         out = []
 
-        # Eliminate duplicates
-        taxa_ref_list = {
+        # Remove refs that are exact copies (identical in every field)
+        unique_refs = {
             str(ref.__dict__): ref for ref in taxa_ref_list
             }.values()
 
         source_refs = {}
 
-        # Store unique refs in dict by source, keeping the matched ref over the
-        # parent copy of the same name (a member of a complex can also be a
-        # parent of another member)
-        for ref in taxa_ref_list:
-            by_name = source_refs.setdefault(ref.source_name, {})
-            kept = by_name.get(ref.scientific_name)
-            if kept is None or (kept.is_parent and not ref.is_parent):
-                by_name[ref.scientific_name] = ref
+        # Group refs by source into a dict, then by scientific name, so each taxon appears
+        # only once per source (shared ancestors come back once per member).
+        # When a name is both a member of the complex and a parent of another
+        # member (e.g. 'Lasiurus borealis|Chiroptera'), keep the matched copy
+        # (is_parent=False): it is how members are recognized further down.
+        for ref in unique_refs:
+            refs_by_name = source_refs.setdefault(ref.source_name, {})
+            already_stored = refs_by_name.get(ref.scientific_name)
+            if already_stored is None or (already_stored.is_parent and not ref.is_parent):
+                refs_by_name[ref.scientific_name] = ref
 
-        for source in source_refs.keys():
-            # order refs by rank order
-            source_set = sorted(
-                source_refs[source].values(), key = lambda x: x.rank_order
-                )
+            # One list per source, highest rank first. Steps below work on the
+            # positions (indices) in this list.
+        for refs_by_name in source_refs.values():
+            lineage = sorted(refs_by_name.values(), key=lambda ref: ref.rank_order)
 
-            # The closest shared parent is no deeper than either bound below
+            # This part check if we have a complex with members with a lineage
+            # that will branch at some point. Above the branch each
+            # rank holds one taxon; at the branch, one rank holds several
+            # different taxa, so rank_order repeats for the first time.
             candidates = []
 
-            # Two refs sharing a rank_order means the member lineages split there
-            divergence = next(
-                (i for i in range(1, len(source_set))
-                 if source_set[i].rank_order == source_set[i - 1].rank_order),
-                None)
-            if divergence is not None:
-                candidates.append(divergence - 2)
+            branch_idx = None
+            for i in range(1, len(lineage)):
+                if lineage[i].rank_order == lineage[i - 1].rank_order:
+                    branch_idx = i
+                    break
+            # branch_idx and branch_idx - 1 are both below the branch, so the
+            # last taxon shared by every member is at branch_idx - 2
+            if branch_idx is not None:
+                candidates.append(branch_idx - 2)
 
-            # A member of the complex can be an ancestor of another member, in
-            # which case it is itself the closest shared parent
-            matched = [
-                i for i, ref in enumerate(source_set) if not ref.is_parent
-                ]
-            if len(matched) >= 2:
-                candidates.append(min(matched))
+            # The scenario below is when there is no branching in the lineage,
+            # where all complex members are in the same lineage, for example
+            # 'Laciurus borealis | Chiroptera', Chiroptera is a parent of 
+            # Laciurus borelialis, so there is only one lineage
+            member_idxs = [i for i, ref in enumerate(lineage) if not ref.is_parent]
+
+            if len(member_idxs) >= 2:
+                candidates.append(min(member_idxs))
 
             if not candidates:
-                # The source knows too few members to place a shared parent.
-                # Mark its matches complex so a partial lineage cannot outrank
-                # the closest shared parent found by a source that knows all
-                # the members.
-                for ref in source_set:
+                # No branch and fewer than two members: this source only knows
+                # one member of the complex (e.g. CDPNQ has Lasiurus borealis but
+                # not Chiroptera), so it can't place a shared parent.
+                # Still mark its member "complex": otherwise it stays a plain match
+                # and could be picked as the observation's taxon over the closest
+                # shared parent found by sources that know every member
+                for ref in lineage:
                     if not ref.is_parent:
                         ref.match_type = "complex"
-                out.extend(source_set)
+                out.extend(lineage)
                 continue
 
             # Set match_type by their position in rank_order
-            pivot = min(candidates)
-            if pivot >= 0:
-                source_set[pivot].match_type = "complex_closest_parent"
-            for ref in source_set[pivot + 1:]:
+            closest_parent_index = min(candidates)
+            if closest_parent_index >= 0:
+                lineage[closest_parent_index].match_type = "complex_closest_parent"
+            for ref in lineage[closest_parent_index + 1:]:
                 ref.match_type = "complex"
 
-            out.extend(source_set)
+            out.extend(lineage)
         return out
 
     @classmethod

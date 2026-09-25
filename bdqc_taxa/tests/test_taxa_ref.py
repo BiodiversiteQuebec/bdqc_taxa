@@ -710,6 +710,17 @@ class TestComplex(unittest.TestCase):
         refs = taxa_ref.TaxaRef.from_all_sources(name)
         self.assertTrue(len(refs) >= 1)
 
+    def test_complex_match_type_synonym_and_parent(self, name='Leuconotopicus villosus|Dryobates'):
+        refs = taxa_ref.TaxaRef.from_all_sources(name)
+        
+        match_leuconotopicus_villosus_cdpnq = [ref for ref in refs if ref.scientific_name == "Leuconotopicus villosus" and ref.source_name == "CDPNQ"]
+        match_dryobates_villosus_cdpnq = [ref for ref in refs if ref.scientific_name == "Dryobates villosus" and ref.source_name == "CDPNQ"]
+        match_dryobates_cdpnq = [ref for ref in refs if ref.scientific_name == "Dryobates" and ref.source_name == "CDPNQ"]
+        
+        self.assertTrue(match_leuconotopicus_villosus_cdpnq[0].match_type == 'complex' and match_leuconotopicus_villosus_cdpnq[0].valid == False)
+        self.assertTrue(match_dryobates_villosus_cdpnq[0].match_type == 'complex' and match_dryobates_villosus_cdpnq[0].valid == True)
+        self.assertTrue(match_dryobates_cdpnq[0].match_type == 'complex_closest_parent' and match_dryobates_cdpnq[0].valid == True)
+
 class TestParent(unittest.TestCase):
     # Test case for Salix matching for a genus of Animalia and a genus of Plantae
     def test_from_all_sources_parent_taxa_salix(self, name='Salix', parent_taxa = 'Plantae'):

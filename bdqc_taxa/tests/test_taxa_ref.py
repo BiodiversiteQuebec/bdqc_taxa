@@ -694,10 +694,32 @@ class TestComplex(unittest.TestCase):
     #     self.assertTrue(any([ref.authorship for ref in refs]))
     #     self.assertTrue(all([isinstance(ref.rank_order, int) for ref in refs]))
 
+    def test_complex_match_type_different_ranks(self, name='Lasiurus borealis|Chiroptera'):
+        refs = taxa_ref.TaxaRef.from_all_sources(name)
+        
+        match_lasiurus_borealis = [ref for ref in refs if ref.scientific_name == "Lasiurus borealis"]
+        self.assertTrue(match_lasiurus_borealis)
+        self.assertTrue(all(ref.match_type == "complex" for ref in match_lasiurus_borealis))
+        
+        match_chiroptera = [ref for ref in refs if ref.scientific_name == "Chiroptera"]
+        self.assertTrue(match_chiroptera)
+        self.assertTrue(all(ref.match_type == "complex_closest_parent" for ref in match_chiroptera))
+
     # Test bug case for name with hyphen
     def test_from_all_sources_hyphen(self, name='Ptilium crista-castrensis'):
         refs = taxa_ref.TaxaRef.from_all_sources(name)
         self.assertTrue(len(refs) >= 1)
+
+    def test_complex_match_type_synonym_and_parent(self, name='Leuconotopicus villosus|Dryobates'):
+        refs = taxa_ref.TaxaRef.from_all_sources(name)
+        
+        match_leuconotopicus_villosus_cdpnq = [ref for ref in refs if ref.scientific_name == "Leuconotopicus villosus" and ref.source_name == "CDPNQ"]
+        match_dryobates_villosus_cdpnq = [ref for ref in refs if ref.scientific_name == "Dryobates villosus" and ref.source_name == "CDPNQ"]
+        match_dryobates_cdpnq = [ref for ref in refs if ref.scientific_name == "Dryobates" and ref.source_name == "CDPNQ"]
+        
+        self.assertTrue(match_leuconotopicus_villosus_cdpnq[0].match_type == 'complex' and match_leuconotopicus_villosus_cdpnq[0].valid == False)
+        self.assertTrue(match_dryobates_villosus_cdpnq[0].match_type == 'complex' and match_dryobates_villosus_cdpnq[0].valid == True)
+        self.assertTrue(match_dryobates_cdpnq[0].match_type == 'complex_closest_parent' and match_dryobates_cdpnq[0].valid == True)
 
 class TestParent(unittest.TestCase):
     # Test case for Salix matching for a genus of Animalia and a genus of Plantae

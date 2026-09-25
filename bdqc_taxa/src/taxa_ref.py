@@ -416,47 +416,76 @@ class TaxaRef:
     @classmethod
     def set_complex_match_type(cls, taxa_ref_list: List[TaxaRef]):
         out = []
-        
-        # Eliminate duplicates
-        taxa_ref_list = {
+
+        # Remove refs that are exact copies (identical in every field)
+        unique_refs = {
             str(ref.__dict__): ref for ref in taxa_ref_list
             }.values()
 
-        source_names = {ref.source_name for ref in taxa_ref_list}
-        source_refs = {source_name: {} for source_name in source_names}
-        source_rank_count = {source_name: {} for source_name in source_names}
+        source_refs = {}
 
-        # Store unique refs in dict by source and count rank duplicates (complex)
-        for ref in taxa_ref_list:
-            try:
-                source_refs[ref.source_name][ref.scientific_name]= ref
-            except KeyError:
-                source_refs[ref.source_name] = {ref.scientific_name: ref}
-                source_rank_count[ref.source_name] = {}
+        # Group refs by source into a dict, then by scientific name, so each taxon appears
+        # only once per source.
+        # When a name is both a member of the complex and a parent of another
+        # member (e.g. 'Lasiurus borealis|Chiroptera'), keep the matched copy
+        # (is_parent=False): it is how the decision is made further down.
+        for ref in unique_refs:
+            refs_by_name = source_refs.setdefault(ref.source_name, {})
+            already_stored = refs_by_name.get(ref.scientific_name)
+            if already_stored is None or (already_stored.is_parent and not ref.is_parent):
+                refs_by_name[ref.scientific_name] = ref
 
-            try:
-                source_rank_count[ref.source_name][str(ref.rank_order)] += 1
-            except KeyError:
-                source_rank_count[ref.source_name][str(ref.rank_order)] = 1
+            # One list per source, highest rank first. Steps below work on the
+            # positions (indices) in this list.
+        for refs_by_name in source_refs.values():
+            lineage = sorted(refs_by_name.values(), key=lambda ref: ref.rank_order)
 
-        for source in source_refs.keys():
-            # order refs by rank order
-            source_set = sorted(
-                source_refs[source].values(), key = lambda x: x.rank_order
-                )
+            # This part check if we have a complex with members with a lineage
+            # that will branch at some point. Above the branch each
+            # rank holds one taxon; at the branch, one rank holds several
+            # different taxa, so rank_order repeats for the first time.
+            candidates = []
+
+            branch_idx = None
+            for i in range(1, len(lineage)):
+                if lineage[i].rank_order == lineage[i - 1].rank_order:
+                    branch_idx = i
+                    break
+            # branch_idx and branch_idx - 1 are both below the branch, so the
+            # last taxon shared by every member is at branch_idx - 2
+            if branch_idx is not None:
+                candidates.append(branch_idx - 2)
+
+            # The scenario below is when there is no branching in the lineage,
+            # where all complex members are in the same lineage, for example
+            # 'Laciurus borealis | Chiroptera', Chiroptera is a parent of 
+            # Laciurus borelialis, so there is only one lineage
+            member_idxs = [i for i, ref in enumerate(lineage) if not ref.is_parent]
+
+            if len(member_idxs) >= 2:
+                candidates.append(min(member_idxs))
+
+            if not candidates:
+                # No branch and fewer than two members: this source only knows
+                # one member of the complex (e.g. CDPNQ has Lasiurus borealis but
+                # not Chiroptera), so it can't place a shared parent.
+                # Still mark its member "complex": otherwise it stays a plain match
+                # and could be picked as the observation's taxon over the closest
+                # shared parent found by sources that know every member
+                for ref in lineage:
+                    if not ref.is_parent:
+                        ref.match_type = "complex"
+                out.extend(lineage)
+                continue
+
             # Set match_type by their position in rank_order
-            complex_switch = False
-            for i, ref in enumerate(source_set):
-                if not complex_switch:
-                    # Can enter here and switch only once
-                    complex_switch = ref.rank_order == source_set[i - 1].rank_order
-                    if complex_switch:
-                        source_set[i - 2].match_type = "complex_closest_parent"
-                        source_set[i - 1].match_type = "complex"
+            closest_parent_index = min(candidates)
+            if closest_parent_index >= 0:
+                lineage[closest_parent_index].match_type = "complex_closest_parent"
+            for ref in lineage[closest_parent_index + 1:]:
+                ref.match_type = "complex"
 
-                if complex_switch:
-                    ref.match_type = "complex"
-            out.extend(source_set)
+            out.extend(lineage)
         return out
 
     @classmethod

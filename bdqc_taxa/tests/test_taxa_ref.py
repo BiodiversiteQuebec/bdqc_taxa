@@ -694,26 +694,16 @@ class TestComplex(unittest.TestCase):
     #     self.assertTrue(any([ref.authorship for ref in refs]))
     #     self.assertTrue(all([isinstance(ref.rank_order, int) for ref in refs]))
 
-    def test_species_and_order_parsing(self, name='Lasiurus borealis|Chiroptera'):
+    def test_complex_match_type_different_ranks(self, name='Lasiurus borealis|Chiroptera'):
         refs = taxa_ref.TaxaRef.from_all_sources(name)
-        self.assertTrue(len(refs) > 1)
-
-        is_match_complex = [ref.match_type == "complex" for ref in refs]
-        self.assertTrue(
-            any(is_match_complex) and not all(is_match_complex)
-        )
         
-        is_common_parent = [ref.match_type ==
-                                    "complex_closest_parent" for ref in refs]
-        self.assertTrue(
-            any(is_common_parent) and not all(is_common_parent)
-        )
-
-        common_parent_names = {
-            ref.scientific_name for ref in refs
-            if ref.match_type == "complex_closest_parent"
-        }
-        self.assertEqual(common_parent_names, {'Chiroptera'})
+        match_lasiurus_borealis = [ref for ref in refs if ref.scientific_name == "Lasiurus borealis"]
+        self.assertTrue(match_lasiurus_borealis)
+        self.assertTrue(all(ref.match_type == "complex" for ref in match_lasiurus_borealis))
+        
+        match_chiroptera = [ref for ref in refs if ref.scientific_name == "Chiroptera"]
+        self.assertTrue(match_chiroptera)
+        self.assertTrue(all(ref.match_type == "complex_closest_parent" for ref in match_chiroptera))
 
     # Test bug case for name with hyphen
     def test_from_all_sources_hyphen(self, name='Ptilium crista-castrensis'):

@@ -425,10 +425,10 @@ class TaxaRef:
         source_refs = {}
 
         # Group refs by source into a dict, then by scientific name, so each taxon appears
-        # only once per source (shared ancestors come back once per member).
+        # only once per source.
         # When a name is both a member of the complex and a parent of another
         # member (e.g. 'Lasiurus borealis|Chiroptera'), keep the matched copy
-        # (is_parent=False): it is how members are recognized further down.
+        # (is_parent=False): it is how the decision is made further down.
         for ref in unique_refs:
             refs_by_name = source_refs.setdefault(ref.source_name, {})
             already_stored = refs_by_name.get(ref.scientific_name)

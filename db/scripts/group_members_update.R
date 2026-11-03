@@ -1,3 +1,89 @@
+tmp <- tempfile(fileext = ".xlsx")
+httr2::request("https://cdn-contenu.quebec.ca/cdn-contenu/faune/documents/precaire/liste-especes-suivies-CDPNQ.xlsx") |>
+  httr2::req_perform(tmp)
+
+# Faune
+emv_fauna <- readxl::read_excel(tmp, sheet = "Faune") |>
+  dplyr::filter(Situation %in% c("Susceptible", "Vulnérable", "Menacée")) |>
+  dplyr::mutate(
+    scientific_name = stringr::str_match(
+      `Nom commun (Nom scientifique)`,
+      "\\((.*)\\)\\s*$"
+    )[, 2],
+    parent_scientific_name = "Animalia",
+    short = dplyr::case_when(
+      Situation == "Susceptible" ~ "CDPNQ_SUSC",
+      Situation == "Vulnérable" ~ "CDPNQ_VUL",
+      Situation == "Menacée" ~ "CDPNQ_ENDANGERED",
+      TRUE ~ Situation
+    ),
+    rank = dplyr::case_when(
+      `Niveau taxonomique` == "Espèce" ~ "species",
+      `Niveau taxonomique` == "Sous-espèce" ~ "subspecies",
+      `Niveau taxonomique` == "Population" ~ "population"
+    )
+  ) |>
+  dplyr::select(short, scientific_name, rank, parent_scientific_name)
+
+
+# Ancienne version (webscrape)
+# CDPNQ_SUSC: 115 (113 dans DB)
+# CDPNQ_VUL: 28 (28 dans DB)
+# CDPNQ_ENDANGERED: 37 (37 dans DB)
+
+# Nouvelle version (.xlsx)
+# CDPNQ_SUSC: 90
+# CDPNQ_VUL: 28
+# CDPNQ_ENDANGERED: 37
+
+# Flore
+emv_flora <- readxl::read_excel(tmp, sheet = "Flore")
+
+# Ancienne version (webscrape)
+# CDPNQ_SUSC: 423 (423 dans BD)
+# CDPNQ_VUL: 18 (18 dans BD)
+# CDPNQ_VUL_HARVEST: 9 (9 dans BD)
+# CDPNQ_ENDANGERED: 59 (59 dans BD)
+
+# Nouvelle version (.xlsx)
+# CDPNQ_SUSC: 423
+# CDPNQ_VUL: 18
+# CDPNQ_VUL_HARVEST: 9
+# CDPNQ_ENDANGERED: 59
+
+emv_susc <- emv_fauna |> dplyr::filter(short == "CDPNQ_SUSC")
+emv_susc_old <- faune_data |> dplyr::filter(short == "CDPNQ_SUSC")
+missing_susc <- emv_susc_old[!(emv_susc_old$scientific_name %in% emv_susc$scientific_name), "scientific_name"]
+
+# Gomphus ventricosus présent sur le site comme CDPNQ_SUSC, mais pas dans le .xlsx
+# Oceanodroma leucorhoa présent sur le site comme CDPNQ_SUSC, mais pas dans le .xlsx
+# Lasiurus cinereus présent sur le site comme CDPNQ_SUSC, mais pas dans le .xlsx
+# Thamnophis saurita septentrionalis (.xlsx) vs Thamnophis sauritus (site web)
+# Falco peregrinus anatum vs Falco peregrinus tundrius vs pop1 sur la même ligne dans .xlsx
+# Cistothorus stellaris (.xlsx) vs Cistothorus platensis (site web)
+
+# Esox americanus vermiculatus (ajouter Esox americanus?)
+# Salvelinus alpinus oquassa (ajouter Salvelinus alpinus?)
+# Diadophis punctatus edwardsii (ajouter Diadophis punctatus?)
+# Nerodia sipedon sipedon (ajouter Nerodia sipedon?)
+# Thamnophis saurita septentrionalis (ajouter Thamnophis saurita?)
+# Calidris canutus rufa (ajouter Calidris canutus?)
+# Ammodramus savannarum pratensis (ajouter Ammodramus savannarum?)
+
+
+# Use-case Francois
+# sp split
+# becassine de wilson vs becassine des marais
+# tiarella cordofolia vs tiarella stolonifera
+# larus argentatus vs larus hudsonianus ou mithsonianus
+
+# diff status
+# glycerie de fernalde
+# torreyocloa palida palida vs  torreyocloa palida fernaldi
+# ergieron philadelphicus philadelphicus vs erigeron philadelphicus provancheri
+
+
+
 ################################################################################
 # This script updates the rubus.taxa_groups_members table
 #
@@ -117,7 +203,7 @@ inject_data <- function(con, data) {
 # 2. Main Script
 #================================================================================================
 # Extract data for faune and flore
-faune_data <- extract_data(url_faune, div_faune_lists)
+faune_data <- extract_data(url_faune, div_faune_lists) |> tibble::as_tibble() |> dplyr::select(short, scientific_name, rank, parent_scientific_name)
 flore_data <- extract_data(url_flore, div_flore_lists)
 
 # Combine the data

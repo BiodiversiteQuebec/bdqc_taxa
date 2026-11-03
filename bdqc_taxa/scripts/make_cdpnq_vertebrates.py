@@ -34,9 +34,9 @@ dataset_row = {
         "organizationName": metadata["organization"]["title"],
     }],
     "pub_date": metadata["metadata_created"].split("T")[0],
-    "abstract": metadata["notes"],
+    "abstract": [metadata["notes"]],
     "keyword_set": [o["name"] for o in metadata["tags"]],
-    "url": ["https://www.donneesquebec.ca/recherche/dataset/liste-de-la-faune-vertebree-du-quebec"],
+    "url_information": ["https://www.donneesquebec.ca/recherche/dataset/liste-de-la-faune-vertebree-du-quebec"],
     "alternate_identifier": [metadata["license_id"], metadata["id"]],
     "license_identifier": metadata["license_id"].upper(),
     "license_url": metadata["license_url"],
@@ -73,6 +73,7 @@ dataset_row = {
     "org_dataset_id": metadata["id"]
 }
 
+# %%
 # Insert dataset row using sqlalchemy
 engine = create_engine(DATABASE_URL)
 datasets_table = Table('datasets', MetaData(), autoload_with=engine, schema='public')
@@ -88,7 +89,7 @@ with engine.begin() as conn:
                 "pub_date": dataset_row["pub_date"],
                 "abstract": dataset_row["abstract"],
                 "keyword_set": dataset_row["keyword_set"],
-                "url": dataset_row["url"],
+                "url_information": dataset_row["url_information"],
                 "alternate_identifier": dataset_row["alternate_identifier"],
                 "license_identifier": dataset_row["license_identifier"],
                 "license_url": dataset_row["license_url"],
@@ -115,9 +116,9 @@ with engine.begin() as conn:
 
 # %%
 # Set the path to the data directory
-xls_path = "scratch/LFVQ_31_01_2025.xlsx"
+xls_path = "../../scratch/LFVQ_25_03_2026.xlsx"
 # Load the data
-df = pd.read_excel(xls_path, header=0, sheet_name="LFVQ_31_01_2025")
+df = pd.read_excel(xls_path, header=0, sheet_name="LFVQ_25_03_2026")
 
 # %% Preformat the dataframe
 
@@ -177,6 +178,10 @@ df = df[[
 
 # Create new column for valid_genus
 df["GENRE_VALIDE"] = df["GENRE"].str.strip()
+
+# Fix Falco peregrinus situation
+df.loc[df["name"] == "Falco peregrinus tundrius", ["valid_name"]] = ["Falco peregrinus pop. 1"]
+df.loc[df["name"] == "Falco peregrinus pop. 1", ["rank"]] = ["population"]
 
 # %% Créer les entrées pour les espèces avec populations qui n'existent pas sans mentions de pop
 # Note : Seulement le Rangifer tarandus caribou est un ssp qui possède des entrées avec des mentions de pop, et possède déjà des entrées sans mentions de pop
@@ -242,8 +247,7 @@ df = df.drop(columns=["species_has_pop"], errors='ignore')
 ssp_df = df.loc[df["rank"] == "subspecies", :].copy()
 
 ssp_df["name"] = ssp_df["ESPECE"]
-ssp_df["name"] = ssp_df["ESPECE"]
-ssp_df["valid_name"] = ssp_df["name"]
+#ssp_df["valid_name"] = ssp_df["name"]
 ssp_df["rank"] = "species"
 ssp_df["synonym"] = False
 
@@ -285,13 +289,13 @@ def get_gbif_synonyms(name):
     Get the GBIF synonyms for a given name.
     """
     try:
-        species = Species.match(name=name, phylum="Chordata")
+        species = Species.match(scientific_name=name, phylum="Chordata")
+        status = species.get('usage', {}).get('status') if species else None
         # If accepted
-        if species and species['status'] == "ACCEPTED":
-            return species
-        elif species and species['status'] == "SYNONYM":
-            species = Species.get(species['acceptedUsageKey'])
-            return species
+        if status == "ACCEPTED":
+            return species['usage']
+        elif status == "SYNONYM":
+            return species.get('acceptedUsage')
         else:
             return None
     except Exception as e:
@@ -430,7 +434,7 @@ genus_rows["vernacular_en"] = np.nan
 
 # Set valid_name for genus rows. It depends if the genus contains all valid species(not synonyms)
 
-genus_rows["valid_name"] = np.nan
+genus_rows["valid_name"] = None
 genus_valid = set(genus_rows["GENRE_VALIDE"].unique())
 genus_rows.loc[genus_rows["name"].isin(genus_valid), "valid_name"] = genus_rows.loc[genus_rows["name"].isin(genus_valid), "name"]
 
@@ -477,6 +481,25 @@ df.loc[df['name'] == 'Rangifer tarandus', 'rank'] = 'species'
 df.loc[df['name'] == 'Rangifer tarandus', 'synonym'] = True
 df.loc[df['name'] == 'Rangifer tarandus', 'vernacular_fr'] = 'Caribou des bois'
 
+# Manually fix/change problems
+df.loc[df['name'] == 'Falco peregrinus' , 'valid_name'] = 'Falco peregrinus pop. 1'
+df.loc[df['name'] == 'Falco peregrinus', 'vernacular_en'] = 'Peregrine Falcon - anatum/tundrius population'
+df.loc[df['name'] == 'Falco peregrinus', 'vernacular_fr'] = 'Faucon pèlerin anatum/tundrius'
+df.loc[df['name'] == 'Falco peregrinus', 'synonym'] = True
+df.loc[df['name'] == 'Falco peregrinus tundrius', 'vernacular_en'] = 'Peregrine Falcon - anatum/tundrius population'
+df.loc[df['name'] == 'Falco peregrinus tundrius', 'vernacular_fr'] = 'Faucon pèlerin anatum/tundrius'
+df.loc[df['name'] == 'Falco peregrinus tundrius', 'synonym'] = True
+df.loc[df['name'] == 'Falco peregrinus pop. 1', 'vernacular_fr'] = 'Faucon pèlerin anatum/tundrius'
+
+# Add missing Falco peregrinus anatum as a synonym of Falco peregrinus pop. 1
+anatum_row = df.loc[df['name'] == 'Falco peregrinus tundrius'].copy()
+anatum_row['name'] = 'Falco peregrinus anatum'
+anatum_row['valid_name'] = 'Falco peregrinus pop. 1'
+anatum_row['author'] = np.nan
+df = pd.concat([df, anatum_row], ignore_index=True)
+
+df.loc[df['name'] == 'Stomia boa ssp. Ferox', 'rank'] = 'subspecies'
+
 # # Verification
 # df.loc[df['valid_name'] == 'Dryobates villosus', :]
 # df.loc[df['name'] == 'Leuconotopicus villosus', :]
@@ -487,7 +510,7 @@ df.loc[df['name'] == 'Rangifer tarandus', 'vernacular_fr'] = 'Caribou des bois'
 # %% Export to csv
 
 # Export to csv
-df.to_csv("scratch/cdpnq_vertebrates_verified.csv", index=False)
+df.to_csv("../../scratch/cdpnq_vertebrates_verified.csv", index=False)
 
 # %%
 # Write to sqlite database

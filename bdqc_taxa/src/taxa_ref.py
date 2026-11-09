@@ -4,6 +4,7 @@ from . import global_names
 from . import gbif
 from . import bryoquel
 from . import cdpnq
+from . import vascan
 from typing import List, Optional
 from inspect import signature
 
@@ -12,6 +13,7 @@ BRYOQUEL_SOURCE_KEY = 1001 # Not in global names so start at 1000
 BROQUEL_SOURCE_NAME = 'Bryoquel'
 CDPNQ_SOURCE_NAME = 'CDPNQ'
 CDPNQ_SOURCE_KEY = 1002 # Not in global names so start at 1000
+VASCAN_SOURCE_KEY = 147 # Corresponds to global names
 
 GBIF_SOURCE_NAME = 'GBIF Backbone Taxonomy'
 GBIF_RANKS = ['kingdom', 'phylum', 'class', 'order', 'family',
@@ -353,6 +355,75 @@ class TaxaRef:
         return out_custom
 
     @classmethod
+    def _remap_vascan(cls, taxa_ref_list: List[TaxaRef]):
+        """Remap VASCAN matches to their only infra-taxon present in Quebec
+
+        The infra-taxon becomes the match, the matched taxon becomes one of its
+        parents, and synonyms of the matched taxon now point to the infra-taxon.
+        """
+        out = list(taxa_ref_list)
+        remapped = {}
+
+        for ref in taxa_ref_list:
+            # Look up the accepted taxon only: the table has no synonym IDs
+            if ref.source_id != VASCAN_SOURCE_KEY or not ref.valid or ref.is_parent:
+                continue
+            remap = vascan.match_taxa(ref.source_record_id)
+            if remap is None:
+                continue
+
+            classification_srids = list(ref.classification_srids)
+            rank_order = ref.rank_order
+
+            # Create rows for the parents between the matched taxon and the infra-taxon
+            for parent in vascan.get_intermediate_taxa(remap):
+                rank_order += 1
+                classification_srids.append(parent['taxon_id'])
+                out.append(cls(
+                    source_id=ref.source_id,
+                    source_name=ref.source_name,
+                    source_record_id=parent['taxon_id'],
+                    scientific_name=parent['name'],
+                    authorship=None,
+                    rank=parent['rank'],
+                    rank_order=rank_order,
+                    classification_srids=list(classification_srids),
+                    valid=True,
+                    valid_srid=parent['taxon_id'],
+                    match_type=None,
+                    is_parent=True
+                ))
+
+            # Create row for the infra-taxon, which takes over the match
+            classification_srids.append(remap['valid_taxon_id'])
+            out.append(cls(
+                source_id=ref.source_id,
+                source_name=ref.source_name,
+                source_record_id=remap['valid_taxon_id'],
+                scientific_name=remap['valid_name'],
+                authorship=strip_authorship(remap['valid_authorship']),
+                rank=remap['valid_rank'],
+                rank_order=rank_order + 1,
+                classification_srids=classification_srids,
+                valid=True,
+                valid_srid=remap['valid_taxon_id'],
+                match_type=ref.match_type,
+                is_parent=False
+            ))
+
+            ref.is_parent = True
+            ref.match_type = None
+            remapped[ref.source_record_id] = (remap['valid_taxon_id'], classification_srids)
+
+        # Point the synonyms of the remapped taxa to the infra-taxon
+        for ref in out:
+            if ref.source_id == VASCAN_SOURCE_KEY and not ref.valid and ref.valid_srid in remapped:
+                ref.valid_srid, classification_srids = remapped[ref.valid_srid]
+                ref.classification_srids = list(classification_srids)
+
+        return out
+
+    @classmethod
     def from_all_sources(cls, name: str, authorship: str = None, parent_taxa: str = None):
         # Capitalize first letter
         name = name.strip()
@@ -389,7 +460,10 @@ class TaxaRef:
         if edge_cases:
             for edge_case, match_type in edge_cases:
                 out.extend(cls.from_custom_sources_fuzzy_matched(edge_case, match_type))
-            
+
+        # Remap VASCAN taxa that have only one infra-taxon present in Quebec
+        out = cls._remap_vascan(out)
+
         if is_complex(name):
             out = cls.set_complex_match_type(out)
 

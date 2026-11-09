@@ -911,5 +911,59 @@ class TestParent(unittest.TestCase):
         ]
         self.assertTrue(len(gbif_accepted_genus_refs) > 0, "Should return at least one accepted genus record from GBIF")
 
+class TestVascanRemap(unittest.TestCase):
+    def _vascan_refs(self, name, parent_taxa=None):
+        refs = taxa_ref.TaxaRef.from_all_sources(name, parent_taxa=parent_taxa)
+        return {ref.source_record_id: ref for ref in refs if ref.source_name == 'VASCAN'}
+
+    def test_species_remapped_to_subspecies(self, name='Arnica griscomii'):
+        refs = self._vascan_refs(name)
+        self.assertTrue(refs['2860'].is_parent)
+        self.assertIsNone(refs['2860'].match_type)
+        self.assertFalse(refs['2861'].is_parent)
+        self.assertEqual(refs['2861'].match_type, 'exact')
+        self.assertEqual(refs['2861'].scientific_name, 'Arnica griscomii griscomii')
+        self.assertEqual(refs['2861'].rank, 'subspecies')
+        self.assertEqual(refs['2861'].valid_srid, '2861')
+
+    def test_species_remapped_keeps_fuzzy_match_type(self, name='Arnica griscomi'):
+        refs = self._vascan_refs(name)
+        self.assertIsNone(refs['2860'].match_type)
+        self.assertEqual(refs['2861'].match_type, 'fuzzy')
+
+    def test_nested_variety_has_full_hierarchy(self, name='Cakile edentula'):
+        refs = self._vascan_refs(name)
+        self.assertTrue(refs['9885'].is_parent)
+        self.assertTrue(refs['3936'].is_parent)
+        self.assertIsNone(refs['3936'].match_type)
+        self.assertEqual(refs['3936'].scientific_name, 'Cakile edentula edentula')
+        self.assertEqual(refs['3936'].rank, 'subspecies')
+        self.assertFalse(refs['3935'].is_parent)
+        self.assertEqual(refs['3935'].rank, 'variety')
+        self.assertEqual(refs['3936'].classification_srids[-2:], ['9885', '3936'])
+        self.assertEqual(refs['3935'].classification_srids[-3:], ['9885', '3936', '3935'])
+        self.assertEqual(refs['3936'].rank_order, refs['9885'].rank_order + 1)
+        self.assertEqual(refs['3935'].rank_order, refs['9885'].rank_order + 2)
+
+    def test_synonym_of_remapped_species(self, name='Gentiana amarella'):
+        refs = self._vascan_refs(name)
+        self.assertFalse(refs['33669'].valid)
+        self.assertEqual(refs['33669'].valid_srid, '6009')
+        self.assertEqual(refs['33669'].match_type, 'exact')
+        self.assertTrue(refs['6010'].is_parent)
+        self.assertFalse(refs['6009'].is_parent)
+        self.assertEqual(refs['6009'].scientific_name, 'Gentianella amarella acuta')
+
+    def test_two_infra_taxa_not_remapped(self, name='Torreyochloa pallida'):
+        refs = self._vascan_refs(name)
+        self.assertFalse(refs['7981'].is_parent)
+        self.assertEqual(refs['7981'].match_type, 'exact')
+        self.assertNotIn('7982', refs)
+
+    def test_remap_kept_when_pruned_on_parent(self, name='Cakile edentula', parent_taxa='Plantae'):
+        refs = self._vascan_refs(name, parent_taxa=parent_taxa)
+        self.assertFalse(refs['3935'].is_parent)
+        self.assertTrue(refs['3936'].is_parent)
+
 if __name__ == '__main__':
     unittest.main()

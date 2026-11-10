@@ -13,6 +13,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from datetime import datetime
 import concurrent.futures
 import os
+import re
 
 # Set the path to the file directory
 file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -247,19 +248,10 @@ df = df.drop(columns=["species_has_pop"], errors='ignore')
 ssp_df = df.loc[df["rank"] == "subspecies", :].copy()
 
 ssp_df["name"] = ssp_df["ESPECE"]
-#ssp_df["valid_name"] = ssp_df["name"]
+# Species are valid by default, the remap below points them to their infra-taxon when needed
+ssp_df["valid_name"] = ssp_df["name"]
 ssp_df["rank"] = "species"
 ssp_df["synonym"] = False
-
-# Count the number of records by ESPECE and set the index name to ESPECE
-espece_counts = df["ESPECE"].value_counts().reset_index()
-
-# Join the counts with the subspecies dataframe
-ssp_df = ssp_df.merge(espece_counts, left_on="ESPECE", right_on="ESPECE", how="left")
-
-# Change valid name to the ESPECE name when there are multiple subspecies, otherwise keep the subspecies as valid name
-#  ie. Rangifer tarandus valid name is Rangifer tarandus caribou
-ssp_df.loc[ssp_df["count"] > 1, "valid_name"] = ssp_df["name"]
 
 # Sort the dataframe by name, vernacular_fr and vernacular_en with missing values at the end and keep the first occurrence
 ssp_df = ssp_df.sort_values(by=["name", "vernacular_fr", "vernacular_en"], na_position='last').drop_duplicates(subset=["name"], keep='first')
@@ -274,6 +266,45 @@ ssp_df["synonym_names"] = np.nan
 
 # Append the subspecies records to the main dataframe
 df = pd.concat([df, ssp_df], axis=0).reset_index(drop=True)
+
+# %% Remap species to their only infra-taxon in Quebec
+# A species is remapped to its infra-taxon (subspecies or population) when:
+#  - the species is not listed itself in the LFVQ. A species-level element means the species occurs
+#    beyond its listed infra-taxa (ie. Loxia curvirostra S5 next to Loxia curvirostra percna S2)
+#  - it has exactly one infra-taxon. Subspecies are counted first, so populations under a subspecies
+#    are not counted (ie. Rangifer tarandus -> Rangifer tarandus caribou, which has 5 populations).
+#    Populations are counted when the species has no subspecies (ie. Desmognathus ochrophaeus pop. 2)
+# Infra-taxa are compared on valid_name, so Falco peregrinus tundrius (valid: Falco peregrinus pop. 1)
+# and Falco peregrinus pop. 1 count as one: Falco peregrinus -> Falco peregrinus pop. 1
+# All Quebec observations of a remapped species are assumed to be the infra-taxon, so the CDPNQ
+# statuses, which are set on the infra-taxon, apply to them.
+# Done before the GBIF synonyms so they point to the infra-taxon too
+#  ie. Oceanodroma leucorhoa -> Hydrobates leucorhous pop. 1
+
+# Rows from the LFVQ have an ELEMENT_ID, the rows created above don't
+from_lfvq = df["ELEMENT_ID"].notna()
+listed_species = set(df.loc[from_lfvq & (df["rank"] == "species"), "ESPECE"])
+
+def get_only_infra(rows):
+    subspecies = rows.loc[rows["rank"] == "subspecies"]
+    targets = (subspecies if not subspecies.empty else rows)["valid_name"].unique()
+    return targets[0] if len(targets) == 1 else None
+
+infra = df.loc[
+    from_lfvq
+    & df["rank"].isin(["subspecies", "population"])
+    & ~df["ESPECE"].isin(listed_species)
+]
+only_infra = infra.groupby("ESPECE")[["rank", "valid_name"]].apply(get_only_infra).dropna()
+
+is_remapped = (df["rank"] == "species") & df["name"].isin(only_infra.index)
+df.loc[is_remapped, "valid_name"] = df.loc[is_remapped, "name"].map(only_infra)
+df.loc[is_remapped, "synonym"] = True
+
+print(f"Species remapped to their only infra-taxon: {is_remapped.sum()}")
+
+# # Verification
+# df.loc[is_remapped, ["name", "valid_name"]]
 
 # %% Create the gbif_synonyms rows
 gbif_synonyms = df.copy()
@@ -475,17 +506,13 @@ df = df[["source_dataset_id", "name", "valid_name", "rank", "synonym", "author",
 # Sort by name
 df = df.sort_values(by="valid_name")
 
-# Manually fix/change Caribou (Rangifer tarandus) matching
-df.loc[df['name'] == 'Rangifer tarandus', 'valid_name'] = 'Rangifer tarandus caribou'
-df.loc[df['name'] == 'Rangifer tarandus', 'rank'] = 'species'
-df.loc[df['name'] == 'Rangifer tarandus', 'synonym'] = True
+# Rangifer tarandus and Falco peregrinus are remapped with the other species above,
+# only their vernacular names are fixed here
 df.loc[df['name'] == 'Rangifer tarandus', 'vernacular_fr'] = 'Caribou des bois'
 
 # Manually fix/change problems
-df.loc[df['name'] == 'Falco peregrinus' , 'valid_name'] = 'Falco peregrinus pop. 1'
 df.loc[df['name'] == 'Falco peregrinus', 'vernacular_en'] = 'Peregrine Falcon - anatum/tundrius population'
 df.loc[df['name'] == 'Falco peregrinus', 'vernacular_fr'] = 'Faucon pèlerin anatum/tundrius'
-df.loc[df['name'] == 'Falco peregrinus', 'synonym'] = True
 df.loc[df['name'] == 'Falco peregrinus tundrius', 'vernacular_en'] = 'Peregrine Falcon - anatum/tundrius population'
 df.loc[df['name'] == 'Falco peregrinus tundrius', 'vernacular_fr'] = 'Faucon pèlerin anatum/tundrius'
 df.loc[df['name'] == 'Falco peregrinus tundrius', 'synonym'] = True
@@ -528,15 +555,13 @@ conn.commit()
 conn.close()
 
 # %%
-# Append to the sqlite README file
-readme = """
-
-TABLE cdpnq_vertebrates
+# Write the table section of the sqlite README file
+readme = """TABLE cdpnq_vertebrates
 
 Description: 
-    This file was generated from the Liste de la faune vertébrée du Québec (LFVQ) Data file LFVQ_31_01_2025.xlsx.
-    The file was obtained from Données Québec on 2025-07-15.
-    The last version of the file is from 2025-01-31.
+    This file was generated from the Liste de la faune vertébrée du Québec (LFVQ) Data file LFVQ_25_03_2026.xlsx.
+    The file was obtained from Données Québec on 2026-11-02.
+    The last version of the file is from 2026-04-13.
     The file was parsed using the script `scripts/make_cdpnq_vertebrates.py`.
 
 Columns:
@@ -555,8 +580,25 @@ Columns:
 
 Notes:
     The entries have no recorded author.
+    Species that are not listed themselves in the LFVQ and have only one infra-taxon (subspecies, or
+    population when there is no subspecies) are synonyms of that infra-taxon. All Quebec observations
+    of the species are assumed to be the infra-taxon.
+    ie. Nerodia sipedon -> Nerodia sipedon sipedon, Rangifer tarandus -> Rangifer tarandus caribou,
+    Desmognathus ochrophaeus -> Desmognathus ochrophaeus pop. 2
+    Falco peregrinus, Falco peregrinus anatum and Falco peregrinus tundrius -> Falco peregrinus pop. 1
 """
 
-with open("..\\custom_sources.txt", "a") as f:
-    f.write(readme)
+# Replace the section if it already exists, otherwise append it
+readme_file = os.path.join("..", "custom_sources.txt")
+with open(readme_file, encoding="utf-8") as f:
+    content = f.read()
+
+section_pattern = re.compile(r"TABLE cdpnq_vertebrates\n.*?(?=\nTABLE |\Z)", re.DOTALL)
+if section_pattern.search(content):
+    content = section_pattern.sub(lambda _: readme, content)
+else:
+    content = content.rstrip("\n") + "\n\n\n" + readme
+
+with open(readme_file, "w", encoding="utf-8") as f:
+    f.write(content)
 # %%

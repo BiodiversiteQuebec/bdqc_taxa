@@ -700,9 +700,13 @@ class TaxaRef:
                     is_parent=True
                 ))
 
-            # Create rows for valid parent species
-            if valid_match and valid_match['rank'].lower() in ['population']:
-                subspecies = valid_match['subspecies'] if 'subspecies' in valid_match else ' '.join(valid_match['name'].split(' ')[:3]) # Fallback when species is not provided (current case for odonates)
+            # Create rows for valid parent subspecies, only when the population is under a subspecies
+            #  ie. Rangifer tarandus caribou pop. 2 -> Rangifer tarandus caribou
+            #  but not Bucephala islandica pop. 1 nor Salmo salar (populations confinées ...)
+            name_parts = valid_match['name'].split(' ') if valid_match else []
+            if valid_match and valid_match['rank'].lower() in ['population'] \
+                    and len(name_parts) > 3 and name_parts[2].isalpha():
+                subspecies = ' '.join(name_parts[:3])
                 out.append(cls(
                     source_id=CDPNQ_SOURCE_KEY,
                     source_name=CDPNQ_SOURCE_NAME,

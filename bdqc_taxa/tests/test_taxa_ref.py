@@ -132,6 +132,18 @@ class TestTaxaRef(unittest.TestCase):
         self.assertTrue(any([ref for ref in valid_refs if ref.rank == 'subspecies' and ref.scientific_name == 'Trachemys scripta elegans' and ref.match_type is None and ref.valid]))
         self.assertTrue(any([ref for ref in refs if ref.rank == 'species' and ref.scientific_name == 'Chrysemys scripta' and not ref.valid and ref.match_type]))
     
+    # A population directly under a species has no subspecies parent
+    def test_from_cdpnq_population_under_species(self, name='Bucephala islandica'):
+        refs = taxa_ref.TaxaRef.from_cdpnq(name)
+        self.assertTrue(any(ref.scientific_name == 'Bucephala islandica pop. 1' and ref.valid and not ref.is_parent for ref in refs))
+        self.assertTrue(any(ref.scientific_name == 'Bucephala islandica' and ref.rank == 'species' and ref.is_parent for ref in refs))
+        self.assertFalse(any(ref.rank == 'subspecies' for ref in refs))
+
+    # A population under a subspecies has the subspecies as parent
+    def test_from_cdpnq_population_under_subspecies(self, name='Rangifer tarandus caribou pop. 2'):
+        refs = taxa_ref.TaxaRef.from_cdpnq(name)
+        self.assertTrue(any(ref.scientific_name == 'Rangifer tarandus caribou' and ref.rank == 'subspecies' and ref.is_parent for ref in refs))
+
     def test_from_all_sources_cdpnq(self, name='Libellula luctuosa'):
         refs = taxa_ref.TaxaRef.from_all_sources(name)
         self.assertTrue(len(refs) > 1)

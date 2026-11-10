@@ -47,9 +47,9 @@ Columns:
 TABLE cdpnq_vertebrates
 
 Description: 
-    This file was generated from the Liste de la faune vert�br�e du Qu�bec (LFVQ) Data file LFVQ_31_01_2025.xlsx.
-    The file was obtained from Donn�es Qu�bec on 2025-07-15.
-    The last version of the file is from 2025-01-31.
+    This file was generated from the Liste de la faune vertébrée du Québec (LFVQ) Data file LFVQ_25_03_2026.xlsx.
+    The file was obtained from Données Québec on 2026-11-02.
+    The last version of the file is from 2026-04-13.
     The file was parsed using the script `scripts/make_cdpnq_vertebrates.py`.
 
 Columns:
@@ -63,12 +63,17 @@ Columns:
     vernacular_en: vernacular name in English
     genus: genus of the taxa
     species: species of the taxa
-    origin: origin of the taxa (Indig�ne, Exotique, Inconnu/Non d�termin�)
+    origin: origin of the taxa (Indigène, Exotique, Inconnu/Non déterminé)
     s_rank: scientific rank of the taxa (e.g. S1, S2, S3, etc.)
 
 Notes:
     The entries have no recorded author.
-
+    Species that are not listed themselves in the LFVQ and have only one infra-taxon (subspecies, or
+    population when there is no subspecies) are synonyms of that infra-taxon. All Quebec observations
+    of the species are assumed to be the infra-taxon.
+    ie. Nerodia sipedon -> Nerodia sipedon sipedon, Rangifer tarandus -> Rangifer tarandus caribou,
+    Desmognathus ochrophaeus -> Desmognathus ochrophaeus pop. 2
+    Falco peregrinus, Falco peregrinus anatum and Falco peregrinus tundrius -> Falco peregrinus pop. 1
 
 TABLE eliso_invertebrates
 

@@ -47,9 +47,9 @@ Columns:
 TABLE cdpnq_vertebrates
 
 Description: 
-    This file was generated from the Liste de la faune vert�br�e du Qu�bec (LFVQ) Data file LFVQ_31_01_2025.xlsx.
-    The file was obtained from Donn�es Qu�bec on 2025-07-15.
-    The last version of the file is from 2025-01-31.
+    This file was generated from the Liste de la faune vertébrée du Québec (LFVQ) Data file LFVQ_25_03_2026.xlsx.
+    The file was obtained from Données Québec on 2026-11-02.
+    The last version of the file is from 2026-04-13.
     The file was parsed using the script `scripts/make_cdpnq_vertebrates.py`.
 
 Columns:
@@ -63,12 +63,17 @@ Columns:
     vernacular_en: vernacular name in English
     genus: genus of the taxa
     species: species of the taxa
-    origin: origin of the taxa (Indig�ne, Exotique, Inconnu/Non d�termin�)
+    origin: origin of the taxa (Indigène, Exotique, Inconnu/Non déterminé)
     s_rank: scientific rank of the taxa (e.g. S1, S2, S3, etc.)
 
 Notes:
     The entries have no recorded author.
-
+    Species that are not listed themselves in the LFVQ and have only one infra-taxon (subspecies, or
+    population when there is no subspecies) are synonyms of that infra-taxon. All Quebec observations
+    of the species are assumed to be the infra-taxon.
+    ie. Nerodia sipedon -> Nerodia sipedon sipedon, Rangifer tarandus -> Rangifer tarandus caribou,
+    Desmognathus ochrophaeus -> Desmognathus ochrophaeus pop. 2
+    Falco peregrinus, Falco peregrinus anatum and Falco peregrinus tundrius -> Falco peregrinus pop. 1
 
 TABLE eliso_invertebrates
 
@@ -95,3 +100,35 @@ Notes:
     The entries have no recorded author.
     The entries may contain comments in parentheses that are kept as is but may prevent matching.
 
+
+TABLE vascan_remap
+
+Description:
+    This file was generated from the VASCAN Darwin Core Archive vascan_dwc_03-11-2026.
+    The archive was obtained from https://data.canadensys.net/vascan/checklist on 2026-11-03
+    (region: Quebec; statuses: native, introduced, ephemeral, doubtful, extirpated, excluded;
+    ranks: species, subspecies, variety, hybrids included).
+    The file was parsed using the script `scripts/make_vascan_remap.py`.
+    Species (and intermediate infra-taxa) that have exactly one infra-taxon present in Quebec
+    are mapped to that infra-taxon. All Quebec observations of the species are assumed to be the infra-taxon.
+    Only the remapped taxa are listed.
+    Infra-taxa counted as present in Quebec: doubtful, ephemeral, extirpated, introduced, native.
+
+Columns:
+    taxon_id: VASCAN taxonID of the taxon to remap (species or intermediate subspecies)
+    name: canonical name of the taxon to remap, without authorship nor rank marker (ie. Cakile edentula edentula)
+    rank: rank of the taxon to remap
+    parent_id: VASCAN taxonID of the parent of the taxon to remap, empty for species
+    valid_taxon_id: VASCAN taxonID of the infra-taxon to remap to
+    valid_name: canonical name of the infra-taxon, without authorship nor rank marker (ie. Arnica griscomii griscomii)
+    valid_rank: rank of the infra-taxon (subspecies or variety)
+    valid_authorship: authorship of the infra-taxon
+    valid_qc_status: VASCAN status of the infra-taxon in Quebec
+    n_infra_listed_qc: number of lowest-level infra-taxa listed for Quebec, any status
+    n_infra_counted_qc: number of those counted as present in Quebec (always 1)
+    vascan_consulted: date the VASCAN archive was generated
+
+Notes:
+    Match on VASCAN taxon IDs, which are the record IDs returned by Global Names for VASCAN (data source 147).
+    The hierarchy of an infra-taxon is rebuilt by following parent_id between the rows that share its
+    valid_taxon_id (ie. 3935 <- 3936 <- 9885 for Cakile edentula edentula edentula).

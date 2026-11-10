@@ -83,6 +83,49 @@ class TestCdpnqVertebrates(unittest.TestCase):
         self.assertTrue(result['vernacular_fr'] == 'Caribou des bois')
         self.assertTrue(result['vernacular_en'] == 'Woodland Caribou')
 
+# Species with only one infra-taxon in Quebec are remapped to that infra-taxon
+class TestCdpnqVertebratesRemap(unittest.TestCase):
+    def assert_remap(self, name, valid_name):
+        result = cdpnq.match_taxa_vertebrates(name)
+        self.assertEqual(result['valid_name'], valid_name)
+        self.assertEqual(result['synonym'], 1)
+
+    def assert_not_remapped(self, name):
+        result = cdpnq.match_taxa_vertebrates(name)
+        self.assertEqual(result['valid_name'], name)
+        self.assertEqual(result['synonym'], 0)
+
+    def test_remap_to_subspecies(self):
+        self.assert_remap('Nerodia sipedon', 'Nerodia sipedon sipedon')
+
+    def test_remap_to_population(self):
+        self.assert_remap('Desmognathus ochrophaeus', 'Desmognathus ochrophaeus pop. 2')
+
+    def test_remap_to_subspecies_with_populations(self):
+        # Rangifer tarandus caribou has 5 populations, which can't be told apart
+        self.assert_remap('Rangifer tarandus', 'Rangifer tarandus caribou')
+        self.assert_not_remapped('Rangifer tarandus caribou')
+
+    def test_remap_falco_peregrinus(self):
+        # Falco peregrinus pop. 1 is the anatum/tundrius population
+        for name in ['Falco peregrinus', 'Falco peregrinus anatum', 'Falco peregrinus tundrius']:
+            self.assert_remap(name, 'Falco peregrinus pop. 1')
+        self.assert_not_remapped('Falco peregrinus pop. 1')
+
+    def test_remap_synonym_of_remapped_species(self):
+        self.assert_remap('Oceanodroma leucorhoa', 'Hydrobates leucorhous pop. 1')
+        self.assert_remap('Chrysemys scripta', 'Trachemys scripta elegans')
+
+    def test_no_remap_species_listed(self):
+        # Loxia curvirostra is listed itself (S5) next to Loxia curvirostra percna (S2)
+        self.assert_not_remapped('Loxia curvirostra')
+
+    def test_no_remap_many_populations(self):
+        self.assert_not_remapped('Delphinapterus leucas')
+
+    def test_no_remap_many_subspecies(self):
+        self.assert_not_remapped('Eremophila alpestris')
+
 # Test match_taxa for both odonates and vertebrates
 class TestCdpnq(unittest.TestCase):
     def test_match_species(self, name = 'Libellula luctuosa'):

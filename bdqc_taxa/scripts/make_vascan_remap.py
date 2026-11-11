@@ -169,7 +169,35 @@ for taxon_id in candidates:
         "vascan_consulted": consulted,
     })
 
-remap = pd.DataFrame(remap_rows).sort_values("name").reset_index(drop=True)
+remap = pd.DataFrame(remap_rows)
+
+# %% Add the manual remaps
+
+# Taxa missing from the archive because VASCAN has no Quebec distribution for them, while the
+# CDPNQ lists the infra-taxon in Quebec, and it is the only infra-taxon of the species in VASCAN.
+#  ie. Cirsium scariosum var. scariosum (Menacée, chardon de la Minganie) is only listed in AB and BC.
+#  Verified on the VASCAN website on 2026-11-11.
+MANUAL_REMAPS = [{
+    "taxon_id": "3004",
+    "name": "Cirsium scariosum",
+    "rank": "species",
+    "parent_id": None,
+    "valid_taxon_id": "3003",
+    "valid_name": "Cirsium scariosum scariosum",
+    "valid_rank": "variety",
+    "valid_authorship": "Nuttall",
+    "valid_qc_status": None,
+    "n_infra_listed_qc": 0,
+    "n_infra_counted_qc": 0,
+    "vascan_consulted": consulted,
+}]
+
+manual_ids = {row["taxon_id"] for row in MANUAL_REMAPS}
+if manual_ids & set(remap["taxon_id"]):
+    raise ValueError(f"Manual remaps already in the archive, remove them: {manual_ids & set(remap['taxon_id'])}")
+
+remap = pd.concat([remap, pd.DataFrame(MANUAL_REMAPS)], ignore_index=True)
+remap = remap.sort_values("name").reset_index(drop=True)
 
 print(f"Accepted taxa: {len(accepted)} | taxa with a Quebec status: {len(qc_status)}")
 print(f"Rows in {TABLE_NAME}: {len(remap)} ({remap['rank'].value_counts().to_dict()})")
@@ -211,6 +239,9 @@ Description:
     Species (and intermediate infra-taxa) that have exactly one infra-taxon present in Quebec
     are mapped to that infra-taxon. All Quebec observations of the species are assumed to be the infra-taxon.
     Only the remapped taxa are listed.
+    Manual remaps are added for taxa with no Quebec distribution in VASCAN, while the CDPNQ lists the
+    infra-taxon in Quebec and it is the only infra-taxon of the species in VASCAN
+    (Cirsium scariosum -> Cirsium scariosum scariosum). Their n_infra_* columns are 0.
     Infra-taxa counted as present in Quebec: {', '.join(sorted(COUNTED_STATUSES))}.
 
 Columns:
@@ -224,7 +255,7 @@ Columns:
     valid_authorship: authorship of the infra-taxon
     valid_qc_status: VASCAN status of the infra-taxon in Quebec
     n_infra_listed_qc: number of lowest-level infra-taxa listed for Quebec, any status
-    n_infra_counted_qc: number of those counted as present in Quebec (always 1)
+    n_infra_counted_qc: number of those counted as present in Quebec (always 1, 0 for manual remaps)
     vascan_consulted: date the VASCAN archive was generated
 
 Notes:

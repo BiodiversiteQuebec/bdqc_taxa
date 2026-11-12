@@ -1,102 +1,31 @@
-tmp <- tempfile(fileext = ".xlsx")
-httr2::request("https://cdn-contenu.quebec.ca/cdn-contenu/faune/documents/precaire/liste-especes-suivies-CDPNQ.xlsx") |>
-  httr2::req_perform(tmp)
-
-# Faune
-emv_fauna <- readxl::read_excel(tmp, sheet = "Faune") |>
-  dplyr::filter(Situation %in% c("Susceptible", "Vulnérable", "Menacée")) |>
-  dplyr::mutate(
-    scientific_name = stringr::str_match(
-      `Nom commun (Nom scientifique)`,
-      "\\((.*)\\)\\s*$"
-    )[, 2],
-    parent_scientific_name = "Animalia",
-    short = dplyr::case_when(
-      Situation == "Susceptible" ~ "CDPNQ_SUSC",
-      Situation == "Vulnérable" ~ "CDPNQ_VUL",
-      Situation == "Menacée" ~ "CDPNQ_ENDANGERED",
-      TRUE ~ Situation
-    ),
-    rank = dplyr::case_when(
-      `Niveau taxonomique` == "Espèce" ~ "species",
-      `Niveau taxonomique` == "Sous-espèce" ~ "subspecies",
-      `Niveau taxonomique` == "Population" ~ "population"
-    )
-  ) |>
-  dplyr::select(short, scientific_name, rank, parent_scientific_name)
-
-
-# Ancienne version (webscrape)
-# CDPNQ_SUSC: 115 (113 dans DB)
-# CDPNQ_VUL: 28 (28 dans DB)
-# CDPNQ_ENDANGERED: 37 (37 dans DB)
-
-# Nouvelle version (.xlsx)
-# CDPNQ_SUSC: 90
-# CDPNQ_VUL: 28
-# CDPNQ_ENDANGERED: 37
-
-# Flore
-emv_flora <- readxl::read_excel(tmp, sheet = "Flore")
-
-# Ancienne version (webscrape)
-# CDPNQ_SUSC: 423 (423 dans BD)
-# CDPNQ_VUL: 18 (18 dans BD)
-# CDPNQ_VUL_HARVEST: 9 (9 dans BD)
-# CDPNQ_ENDANGERED: 59 (59 dans BD)
-
-# Nouvelle version (.xlsx)
-# CDPNQ_SUSC: 423
-# CDPNQ_VUL: 18
-# CDPNQ_VUL_HARVEST: 9
-# CDPNQ_ENDANGERED: 59
-
-emv_susc <- emv_fauna |> dplyr::filter(short == "CDPNQ_SUSC")
-emv_susc_old <- faune_data |> dplyr::filter(short == "CDPNQ_SUSC")
-missing_susc <- emv_susc_old[!(emv_susc_old$scientific_name %in% emv_susc$scientific_name), "scientific_name"]
-
-# Gomphus ventricosus présent sur le site comme CDPNQ_SUSC, mais pas dans le .xlsx
-# Oceanodroma leucorhoa présent sur le site comme CDPNQ_SUSC, mais pas dans le .xlsx
-# Lasiurus cinereus présent sur le site comme CDPNQ_SUSC, mais pas dans le .xlsx
-# Thamnophis saurita septentrionalis (.xlsx) vs Thamnophis sauritus (site web)
-# Falco peregrinus anatum vs Falco peregrinus tundrius vs pop1 sur la même ligne dans .xlsx
-# Cistothorus stellaris (.xlsx) vs Cistothorus platensis (site web)
-
-# Esox americanus vermiculatus (ajouter Esox americanus?)
-# Salvelinus alpinus oquassa (ajouter Salvelinus alpinus?)
-# Diadophis punctatus edwardsii (ajouter Diadophis punctatus?)
-# Nerodia sipedon sipedon (ajouter Nerodia sipedon?)
-# Thamnophis saurita septentrionalis (ajouter Thamnophis saurita?)
-# Calidris canutus rufa (ajouter Calidris canutus?)
-# Ammodramus savannarum pratensis (ajouter Ammodramus savannarum?)
-
-
-# Use-case Francois
-# sp split
-# becassine de wilson vs becassine des marais
-# tiarella cordofolia vs tiarella stolonifera
-# larus argentatus vs larus hudsonianus ou mithsonianus
-
-# diff status
-# glycerie de fernalde
-# torreyocloa palida palida vs  torreyocloa palida fernaldi
-# ergieron philadelphicus philadelphicus vs erigeron philadelphicus provancheri
-
-
-
 ################################################################################
-# This script updates the rubus.taxa_groups_members table
+# This script updates the CDPNQ status groups of the rubus.taxa_group_members table
 #
-# 1. This script extracts the list of threatened species in Quebec from the Quebec
-# government website. The data is extracted from the following pages:
-# - Faune: https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques
-# - Flore: https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/flore
-# the data is prepared for injection in the rubus.taxa_group_members table of the Atlas database
+# The statuses come from the list of the species followed by the CDPNQ
+# (liste-especes-suivies-CDPNQ.xlsx, sheets Faune and Flore). Only the designated statuses
+# are kept: Menacée, Vulnérable, Vulnérable à la récolte and Susceptible (not Candidate).
 #
-# 2. This script extracts the list of invasive species in Quebec from the Quebec
-# government website. The data is extracted from the following pages:
-# - Liste des principales espèces exotiques envahissantes: https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques/gestion-especes-exotiques-envahissantes-animales/liste-especes
-# - Liste des espèces exotiques envahissantes répertoriées dans Sentinelle: https://www.donneesquebec.ca/recherche/dataset/31f841b6-a544-47f9-93fb-b111a46fc654/resource/ac4aeddf-13ed-4d80-9ca3-28ca9ed77b14/download/sentinelle_liste_sp.csv
+# Statuses are injected with the name and the rank given by the CDPNQ (species, subspecies, variety
+# or population). A status reaches the observations of the taxon and of its infra-taxa.
+#
+# Species with infra-taxa (the remaps are done in taxa_ref by bdqc_taxa, cdpnq_vertebrates for
+# vertebrates and vascan_remap for vascular plants):
+#  - One infra-taxon in Quebec: observations of the species are remapped to it, so they get the
+#    status of the infra-taxon without a species-level entry.
+#      ie. Nerodia sipedon -> Nerodia sipedon sipedon (Vulnérable)
+#    For vertebrates, a species listed itself in the LFVQ is remapped only if the infra-taxon has a status.
+#      ie. Osmerus mordax -> Osmerus mordax pop. 1 (Vulnérable)
+#    The CDPNQ is trusted over VASCAN for the presence of an infra-taxon in Quebec.
+#      ie. Symphyotrichum lanceolatum subsp. lanceolatum is not remapped to var. lanceolatum
+#      because var. interior is listed by the CDPNQ, even if VASCAN excludes it from Quebec
+#  - Many infra-taxa in Quebec: no remap, each infra-taxon keeps its own status and the species
+#    has none, as its observations can't be resolved to an infra-taxon.
+#      ie. Esox americanus: only Esox americanus vermiculatus is Vulnérable
+#    Except when all the infra-taxa have a status, see inherit_status_taxa.
+#  - Taxa that are not vertebrates nor vascular plants (bryophytes, invertebrates) are not remapped.
+#
+# The status is given to the name used by the CDPNQ, even when VASCAN treats it as a synonym
+#  ie. Deschampsia alpina -> Deschampsia cespitosa subsp. neoalpina
 #
 # Required environment variables:
 # - POSTGRES_DB
@@ -109,75 +38,122 @@ missing_susc <- emv_susc_old[!(emv_susc_old$scientific_name %in% emv_susc$scient
 # Date: 2025-01-27
 ################################################################################
 
-################################################################################
-# 1. CDPNQ EMV
-################################################################################
-
 #================================================================================================
 # 0. Setup
 #================================================================================================
-library(rvest)
 library(RPostgres)
 
 # Load .env file
 readRenviron(".env")
 
 # Constants
-url_faune <- "https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques/especes-fauniques-menacees-vulnerables/liste"
-div_faune_lists <- c(
-  "CDPNQ_ENDANGERED" = "#c159706",
-  "CDPNQ_VUL" = "#c159753",
-  "CDPNQ_SUSC" = "#c159756"
+url_cdpnq_list <- "https://cdn-contenu.quebec.ca/cdn-contenu/faune/documents/precaire/liste-especes-suivies-CDPNQ.xlsx"
+
+cdpnq_groups <- c(
+  "Susceptible" = "CDPNQ_SUSC",
+  "Vulnérable" = "CDPNQ_VUL",
+  "Vulnérable à la récolte" = "CDPNQ_VUL_HARVEST",
+  "Menacée" = "CDPNQ_ENDANGERED"
 )
 
-url_flore <- "https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/flore/especes-floristiques-menacees-ou-vulnerables/liste-especes"
-div_flore_lists <- c(
-  "CDPNQ_ENDANGERED" = "#c293495",
-  "CDPNQ_VUL" = "#c293496",
-  "CDPNQ_VUL_HARVEST" = "#c293497",
-  "CDPNQ_SUSC" = "#c293498"
+# Used to keep one status per taxon, the most severe
+status_severity <- c(
+  "CDPNQ_SUSC" = 1,
+  "CDPNQ_VUL_HARVEST" = 2,
+  "CDPNQ_VUL" = 3,
+  "CDPNQ_ENDANGERED" = 4
+)
+
+# The level is not written the same way in both sheets (ie. Espèce, espèce)
+cdpnq_ranks <- c(
+  "espèce" = "species",
+  "sous-espèce" = "subspecies",
+  "variété" = "variety",
+  "population" = "population"
+)
+
+# Species with no status of their own, many infra-taxa in Quebec, and a status on ALL of them:
+# an observation of the species is necessarily of an infra-taxon with a status, so the species gets
+# the least severe status of its infra-taxa.
+# n_infra is the number of infra-taxa in Quebec, from the LFVQ for vertebrates, VASCAN for vascular
+# plants and the CDPNQ names for bryophytes (Bryoquel has no infra-taxa). The script stops if the
+# number of infra-taxa with a status changes in the CDPNQ list, the taxon should then be reviewed.
+# Species with an infra-taxon without a status are left out, the species has no status
+#  ie. Cicuta maculata: var. victorinii is Menacée, but var. maculata has no status
+#  ie. Rangifer tarandus caribou: pop. 2 and 14 have a status, pop. 7, 17 and 28 don't
+inherit_status_taxa <- tibble::tribble(
+  ~scientific_name,        ~rank,     ~parent_scientific_name, ~n_infra,
+  "Gadus morhua",          "species", "Animalia",              2, # pop. 4, pop. 7
+  "Corallorhiza striata",  "species", "Plantae",               2, # var. striata, var. vreelandii
+  "Gentianopsis virgata",  "species", "Plantae",               2, # subsp. macounii, subsp. victorinii
+  "Viola sagittata",       "species", "Plantae",               2, # var. ovata, var. sagittata
+  "Stegonia latifolia",    "species", "Plantae",               2  # var. latifolia, var. pilifera
 )
 
 #================================================================================================
 # 1. Functions
 #================================================================================================
 
-extract_table_data <- function(table, list_name) {
-  vernacular_name <- table |> html_nodes("tbody tr td:nth-child(1)") |> html_text(trim = TRUE)
-  scientific_name <- table |> html_nodes("tbody tr td:nth-child(2)") |> html_text(trim = TRUE)
-  category_faune <- table |> html_node("caption") |> html_text(trim = TRUE)
-  category_flore <- table |> html_node("h3") |> html_text(trim = TRUE)
-  category <- ifelse(!is.na(category_faune), category_faune, category_flore)
-  parent_scientific_name <- ifelse(!is.na(category_faune), "Animalia", "Plantae")
-
-  data.frame(vernacular_fr = vernacular_name,
-             scientific_name = scientific_name,
-             short = list_name,
-             category = category,
-             parent_scientific_name = parent_scientific_name,
-             stringsAsFactors = FALSE)
+# Read a sheet of the CDPNQ list into the columns used by inject_data()
+read_cdpnq_sheet <- function(path, sheet, parent_scientific_name) {
+  readxl::read_excel(path, sheet = sheet) |>
+    dplyr::filter(Situation %in% names(cdpnq_groups)) |>
+    dplyr::mutate(
+      # The scientific name is the last parenthesis of `Nom commun (Nom scientifique)`
+      scientific_name = stringr::str_match(`Nom commun (Nom scientifique)`, "\\((.*)\\)\\s*$")[, 2],
+      # Flora populations are codes written after the name (ie. Carex macloviana -p11), which
+      # seem to be administrative regions (-p11 is the Gaspésie population of Gentianopsis
+      # virgata subsp. macounii). The status is given to the taxon, as names with the codes
+      # can't be matched and observations can't be resolved to a population
+      scientific_name = stringr::str_trim(stringr::str_remove(scientific_name, "\\s+-p\\d.*$")),
+      rank = cdpnq_ranks[tolower(`Niveau taxonomique`)],
+      rank = dplyr::case_when(
+        rank == "population" & grepl("\\svar\\.\\s", scientific_name) ~ "variety",
+        rank == "population" & grepl("\\ssubsp\\.\\s", scientific_name) ~ "subspecies",
+        rank == "population" & !grepl("\\spop\\.", scientific_name) ~ "species",
+        TRUE ~ rank
+      ),
+      short = unname(cdpnq_groups[Situation]),
+      parent_scientific_name = parent_scientific_name
+    ) |>
+    dplyr::select(short, scientific_name, rank, parent_scientific_name)
 }
 
-define_taxonomic_level <- function(data) {
-  data <- data |>
-    dplyr::mutate(rank = dplyr::case_when(
-      #grepl("population", vernacular_fr, ignore.case = TRUE) ~ "population",
-      grepl("var\\.", scientific_name, ignore.case = TRUE) ~ "variety",
-      grepl("subsp\\.", scientific_name, ignore.case = TRUE) ~ "subspecies",
-      nchar(gsub("[^ ]", "", scientific_name, ignore.case = TRUE)) == 2 ~ "subspecies",
-      TRUE ~ "species"
-    ))
+# Keep one status per taxon, the most severe. A taxon can have many statuses when a flora
+# population has a status different from the taxon
+#  ie. Erigeron compositus is Susceptible, its populations -p01, p11 are Vulnérable
+keep_most_severe <- function(data) {
+  data |>
+    dplyr::slice_max(status_severity[short], n = 1, with_ties = FALSE, by = scientific_name)
 }
 
-extract_data <- function(url, div_lists) {
-  page <- read_html(url)
-  data <- lapply(names(div_lists), function(list_name) {
-    div_id <- div_lists[[list_name]]
-    tables <- page |> html_elements(div_id) |> html_elements("table")
-    lapply(tables, extract_table_data, list_name = list_name)
-  }) |>
-    dplyr::bind_rows()
-  data <- define_taxonomic_level(data)
+# Give the taxa in inherit_status_taxa the least severe status of their infra-taxa
+get_inherited_status <- function(data, inherit_taxa) {
+  infra <- inherit_taxa |>
+    dplyr::cross_join(dplyr::select(data, infra_name = scientific_name, short)) |>
+    dplyr::filter(startsWith(infra_name, paste0(scientific_name, " ")))
+
+  # Stop if the infra-taxa with a status are not all the infra-taxa anymore (ie. a status was
+  # removed or a name changed in the list)
+  n_found <- dplyr::count(infra, scientific_name, name = "n_found")
+  wrong_n <- inherit_taxa |>
+    dplyr::left_join(n_found, by = "scientific_name") |>
+    dplyr::filter(is.na(n_found) | n_found != n_infra)
+  if (nrow(wrong_n) > 0) {
+    stop("Not all the infra-taxa have a status for: ", paste(wrong_n$scientific_name, collapse = ", "))
+  }
+
+  inherited <- infra |>
+    dplyr::slice_min(status_severity[short], n = 1, with_ties = FALSE, by = scientific_name) |>
+    dplyr::select(short, scientific_name, rank, parent_scientific_name)
+
+  # Stop if a taxon already has a status of its own, it should be removed from inherit_taxa
+  has_status <- intersect(inherit_taxa$scientific_name, data$scientific_name)
+  if (length(has_status) > 0) {
+    stop("Taxa with a status of their own in inherit_status_taxa: ", paste(has_status, collapse = ", "))
+  }
+
+  inherited
 }
 
 inject_data <- function(con, data) {
@@ -202,12 +178,28 @@ inject_data <- function(con, data) {
 #================================================================================================
 # 2. Main Script
 #================================================================================================
-# Extract data for faune and flore
-faune_data <- extract_data(url_faune, div_faune_lists) |> tibble::as_tibble() |> dplyr::select(short, scientific_name, rank, parent_scientific_name)
-flore_data <- extract_data(url_flore, div_flore_lists)
 
-# Combine the data
-cdpnq_emv <- rbind(faune_data, flore_data)
+# Download the CDPNQ list
+cdpnq_list_file <- tempfile(fileext = ".xlsx")
+httr2::request(url_cdpnq_list) |>
+  httr2::req_perform(path = cdpnq_list_file)
+
+emv_fauna <- read_cdpnq_sheet(cdpnq_list_file, "Faune", "Animalia")
+emv_flora <- read_cdpnq_sheet(cdpnq_list_file, "Flore", "Plantae")
+
+cdpnq_emv <- dplyr::bind_rows(emv_fauna, emv_flora) |>
+  keep_most_severe()
+
+if (any(is.na(cdpnq_emv$scientific_name)) || any(is.na(cdpnq_emv$rank))) {
+  stop("Some rows have no scientific name or an unknown taxonomic level")
+}
+
+cdpnq_emv <- dplyr::bind_rows(
+  cdpnq_emv,
+  get_inherited_status(cdpnq_emv, inherit_status_taxa)
+)
+
+print(table(cdpnq_emv$parent_scientific_name, cdpnq_emv$short))
 
 # Connect to the database
 print("Connecting to Database…")
@@ -222,127 +214,19 @@ resp_delete_old_cdpnq <- dbExecute(con, delete_old_emv_grp)
 # Inject new data
 inject_data(con, cdpnq_emv)
 
-
-################################################################################
-# 2. Invasive species
-#
-# Deux sources :
-# - Liste des principales espèces exotiques envahissantes: https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques/gestion-especes-exotiques-envahissantes-animales/liste-especes
-# - Liste des espèces exotiques envahissantes répertoriées dans Sentinelle: https://www.donneesquebec.ca/recherche/dataset/31f841b6-a544-47f9-93fb-b111a46fc654/resource/ac4aeddf-13ed-4d80-9ca3-28ca9ed77b14/download/sentinelle_liste_sp.csv
-#
-# - La présence d’une EEE est répertoriée selon laiste des principales espèces exotiques envahissantes dans les catégories suivantes :
-#     Absente du Québec : l’espèce n’a jamais été observée au Québec;
-#     Observations ponctuelles : l’espèce a été observée à certaines occasions, mais il n’y a pas de preuve que les individus survivent et se reproduisent de manière autonome de sorte à former une population;
-#     Observations récurrentes : l’espèce a été observée à plusieurs occasions, mais  il n’y a pas de preuve que les individus survivent et se reproduisent de manière autonome de sorte à former une population;
-#     Établie : l’espèce est observée et il y a des preuves ou de bonnes raisons de croire que les individus survivent et se reproduisent de manière autonome de sorte à former une population.
-################################################################################
+dbDisconnect(con)
 
 #================================================================================================
-# 0. Setup
+# Notes
 #================================================================================================
 
-library(rvest)
-library(RPostgres)
+# Use-case Francois
+# sp split
+# becassine de wilson vs becassine des marais
+# tiarella cordofolia vs tiarella stolonifera
+# larus argentatus vs larus hudsonianus ou mithsonianus
 
-# Load .env file
-readRenviron(".env")
-
-# Constants
-url_liste_qc <- "https://www.quebec.ca/agriculture-environnement-et-ressources-naturelles/faune/gestion-faune-habitats-fauniques/gestion-especes-exotiques-envahissantes-animales/liste-especes"
-div_tables <- c(
-  "faune" = "#c306328",
-  "flore" = "#c306329",
-  "champignons" = "#c150579"
-)
-
-url_sentinelle <- "https://stqc380donopppdtce01.blob.core.windows.net/donnees-ouvertes/Especes_exo_envahissantes/especes_exo_envahissantes.json"
-
-url_aquatique <- "https://diffusion.mffp.gouv.qc.ca/Diffusion/DonneeGratuite/Faune/EAE_faunique/CSV/BD_EAE_faunique_Quebec.csv"
-
-#================================================================================================
-# 1. Functions
-#================================================================================================
-
-# Function to extract data from the principal invasive species list
-extract_data_principal <- function(table, list_name) {
-  scientific_name <- table |> html_nodes("tbody tr td:nth-child(2)") |> html_text(trim = TRUE)
-  parent_scientific_name <- ifelse(list_name == "faune", "Animalia", ifelse(list_name == "flore", "Plantae", "Fungi"))
-
-  data.frame(scientific_name = stringr::str_trim(scientific_name),
-             short = "PRINCIPAL_INVASIVE",
-             parent_scientific_name = parent_scientific_name,
-             stringsAsFactors = FALSE)
-}
-
-# Function to extract data from Sentinelle
-extract_data_sentinelle <- function(url) {
-  sentinelle_data <- jsonlite::fromJSON(url)$features$properties |>
-    dplyr::select(scientific_name = Nom_espece_latin) |>
-    dplyr::distinct() |>
-    dplyr::mutate(short = "SENTINELLE_INVASIVE",
-                  parent_scientific_name = NA,
-                  scientific_name = stringr::str_trim(scientific_name))
-}
-
-# Function to extract data from Aquatique envahissante
-extract_data_aquatic <- function(url) {
-  aquatic_data <- read.csv(url) |>
-    dplyr::select(scientific_name = especes) |>
-    dplyr::distinct() |>
-    dplyr::mutate(short = "AQUATIC_INVASIVE",
-                  parent_scientific_name = NA,
-                  scientific_name = stringr::str_trim(scientific_name))
-
-}
-
-# Function to clean and fix scientific names
-clean_scientific_names <- function(data) {
-  data[data$scientific_name == "Lymantria dispar asiatica, L. dispar japonica", "scientific_name"] <- "Lymantria dispar asiatica"
-  data <- rbind(data, data.frame(scientific_name = "Lymantria dispar japonica", short = "PRINCIPAL_INVASIVE", parent_scientific_name = "Animalia", stringsAsFactors = FALSE))
-  data <- data[!is.na(data$scientific_name), ]
-  data <- data[data$scientific_name != "", ]
-}
-
-#================================================================================================
-# 2. Main Script
-#================================================================================================
-
-# Extract data for principal invasive species
-page <- read_html(url_liste_qc)
-eee_principales_data <- lapply(names(div_tables), function(list_name) {
-  div_id <- div_tables[[list_name]]
-  tables <- page |> html_nodes(paste0(div_id, " table"))
-  lapply(tables, function(tbl) extract_data_principal(tbl, list_name = list_name))
-}) |>
-  dplyr::bind_rows()
-eee_principales_data <- clean_scientific_names(eee_principales_data) |>
-  define_taxonomic_level()
-
-# Extract data from Sentinelle
-eee_sentinelle_data <- extract_data_sentinelle(url_sentinelle) |>
-  define_taxonomic_level()
-
-# Extract data from Aquatique envahissante
-eee_aquatic_data <- extract_data_aquatic(url_aquatique) |>
-  define_taxonomic_level()
-
-# Combine the data and remove duplicates
-eee_all <- dplyr::bind_rows(eee_principales_data, eee_sentinelle_data, eee_aquatic_data) |>
-  dplyr::distinct(scientific_name, .keep_all = TRUE) |>
-  dplyr::mutate(short = "INVASIVE_SPECIES")
-
-# Connect to the database
-print("Connecting to Database…")
-con <- dbConnect(Postgres(), dbname = Sys.getenv("POSTGRES_DB"),
-                 host = Sys.getenv("POSTGRES_HOST"), port = Sys.getenv("POSTGRES_PORT"),
-                 user = Sys.getenv("POSTGRES_USER"), password = Sys.getenv("POSTGRES_PASSWORD"))
-
-# Delete old data
-delete_old_invasive_grp <- "DELETE FROM rubus.taxa_group_members WHERE short IN ('PRINCIPAL_INVASIVE', 'SENTINELLE_INVASIVE', 'INVASIVE_SPECIES', 'AQUATIC_INVASIVE');"
-resp_delete_old_invasive <- dbExecute(con, delete_old_invasive_grp)
-
-# Inject new data
-inject_data(con, eee_principales_data)
-inject_data(con, eee_sentinelle_data)
-inject_data(con, eee_aquatic_data)
-inject_data(con, eee_all)
+# diff status
+# glycerie de fernalde
+# torreyocloa palida palida vs  torreyocloa palida fernaldi
+# ergieron philadelphicus philadelphicus vs erigeron philadelphicus provancheri

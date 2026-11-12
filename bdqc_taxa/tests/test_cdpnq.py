@@ -116,9 +116,20 @@ class TestCdpnqVertebratesRemap(unittest.TestCase):
         self.assert_remap('Oceanodroma leucorhoa', 'Hydrobates leucorhous pop. 1')
         self.assert_remap('Chrysemys scripta', 'Trachemys scripta elegans')
 
-    def test_no_remap_species_listed(self):
-        # Loxia curvirostra is listed itself (S5) next to Loxia curvirostra percna (S2)
+    def test_remap_species_listed_infra_with_status(self):
+        # Listed themselves, but their only infra-taxon has a CDPNQ status
+        self.assert_remap('Osmerus mordax', 'Osmerus mordax pop. 1')
+        self.assert_remap('Coregonus artedi', 'Coregonus artedi pop. 1')
+        self.assert_remap('Salvelinus alpinus', 'Salvelinus alpinus oquassa')
+        self.assert_remap('Phoca vitulina', 'Phoca vitulina mellonae')
+
+    def test_remap_synonym_of_remapped_listed_species(self):
+        self.assert_remap('Salvelinus salvelinus', 'Salvelinus alpinus oquassa')
+
+    def test_no_remap_species_listed_infra_without_status(self):
+        # Loxia curvirostra is listed itself (S5), Loxia curvirostra percna (S2) has no status
         self.assert_not_remapped('Loxia curvirostra')
+        self.assert_not_remapped('Salmo salar')
 
     def test_no_remap_many_populations(self):
         self.assert_not_remapped('Delphinapterus leucas')

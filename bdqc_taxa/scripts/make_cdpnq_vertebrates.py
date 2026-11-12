@@ -268,12 +268,14 @@ ssp_df["synonym_names"] = np.nan
 df = pd.concat([df, ssp_df], axis=0).reset_index(drop=True)
 
 # %% Remap species to their only infra-taxon in Quebec
-# A species is remapped to its infra-taxon (subspecies or population) when:
-#  - the species is not listed itself in the LFVQ. A species-level element means the species occurs
-#    beyond its listed infra-taxa (ie. Loxia curvirostra S5 next to Loxia curvirostra percna S2)
-#  - it has exactly one infra-taxon. Subspecies are counted first, so populations under a subspecies
-#    are not counted (ie. Rangifer tarandus -> Rangifer tarandus caribou, which has 5 populations).
-#    Populations are counted when the species has no subspecies (ie. Desmognathus ochrophaeus pop. 2)
+# A species is remapped to its infra-taxon (subspecies or population) when it has exactly one
+# infra-taxon. Subspecies are counted first, so populations under a subspecies are not counted
+# (ie. Rangifer tarandus -> Rangifer tarandus caribou, which has 5 populations). Populations are
+# counted when the species has no subspecies (ie. Desmognathus ochrophaeus pop. 2)
+# When the species is listed itself in the LFVQ, it is remapped only if its infra-taxon has a
+# CDPNQ status: an observation of the species may be of the infra-taxon, so it gets its status
+#  ie. Osmerus mordax (S4) -> Osmerus mordax pop. 1 (Vulnérable)
+#  but not Loxia curvirostra (S5) -> Loxia curvirostra percna (no status)
 # Infra-taxa are compared on valid_name, so Falco peregrinus tundrius (valid: Falco peregrinus pop. 1)
 # and Falco peregrinus pop. 1 count as one: Falco peregrinus -> Falco peregrinus pop. 1
 # All Quebec observations of a remapped species are assumed to be the infra-taxon, so the CDPNQ
@@ -285,17 +287,26 @@ df = pd.concat([df, ssp_df], axis=0).reset_index(drop=True)
 from_lfvq = df["ELEMENT_ID"].notna()
 listed_species = set(df.loc[from_lfvq & (df["rank"] == "species"), "ESPECE"])
 
+# Taxa with a status in the list of the species followed by the CDPNQ, same parsing and statuses
+# as group_members_update.R
+cdpnq_list_path = "../../scratch/liste-especes-suivies-CDPNQ.xlsx"
+cdpnq_list = pd.read_excel(cdpnq_list_path, sheet_name="Faune")
+cdpnq_list = cdpnq_list.loc[cdpnq_list["Situation"].isin(["Susceptible", "Vulnérable", "Vulnérable à la récolte", "Menacée"])]
+cdpnq_status_names = set(
+    cdpnq_list["Nom commun (Nom scientifique)"].str.extract(r"\((.*)\)\s*$")[0].str.strip().dropna()
+)
+
 def get_only_infra(rows):
     subspecies = rows.loc[rows["rank"] == "subspecies"]
     targets = (subspecies if not subspecies.empty else rows)["valid_name"].unique()
     return targets[0] if len(targets) == 1 else None
 
-infra = df.loc[
-    from_lfvq
-    & df["rank"].isin(["subspecies", "population"])
-    & ~df["ESPECE"].isin(listed_species)
-]
+infra = df.loc[from_lfvq & df["rank"].isin(["subspecies", "population"])]
 only_infra = infra.groupby("ESPECE")[["rank", "valid_name"]].apply(get_only_infra).dropna()
+
+# Listed species are remapped only to an infra-taxon with a status
+only_infra = only_infra.loc[~only_infra.index.isin(listed_species) | only_infra.isin(cdpnq_status_names)]
+print(f"Listed species remapped to their infra-taxon with a status: {sorted(set(only_infra.index) & listed_species)}")
 
 is_remapped = (df["rank"] == "species") & df["name"].isin(only_infra.index)
 df.loc[is_remapped, "valid_name"] = df.loc[is_remapped, "name"].map(only_infra)
@@ -580,11 +591,13 @@ Columns:
 
 Notes:
     The entries have no recorded author.
-    Species that are not listed themselves in the LFVQ and have only one infra-taxon (subspecies, or
-    population when there is no subspecies) are synonyms of that infra-taxon. All Quebec observations
-    of the species are assumed to be the infra-taxon.
+    Species that have only one infra-taxon (subspecies, or population when there is no subspecies)
+    are synonyms of that infra-taxon. All Quebec observations of the species are assumed to be the
+    infra-taxon. Species listed themselves in the LFVQ are remapped only if the infra-taxon has a status
+    in the list of the species followed by the CDPNQ (liste-especes-suivies-CDPNQ.xlsx).
     ie. Nerodia sipedon -> Nerodia sipedon sipedon, Rangifer tarandus -> Rangifer tarandus caribou,
-    Desmognathus ochrophaeus -> Desmognathus ochrophaeus pop. 2
+    Desmognathus ochrophaeus -> Desmognathus ochrophaeus pop. 2, Osmerus mordax -> Osmerus mordax pop. 1,
+    but not Loxia curvirostra (Loxia curvirostra percna has no status)
     Falco peregrinus, Falco peregrinus anatum and Falco peregrinus tundrius -> Falco peregrinus pop. 1
 """
 

@@ -23,7 +23,11 @@ WHERE id_taxa_obs in (
     3818812, -- Acipenser oxyrinchus
     1953296, -- Clemmys guttata
     3818821, -- Graptemys geographica
-    3818823 -- Sternotherus odoratus
+    3818823, -- Sternotherus odoratus
+    3818771, -- Melanoplus gaspesiensis
+    3818772, -- Oenes bore gaspeensis
+    3818773, -- Coenonympha nipisiquit
+    928807 -- Centronyx henslowii
 )
 AND short = 'SENSITIVE';
 

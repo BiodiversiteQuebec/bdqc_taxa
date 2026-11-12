@@ -68,11 +68,13 @@ Columns:
 
 Notes:
     The entries have no recorded author.
-    Species that are not listed themselves in the LFVQ and have only one infra-taxon (subspecies, or
-    population when there is no subspecies) are synonyms of that infra-taxon. All Quebec observations
-    of the species are assumed to be the infra-taxon.
+    Species that have only one infra-taxon (subspecies, or population when there is no subspecies)
+    are synonyms of that infra-taxon. All Quebec observations of the species are assumed to be the
+    infra-taxon. Species listed themselves in the LFVQ are remapped only if the infra-taxon has a status
+    in the list of the species followed by the CDPNQ (liste-especes-suivies-CDPNQ.xlsx).
     ie. Nerodia sipedon -> Nerodia sipedon sipedon, Rangifer tarandus -> Rangifer tarandus caribou,
-    Desmognathus ochrophaeus -> Desmognathus ochrophaeus pop. 2
+    Desmognathus ochrophaeus -> Desmognathus ochrophaeus pop. 2, Osmerus mordax -> Osmerus mordax pop. 1,
+    but not Loxia curvirostra (Loxia curvirostra percna has no status)
     Falco peregrinus, Falco peregrinus anatum and Falco peregrinus tundrius -> Falco peregrinus pop. 1
 
 TABLE eliso_invertebrates
@@ -112,7 +114,12 @@ Description:
     Species (and intermediate infra-taxa) that have exactly one infra-taxon present in Quebec
     are mapped to that infra-taxon. All Quebec observations of the species are assumed to be the infra-taxon.
     Only the remapped taxa are listed.
-    Infra-taxa counted as present in Quebec: doubtful, ephemeral, extirpated, introduced, native.
+    Manual remaps are added for taxa with no Quebec distribution in VASCAN, while the CDPNQ lists the
+    infra-taxon in Quebec and it is the only infra-taxon of the species in VASCAN
+    (Cirsium scariosum -> Cirsium scariosum scariosum). Their n_infra_* columns are 0.
+    Infra-taxa counted as present in Quebec: doubtful, ephemeral, extirpated, introduced, native, and the infra-taxa
+    on the list of the species followed by the CDPNQ (liste-especes-suivies-CDPNQ.xlsx, any situation)
+    whatever their VASCAN status (ie. Symphyotrichum lanceolatum subsp. lanceolatum var. interior).
 
 Columns:
     taxon_id: VASCAN taxonID of the taxon to remap (species or intermediate subspecies)
@@ -125,7 +132,7 @@ Columns:
     valid_authorship: authorship of the infra-taxon
     valid_qc_status: VASCAN status of the infra-taxon in Quebec
     n_infra_listed_qc: number of lowest-level infra-taxa listed for Quebec, any status
-    n_infra_counted_qc: number of those counted as present in Quebec (always 1)
+    n_infra_counted_qc: number of those counted as present in Quebec (always 1, 0 for manual remaps)
     vascan_consulted: date the VASCAN archive was generated
 
 Notes:

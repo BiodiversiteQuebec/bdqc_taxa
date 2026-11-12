@@ -11,6 +11,9 @@ TORREYOCHLOA_PALLIDA = '7981'                      # species, two infra-taxa in 
 CAKILE_EDENTULA = '9885'                           # species
 CAKILE_EDENTULA_EDENTULA = '3936'                  # subspecies
 CAKILE_EDENTULA_EDENTULA_EDENTULA = '3935'         # variety, only infra-taxon in Quebec
+SYMPHYOTRICHUM_LANCEOLATUM_LANCEOLATUM = '3550'    # subspecies, var. interior excluded in VASCAN but listed by the CDPNQ
+CIRSIUM_SCARIOSUM = '3004'                         # species, manual remap
+CIRSIUM_SCARIOSUM_SCARIOSUM = '3003'               # variety, no Quebec distribution in VASCAN
 
 
 class TestVascanMatchTaxa(unittest.TestCase):
@@ -37,6 +40,17 @@ class TestVascanMatchTaxa(unittest.TestCase):
         self.assertEqual(result['valid_taxon_id'], CAKILE_EDENTULA_EDENTULA_EDENTULA)
         self.assertEqual(result['valid_name'], 'Cakile edentula edentula edentula')
         self.assertEqual(result['valid_rank'], 'variety')
+
+    def test_infra_taxon_listed_by_cdpnq_is_counted(self):
+        """var. interior is excluded in VASCAN but listed by the CDPNQ, so the subspecies has two
+        varieties in Quebec and is not remapped to var. lanceolatum"""
+        self.assertIsNone(vascan.match_taxa(SYMPHYOTRICHUM_LANCEOLATUM_LANCEOLATUM))
+
+    def test_manual_remap(self):
+        """Cirsium scariosum -> Cirsium scariosum scariosum"""
+        result = vascan.match_taxa(CIRSIUM_SCARIOSUM)
+        self.assertEqual(result['valid_taxon_id'], CIRSIUM_SCARIOSUM_SCARIOSUM)
+        self.assertEqual(result['valid_name'], 'Cirsium scariosum scariosum')
 
 
 class TestVascanIntermediateTaxa(unittest.TestCase):

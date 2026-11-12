@@ -18,6 +18,11 @@
 # - Infra-taxa absent from Quebec are not in such an archive, which is fine: only infra-taxa
 #   listed for Quebec can be counted. Excluded infra-taxa are listed, so the Quebec status of
 #   each infra-taxon is still needed to know which ones are counted.
+# - The CDPNQ is trusted over VASCAN for the presence in Quebec: infra-taxa on the list of the
+#   species followed by the CDPNQ (any situation) are counted whatever their VASCAN status.
+#   ie. Symphyotrichum lanceolatum subsp. lanceolatum var. interior is excluded in VASCAN but
+#   Susceptible for the CDPNQ, so Symphyotrichum lanceolatum subsp. lanceolatum has two varieties
+#   in Quebec and is not remapped to var. lanceolatum.
 # - Rows are matched on VASCAN taxon IDs, which are the record IDs returned by Global Names
 #   for VASCAN (data source 147).
 #====================================================================================================
@@ -36,6 +41,9 @@ DB_FILE = "../custom_sources.sqlite"
 README_FILE = "../custom_sources.txt"
 DWCA_PATH = "../../scratch/vascan_dwc_03-11-2026/"
 CSV_EXPORT = "../../scratch/vascan_remap.csv"
+# List of the species followed by the CDPNQ, from
+# https://cdn-contenu.quebec.ca/cdn-contenu/faune/documents/precaire/liste-especes-suivies-CDPNQ.xlsx
+CDPNQ_LIST = "../../scratch/liste-especes-suivies-CDPNQ.xlsx"
 TABLE_NAME = "vascan_remap"
 
 QC_LOCATION_ID = "ISO 3166-2:CA-QC"
@@ -117,6 +125,58 @@ if qc["taxonID"].duplicated().any():
 qc["vascan_status"] = [VASCAN_STATUS[k] for k in status_keys]
 qc_status = qc.set_index("taxonID")["vascan_status"]
 
+# %% Get the infra-taxa listed by the CDPNQ
+
+# Names are compared without authorship, with the rank markers, the way the CDPNQ writes them
+#  ie. 'Symphyotrichum lanceolatum (Willdenow) G.L. Nesom subsp. lanceolatum var. lanceolatum'
+#  -> 'Symphyotrichum lanceolatum subsp. lanceolatum var. lanceolatum'
+RANK_MARKERS = ("subsp.", "var.", "f.")
+
+def strip_authorship(scientific_name):
+    words = scientific_name.split()
+    out = words[:2]
+    for i, word in enumerate(words[2:-1], start=2):
+        if word in RANK_MARKERS:
+            out += [word, words[i + 1]]
+    return " ".join(out)
+
+# Synonyms are kept, as the CDPNQ may use a name that VASCAN treats as a synonym
+#  ie. Woodsia obtusa subsp. obtusa -> Physematium obtusum subsp. obtusum
+# Misapplied names (auct.) are left out, they don't refer to the taxon they name
+names = taxa.loc[~taxa["scientificName"].str.contains(r"\bauct\.", regex=True)].copy()
+names["name"] = names["scientificName"].map(strip_authorship)
+names["accepted_id"] = names["acceptedNameUsageID"].where(names["taxonomicStatus"] == "synonym", names["taxonID"])
+names["accepted_id"] = names["accepted_id"].str.split("|")
+names = names.explode("accepted_id")
+names = names.loc[names["accepted_id"].isin(accepted_by_id.index)]
+name_to_ids = names.groupby("name")["accepted_id"].agg(set).to_dict()
+
+# The scientific name is the last parenthesis of `Nom commun (Nom scientifique)`, flora populations
+# are codes written after the name (ie. Carex macloviana -p11), same as in group_members_update.R
+cdpnq = pd.read_excel(CDPNQ_LIST, sheet_name="Flore")
+cdpnq = cdpnq.loc[cdpnq["Grand groupe"] != "Bryophytes"]
+cdpnq_names = (
+    cdpnq["Nom commun (Nom scientifique)"]
+    .str.extract(r"\((.*)\)\s*$")[0]
+    .str.replace(r"\s+-p\d.*$", "", regex=True)
+    .str.strip()
+    .dropna()
+    .unique()
+)
+
+cdpnq_ids = set()
+for name in cdpnq_names:
+    ids = {i for i in name_to_ids.get(name, set()) if accepted_by_id.loc[i, "taxonRank"] != "species"}
+    cdpnq_ids |= ids
+    # Infra-taxa missing from the archive can't be counted, they may need a manual remap
+    #  ie. Cirsium scariosum var. scariosum, see MANUAL_REMAPS
+    # Names found as synonyms of a species are fine (ie. Viola sagittata var. sagittata -> Viola sagittata)
+    if name not in name_to_ids and any(f" {marker} " in name for marker in RANK_MARKERS):
+        print(f"Warning: CDPNQ infra-taxon not found in the archive: {name}")
+
+cdpnq_only = sorted(i for i in cdpnq_ids if qc_status.get(i) not in COUNTED_STATUSES)
+print(f"Infra-taxa counted because the CDPNQ lists them: {[canonical_names[i] for i in cdpnq_only]}")
+
 # %% Find the taxa to remap
 
 # Accepted children of each taxon
@@ -141,7 +201,7 @@ for taxon_id in candidates:
         print(f"Warning: {canonical_names[taxon_id]} ({taxon_id}) has children and its own Quebec status")
 
     leaves = get_leaves(taxon_id)
-    counted = [leaf for leaf in leaves if qc_status.get(leaf) in COUNTED_STATUSES]
+    counted = [leaf for leaf in leaves if qc_status.get(leaf) in COUNTED_STATUSES or leaf in cdpnq_ids]
 
     # Remap only when exactly one infra-taxon is present in Quebec
     if len(counted) != 1:
@@ -242,7 +302,9 @@ Description:
     Manual remaps are added for taxa with no Quebec distribution in VASCAN, while the CDPNQ lists the
     infra-taxon in Quebec and it is the only infra-taxon of the species in VASCAN
     (Cirsium scariosum -> Cirsium scariosum scariosum). Their n_infra_* columns are 0.
-    Infra-taxa counted as present in Quebec: {', '.join(sorted(COUNTED_STATUSES))}.
+    Infra-taxa counted as present in Quebec: {', '.join(sorted(COUNTED_STATUSES))}, and the infra-taxa
+    on the list of the species followed by the CDPNQ (liste-especes-suivies-CDPNQ.xlsx, any situation)
+    whatever their VASCAN status (ie. Symphyotrichum lanceolatum subsp. lanceolatum var. interior).
 
 Columns:
     taxon_id: VASCAN taxonID of the taxon to remap (species or intermediate subspecies)

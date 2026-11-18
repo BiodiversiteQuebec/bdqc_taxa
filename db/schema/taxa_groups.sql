@@ -59,7 +59,8 @@ COMMENT ON TABLE rubus.taxa_groups IS 'Table of taxa groups definitions';
 (38, 'MICROORGANISMS', 'Microorganismes', 'Microorganisms', 1),
 (39, 'SARA_ENDANGERED', 'En voie de disparition', 'Endangered', 2),
 (40, 'SARA_THREATENED', 'Menacée', 'Threatened', 2),
-(41, 'SARA_SPECIAL_CONCERN', 'Préoccupante', 'Special Concern', 2)
+(41, 'SARA_SPECIAL_CONCERN', 'Préoccupante', 'Special Concern', 2),
+(43, 'AQUATIC_INVASIVE', 'Faune aquatique exotique envahissante', 'Invasive exotic aquatic fauna', 2, 'MELCCFP')
 
 
 --------------------------------------------------------------------------

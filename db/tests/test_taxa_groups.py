@@ -205,3 +205,34 @@ class TestTaxaObsGroupLookup(unittest.TestCase):
 
         # Assert all observed names are in the group
         self.assertEqual(len(synonym_taxa_obs), len(group_taxa_obs))
+        
+    def test_indigenous_lonicera_not_invasive_groups(
+            self,
+            indigenous_taxa = [
+                'Lonicera canadensis',
+                'Lonicera caerulea',
+                'Lonicera dioica',
+                'Lonicera hirsuta',
+                'Lonicera involucrata',
+                'Lonicera oblongifolia',
+            ],
+            invasive_groups = [
+                'AQUATIC_INVASIVE',
+                'INVASIVE_SPECIES',
+                'SENTINELLE_INVASIVE',
+                'PRINCIPAL_INVASIVE',
+            ]):
+        # Look for any of these taxa in an invasive group
+        query = """
+            SELECT taxa_obs.scientific_name, glu.short_group
+            FROM rubus.taxa_obs_group_lookup_level_1_2_view glu
+            JOIN taxa_obs ON glu.id_taxa_obs = taxa_obs.id
+            WHERE taxa_obs.scientific_name = ANY(%s)
+                AND glu.short_group = ANY(%s)
+            """
+        df = pd.read_sql(query, self.conn, params=(indigenous_taxa, invasive_groups))
+
+        # Assert none of the indigenous taxa are part of an invasive group
+        self.assertTrue(
+            df.empty,
+            f"Indigenous Lonicera found in invasive groups:\n{df.to_string(index=False)}")
